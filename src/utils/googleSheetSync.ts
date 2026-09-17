@@ -449,6 +449,45 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (data.action === "sendOtpEmail") {
+      var to = data.toEmail || "kuldeeprai75220@gmail.com";
+      var otpCode = data.otp;
+      var schName = data.schoolName || "H.D. PANDEY PUBLIC J.H.S.";
+      var subj = data.subject || (schName + " - व्यवस्थापक पासवर्ड रीसेट OTP");
+      var html = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;">' +
+        '<div style="text-align:center;border-bottom:2px solid #0f2b48;padding-bottom:12px;margin-bottom:20px;">' +
+        '<h2 style="color:#0f2b48;margin:0;">' + schName + '</h2>' +
+        '<p style="color:#64748b;font-size:13px;margin:4px 0 0 0;">प्रशासनिक पोर्टल सुरक्षा सत्यापन (Admin Portal Security Verification)</p>' +
+        '</div>' +
+        '<p style="font-size:15px;color:#1e293b;">नमस्ते व्यवस्थापक,</p>' +
+        '<p style="font-size:14px;color:#334155;line-height:1.6;">आपके व्यवस्थापक खाते का पासवर्ड रीसेट करने के लिए सत्यापन कोड (OTP) का अनुरोध प्राप्त हुआ है। पासवर्ड रीसेट करने के लिए नीचे दिए गए 6-अंकीय कोड का उपयोग करें:</p>' +
+        '<div style="text-align:center;margin:24px 0;padding:16px;background:#f8fafc;border:2px dashed #0f2b48;border-radius:10px;">' +
+        '<span style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#0f2b48;font-family:monospace;">' + otpCode + '</span>' +
+        '<p style="font-size:12px;color:#64748b;margin:8px 0 0 0;">यह कोड केवल 15 मिनट के लिए मान्य है।</p>' +
+        '</div>' +
+        '<p style="font-size:13px;color:#ef4444;">⚠️ यदि आपने पासवर्ड रीसेट का अनुरोध नहीं किया है, तो इस ईमेल को अनदेखा करें। आपके खाते की सुरक्षा सुरक्षित रहेगी।</p>' +
+        '<hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;" />' +
+        '<p style="font-size:11px;color:#94a3b8;text-align:center;">यह एक स्वचालित संदेश है। कृपया इस ईमेल का उत्तर न दें।</p>' +
+        '</div>';
+
+      try {
+        MailApp.sendEmail({
+          to: to,
+          subject: subj,
+          htmlBody: html
+        });
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "success",
+          message: "OTP email successfully dispatched to " + to
+        })).setMimeType(ContentService.MimeType.JSON);
+      } catch (mailErr) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error",
+          error: mailErr.toString()
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
     return ContentService.createTextOutput(JSON.stringify({ status: "ignored" }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {

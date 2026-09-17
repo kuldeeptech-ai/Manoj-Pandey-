@@ -16,6 +16,7 @@ import {
   calculateStudentResult,
   normalizeSchoolSettings,
   formatDisplayDate,
+  normalizeStudentRecord,
 } from './utils/calculations';
 import { PublicSearch } from './components/PublicSearch';
 import { ResultViewer } from './components/ResultViewer';
@@ -67,8 +68,13 @@ export default function App() {
 
   // Persistence State
   const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem('hd_pandey_students');
-    return saved ? JSON.parse(saved) : DEFAULT_STUDENTS;
+    try {
+      const saved = localStorage.getItem('hd_pandey_students');
+      const raw = saved ? JSON.parse(saved) : DEFAULT_STUDENTS;
+      return (raw || []).map(normalizeStudentRecord);
+    } catch {
+      return (DEFAULT_STUDENTS || []).map(normalizeStudentRecord);
+    }
   });
 
   const [subjects, setSubjects] = useState<SubjectConfig[]>(() => {
@@ -137,12 +143,7 @@ export default function App() {
             });
           }
           if (Array.isArray(data.students)) {
-            const normalizedStudents = data.students.map((s: Student) => ({
-              ...s,
-              dob: formatDisplayDate(s.dob),
-              mobile: s.mobile ? String(s.mobile).trim() : '',
-              aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
-            }));
+            const normalizedStudents = data.students.map(normalizeStudentRecord);
             setStudents((prev) => {
               if (JSON.stringify(prev) !== JSON.stringify(normalizedStudents)) {
                 localStorage.setItem('hd_pandey_students', JSON.stringify(normalizedStudents));
@@ -181,12 +182,7 @@ export default function App() {
       const fbData = await fetchAllFromFirebase();
       if (fbData) {
         if (fbData.students && fbData.students.length > 0) {
-          const normalizedStudents = fbData.students.map((s: Student) => ({
-            ...s,
-            dob: formatDisplayDate(s.dob),
-            mobile: s.mobile ? String(s.mobile).trim() : '',
-            aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
-          }));
+          const normalizedStudents = fbData.students.map(normalizeStudentRecord);
           setStudents((prev) => {
             if (JSON.stringify(prev) !== JSON.stringify(normalizedStudents)) {
               localStorage.setItem('hd_pandey_students', JSON.stringify(normalizedStudents));
@@ -268,12 +264,7 @@ export default function App() {
         });
       },
       onStudents: (newStudents) => {
-        const formatted = newStudents.map((s) => ({
-          ...s,
-          dob: formatDisplayDate(s.dob),
-          mobile: s.mobile ? String(s.mobile).trim() : '',
-          aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
-        }));
+        const formatted = newStudents.map(normalizeStudentRecord);
         setStudents(formatted);
         localStorage.setItem('hd_pandey_students', JSON.stringify(formatted));
       },
@@ -736,6 +727,7 @@ export default function App() {
               schoolName={schoolSettings.schoolName}
               adminUserId={schoolSettings.adminUserId || (typeof localStorage !== 'undefined' ? localStorage.getItem('school_admin_user') || '' : '')}
               adminPassword={schoolSettings.adminPassword || (typeof localStorage !== 'undefined' ? localStorage.getItem('school_admin_pass') || '' : '')}
+              adminEmail={schoolSettings.adminEmail || 'kuldeeprai75220@gmail.com'}
             />
           </div>
         )
@@ -751,6 +743,7 @@ export default function App() {
           schoolName={schoolSettings.schoolName}
           adminUserId={schoolSettings.adminUserId || (typeof localStorage !== 'undefined' ? localStorage.getItem('school_admin_user') || '' : '')}
           adminPassword={schoolSettings.adminPassword || (typeof localStorage !== 'undefined' ? localStorage.getItem('school_admin_pass') || '' : '')}
+          adminEmail={schoolSettings.adminEmail || 'kuldeeprai75220@gmail.com'}
         />
       )}
     </div>

@@ -18,6 +18,7 @@ function normalizeStudent(s: any): any {
   if (!s || typeof s !== 'object') return s;
   return {
     ...s,
+    marks: s.marks && typeof s.marks === 'object' ? s.marks : {},
     dob: formatDisplayDate(s.dob),
     mobile: s.mobile ? String(s.mobile).trim() : '',
     aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
@@ -182,60 +183,216 @@ async function startServer() {
     res.json(store);
   });
 
-  // Strict Admin Login Verification Endpoint
-  // Always verifies against currently persisted active credentials in store/data-store.json
-  // Old credentials will NEVER be accepted once changed!
+  const PRIMARY_ADMIN_EMAIL = 'kuldeeprai75220@gmail.com';
+
+  // Strict Single-Credential Admin Login Verification Endpoint
+  // Supports Login via Admin Email (kuldeeprai75220@gmail.com) as well as Admin User ID
   app.post('/api/admin/login', (req, res) => {
-    const { userId, password } = req.body || {};
-    if (!userId || !password) {
-      return res.status(400).json({ success: false, error: 'User ID and Password are required.' });
+    const { userId, email, password } = req.body || {};
+    const inputIdentifier = String(email || userId || '').trim().toLowerCase();
+    const inputPass = String(password || '').trim();
+
+    if (!inputIdentifier || !inputPass) {
+      return res.status(400).json({ success: false, error: 'व्यवस्थापक ईमेल और पासवर्ड आवश्यक हैं।' });
     }
 
-    const currentUserId = (store.schoolSettings?.adminUserId || 'Kld75').trim();
+    const currentEmail = (store.schoolSettings?.adminEmail || PRIMARY_ADMIN_EMAIL).trim().toLowerCase();
+    const currentUserId = (store.schoolSettings?.adminUserId || 'Kld7522').trim().toLowerCase();
     const currentPassword = (store.schoolSettings?.adminPassword || 'Kld@2314').trim();
 
-    const userMatches = String(userId).trim().toLowerCase() === currentUserId.toLowerCase();
-    const passMatches = String(password).trim() === currentPassword;
+    // Verification check against Admin Email or configured User ID
+    const isIdentifierValid =
+      inputIdentifier === currentEmail ||
+      inputIdentifier === PRIMARY_ADMIN_EMAIL ||
+      inputIdentifier === currentUserId;
 
-    if (userMatches && passMatches) {
+    const isPasswordValid = inputPass === currentPassword;
+
+    if (isIdentifierValid && isPasswordValid) {
       const token = `adm_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      console.log(`[Admin Auth] Successful login for: ${currentUserId}`);
+      console.log(`[Admin Auth] Successful login for admin: ${currentEmail}`);
       return res.json({
         success: true,
         token,
-        adminUserId: currentUserId,
+        adminEmail: currentEmail,
+        adminUserId: store.schoolSettings?.adminUserId || 'Kld7522',
         schoolName: store.schoolSettings?.schoolName,
       });
     }
 
-    console.warn(`[Admin Auth] Failed login attempt for user: "${userId}". Current active user is: "${currentUserId}"`);
+    console.warn(`[Admin Auth] Failed login attempt for: "${inputIdentifier}"`);
     return res.status(401).json({
       success: false,
-      error: 'अमान्य यूज़र आईडी या पासवर्ड! यदि आपने हाल ही में क्रेडेंशियल्स बदले हैं, तो कृपया नए आईडी और पासवर्ड का ही उपयोग करें। पुराना पासवर्ड अमान्य है।',
+      error: `अमान्य ईमेल या पासवर्ड! केवल अधिकृत व्यवस्थापक (${currentEmail}) ही एडमिन बन सकते हैं।`,
+    });
+  });
+
+  // Firebase Authentication Verification Endpoint
+  // STRICT SECURITY: Only PRIMARY_ADMIN_EMAIL (kuldeeprai75220@gmail.com) is accepted.
+  app.post('/api/admin/firebase-auth-success', (req, res) => {
+    const { email } = req.body || {};
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const primaryAdmin = (store.schoolSettings?.adminEmail || PRIMARY_ADMIN_EMAIL).trim().toLowerCase();
+
+    if (cleanEmail === primaryAdmin || cleanEmail === PRIMARY_ADMIN_EMAIL.toLowerCase()) {
+      const token = `adm_fb_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      console.log(`[Admin Auth] Verified sole admin via Firebase: ${cleanEmail}`);
+      return res.json({
+        success: true,
+        token,
+        adminEmail: cleanEmail,
+        schoolName: store.schoolSettings?.schoolName,
+      });
+    }
+
+    console.warn(`[Admin Auth] Unauthorized Firebase login attempt: "${cleanEmail}"`);
+    return res.status(403).json({
+      success: false,
+      error: `अनधिकृत खाता (${cleanEmail || 'अज्ञात'})! केवल अधिकृत व्यवस्थापक (${primaryAdmin}) ही एडमिन पोर्टल में प्रवेश कर सकते हैं। अन्य किसी को अनुमति नहीं है।`,
+    });
+  });
+
+  // In-Memory OTP Store for Admin Password Recovery
+  const recoveryOtpStore: Record<string, { otp: string; expiresAt: number }> = {};
+
+  // Helper to asynchronously send OTP via Google Apps Script (which triggers Google MailApp/Gmail)
+  async function dispatchOtpEmailToAdmin(toEmail: string, otpCode: string, schoolName: string) {
+    const sheetUrl = store.schoolSettings?.googleSheetWebAppUrl?.trim() || process.env.VITE_GOOGLE_SHEET_URL;
+    if (sheetUrl && sheetUrl.startsWith('http')) {
+      try {
+        const resp = await fetch(sheetUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'sendOtpEmail',
+            toEmail: toEmail,
+            otp: otpCode,
+            schoolName: schoolName,
+            subject: `${schoolName} - व्यवस्थापक पासवर्ड रीसेट OTP (${otpCode})`,
+          }),
+          signal: AbortSignal.timeout(7000),
+        });
+        if (resp.ok) {
+          console.log(`[Admin OTP] Real email dispatched successfully via Google Apps Script to: ${toEmail}`);
+          return true;
+        }
+      } catch (err: any) {
+        console.warn(`[Admin OTP] Google Apps Script email dispatch note: ${err.message}`);
+      }
+    }
+    return false;
+  }
+
+  // Request Forgot Password OTP Endpoint
+  // Generates 6-digit OTP and dispatches directly to kuldeeprai75220@gmail.com
+  // NEVER returns the OTP in client response
+  app.post('/api/admin/forgot-password/request-otp', async (req, res) => {
+    const { email } = req.body || {};
+    const inputEmail = String(email || '').trim().toLowerCase();
+
+    const registeredEmail = (store.schoolSettings?.adminEmail || PRIMARY_ADMIN_EMAIL).trim().toLowerCase();
+
+    // Verify authorized email (allow empty so default registered email is used, or must match)
+    if (inputEmail && inputEmail !== registeredEmail && inputEmail !== PRIMARY_ADMIN_EMAIL) {
+      return res.status(403).json({
+        success: false,
+        error: `यह ईमेल दर्ज नहीं है। पासवर्ड रीसेट केवल अधिकृत ईमेल (${registeredEmail}) पर ही भेजा जा सकता है।`,
+      });
+    }
+
+    const targetEmail = registeredEmail || PRIMARY_ADMIN_EMAIL;
+
+    // Generate secure 6-digit verification code
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    recoveryOtpStore[targetEmail] = {
+      otp,
+      expiresAt: Date.now() + 15 * 60 * 1000, // Valid for 15 minutes
+    };
+
+    console.log(`[Admin Security] OTP successfully generated for admin email: ${targetEmail}`);
+
+    // Asynchronously dispatch OTP email through Google Apps Script
+    const schoolName = store.schoolSettings?.schoolName || 'H.D.P. PUBLIC SCHOOL';
+    dispatchOtpEmailToAdmin(targetEmail, otp, schoolName).catch(() => {});
+
+    // Note: Do NOT send otp in response! User must get it from their actual email inbox
+    return res.json({
+      success: true,
+      message: `सत्यापन कोड (OTP) आपके अधिकृत व्यवस्थापक ईमेल (${targetEmail}) पर भेज दिया गया है। कृपया अपना इनबॉक्स और स्पैम फ़ोल्डर देखें और 6-अंकीय कोड दर्ज करें।`,
+      expiresInMinutes: 15,
+      targetEmail,
+    });
+  });
+
+  // Verify OTP and Reset Admin Password Endpoint
+  app.post('/api/admin/forgot-password/verify-reset', (req, res) => {
+    const { email, otp, newPassword, newUserId } = req.body || {};
+    const inputEmail = String(email || '').trim().toLowerCase();
+    const inputOtp = String(otp || '').trim();
+    const cleanPass = String(newPassword || '').trim();
+    const cleanUser = String(newUserId || '').trim();
+
+    if (!inputEmail || !inputOtp || !cleanPass) {
+      return res.status(400).json({ success: false, error: 'ईमेल, OTP और नया पासवर्ड आवश्यक हैं।' });
+    }
+
+    const record = recoveryOtpStore[inputEmail];
+    if (!record) {
+      return res.status(400).json({ success: false, error: 'इस ईमेल के लिए कोई OTP अनुरोध नहीं मिला। कृपया पुनः OTP भेजें।' });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      delete recoveryOtpStore[inputEmail];
+      return res.status(400).json({ success: false, error: 'OTP की समय सीमा समाप्त (Expired) हो चुकी है। कृपया नया OTP अनुरोध करें।' });
+    }
+
+    if (record.otp !== inputOtp) {
+      return res.status(400).json({ success: false, error: 'गलत OTP कोड! कृपया ईमेल में आया 6-अंकीय कोड सही दर्ज करें।' });
+    }
+
+    // OTP verified successfully! Clear OTP
+    delete recoveryOtpStore[inputEmail];
+
+    // Update credentials
+    if (cleanUser) {
+      store.schoolSettings.adminUserId = cleanUser;
+    }
+    store.schoolSettings.adminPassword = cleanPass;
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+
+    console.log(`[Admin Forgot-Password] Password successfully reset for admin: "${store.schoolSettings.adminUserId}"`);
+    return res.json({
+      success: true,
+      adminUserId: store.schoolSettings.adminUserId,
+      message: 'एडमिन पासवर्ड सफलतापूर्वक रीसेट कर दिया गया है! अब आप नए पासवर्ड से लॉगिन कर सकते हैं।',
     });
   });
 
   // Dedicated Change Credentials Endpoint
   // Immediately writes new credentials to data-store.json and store in memory
   app.post('/api/admin/change-credentials', (req, res) => {
-    const { newUserId, newPassword } = req.body || {};
-    const cleanId = String(newUserId || '').trim();
+    const { newUserId, newPassword, newEmail } = req.body || {};
+    const cleanId = String(newUserId || '').trim() || 'Kld7522';
     const cleanPass = String(newPassword || '').trim();
+    const cleanEmail = String(newEmail || '').trim() || 'kuldeeprai75220@gmail.com';
 
-    if (!cleanId || !cleanPass) {
-      return res.status(400).json({ success: false, error: 'User ID and Password cannot be blank.' });
+    if (!cleanPass) {
+      return res.status(400).json({ success: false, error: 'पासवर्ड खाली नहीं हो सकता।' });
     }
 
     store.schoolSettings.adminUserId = cleanId;
     store.schoolSettings.adminPassword = cleanPass;
+    store.schoolSettings.adminEmail = cleanEmail;
     store.lastUpdated = new Date().toISOString();
     saveStore();
 
-    console.log(`[Admin Auth] Admin credentials successfully changed! Active User ID: "${cleanId}"`);
+    console.log(`[Admin Auth] Admin credentials successfully changed! Email: "${cleanEmail}", User ID: "${cleanId}"`);
     return res.json({
       success: true,
+      adminEmail: cleanEmail,
       adminUserId: cleanId,
-      message: 'नया एडमिन यूजर आईडी और पासवर्ड सफलतापूर्वक सुरक्षित हो गया। पुराना पासवर्ड तुरंत निरस्त कर दिया गया है।',
+      message: 'नया एडमिन ईमेल और पासवर्ड सफलतापूर्वक सुरक्षित हो गया। केवल यही नया क्रेडेंशियल मान्य रहेगा।',
     });
   });
 
@@ -246,11 +403,13 @@ async function startServer() {
     if (Array.isArray(subjects)) store.subjects = subjects;
     if (schoolSettings && typeof schoolSettings === 'object') {
       // Retain active credentials if incoming object omits or leaves them blank
-      const preservedUserId = schoolSettings.adminUserId?.trim() || store.schoolSettings.adminUserId || 'Kld75';
+      const preservedEmail = schoolSettings.adminEmail?.trim() || store.schoolSettings.adminEmail || 'kuldeeprai75220@gmail.com';
+      const preservedUserId = schoolSettings.adminUserId?.trim() || store.schoolSettings.adminUserId || 'Kld7522';
       const preservedPassword = schoolSettings.adminPassword?.trim() || store.schoolSettings.adminPassword || 'Kld@2314';
       store.schoolSettings = normalizeSchoolSettings({
         ...store.schoolSettings,
         ...schoolSettings,
+        adminEmail: preservedEmail,
         adminUserId: preservedUserId,
         adminPassword: preservedPassword,
       });

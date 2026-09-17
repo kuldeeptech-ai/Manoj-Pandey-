@@ -88,6 +88,39 @@ export function formatDisplayDate(val: any): string {
 }
 
 /**
+ * Normalizes a student record to guarantee safe fields and prevents undefined marks crashes
+ */
+export function normalizeStudentRecord(s: any): Student {
+  if (!s || typeof s !== 'object') {
+    return {
+      id: '',
+      rollNo: '',
+      name: '',
+      fatherName: '',
+      motherName: '',
+      className: '',
+      section: '',
+      dob: '',
+      gender: 'MALE',
+      admissionNo: '',
+      session: '2025–2026',
+      marks: {},
+    };
+  }
+  return {
+    ...s,
+    marks: s.marks && typeof s.marks === 'object' ? s.marks : {},
+    dob: formatDisplayDate(s.dob),
+    mobile: s.mobile ? String(s.mobile).trim() : '',
+    aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
+    className: String(s.className || '').trim(),
+    rollNo: String(s.rollNo || '').trim(),
+    name: String(s.name || '').trim(),
+    admissionNo: String(s.admissionNo || '').trim(),
+  };
+}
+
+/**
  * Universal Boolean normalizer for school settings.
  * Accurately parses boolean, string booleans ("false", "true", "FALSE"), and numbers (0, 1).
  */
@@ -130,10 +163,13 @@ export function normalizeSchoolSettings(settings?: Partial<SchoolSettings>): Sch
     classTeachers: Array.isArray(s.classTeachers) ? s.classTeachers : undefined,
     adminUserId: s.adminUserId && String(s.adminUserId).trim()
       ? String(s.adminUserId).trim()
-      : (typeof window !== 'undefined' && window.localStorage?.getItem('school_admin_user')) || 'Kld75',
+      : (typeof window !== 'undefined' && window.localStorage?.getItem('school_admin_user')) || 'Kld7522',
     adminPassword: s.adminPassword && String(s.adminPassword).trim()
       ? String(s.adminPassword).trim()
       : (typeof window !== 'undefined' && window.localStorage?.getItem('school_admin_pass')) || 'Kld@2314',
+    adminEmail: s.adminEmail && String(s.adminEmail).trim()
+      ? String(s.adminEmail).trim()
+      : (typeof window !== 'undefined' && window.localStorage?.getItem('school_admin_email')) || 'kuldeeprai75220@gmail.com',
     showHalfYearlyExam: isSettingEnabled(s.showHalfYearlyExam, true),
     showAnnualExam: isSettingEnabled(s.showAnnualExam, true),
     showTeacherRemarks: isSettingEnabled(s.showTeacherRemarks, true),

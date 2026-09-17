@@ -57,6 +57,7 @@ export interface SchoolSettings {
   mobile: string;
   tagline: string;
   logoUrl?: string;
+  logoSize?: number; // Custom marksheet logo size in px (e.g. 50 - 130px, default 85px)
   schoolBadgeType: 'OFFICIAL RESULT' | 'ACADEMIC RESULT';
   resultTitle: string;
   resultTitleHalfYearly?: string;
@@ -77,6 +78,7 @@ export interface SchoolSettings {
   // Dynamic Admin Authentication
   adminUserId?: string;
   adminPassword?: string;
+  adminEmail?: string;
 
   // Master Customization Toggles
   showHalfYearlyExam?: boolean;

@@ -75,7 +75,13 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
   const isVeryDense = subjects.length >= 11;
   const pagePadding = isVeryDense ? '3mm 5mm 2.5mm 5mm' : isDense ? '4mm 6mm 3mm 6mm' : '5mm 8mm 4mm 8mm';
   const rowHeight = isVeryDense ? '18px' : isDense ? '21px' : '24px';
-  const headerLogoSize = isVeryDense ? '52px' : isDense ? '60px' : '70px';
+  const configuredLogoSize = typeof school.logoSize === 'number' && school.logoSize >= 40 && school.logoSize <= 160 ? school.logoSize : 85;
+  const headerLogoSizePx = isVeryDense
+    ? Math.max(54, Math.round(configuredLogoSize * 0.82))
+    : isDense
+    ? Math.max(62, Math.round(configuredLogoSize * 0.90))
+    : configuredLogoSize;
+  const headerLogoSize = `${headerLogoSizePx}px`;
   const photoW = isVeryDense ? '70px' : '80px';
   const photoH = isVeryDense ? '88px' : '100px';
 

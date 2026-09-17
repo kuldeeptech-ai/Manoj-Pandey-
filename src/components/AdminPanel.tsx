@@ -45,6 +45,8 @@ import {
 import { ref, get, set, update, remove } from 'firebase/database';
 import { formatDisplayDate } from '../utils/calculations';
 import { ClassTeachersManager } from './ClassTeachersManager';
+import { BulkImportModal } from './BulkImportModal';
+import { BulkMarksModal } from './BulkMarksModal';
 import {
   Users,
   UserCheck,
@@ -134,6 +136,73 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [marksCloudStatus, setMarksCloudStatus] = useState<'synced' | 'local_only' | 'offline' | null>(null);
   const [isCloudSyncing, setIsCloudSyncing] = useState<boolean>(false);
   const [manualSyncMsg, setManualSyncMsg] = useState<string | null>(null);
+  const [showBulkImportModal, setShowBulkImportModal] = useState<boolean>(false);
+  const [showBulkMarksModal, setShowBulkMarksModal] = useState<boolean>(false);
+  const [bulkNotice, setBulkNotice] = useState<string | null>(null);
+
+  const handleImportStudents = (newStudents: Student[], mode: 'merge' | 'append' | 'replace') => {
+    let finalStudents: Student[] = [];
+    if (mode === 'replace') {
+      finalStudents = newStudents;
+    } else if (mode === 'append') {
+      finalStudents = [...students, ...newStudents];
+    } else {
+      // 'merge': match by Roll No + ClassName, or ID
+      const existingMap = new Map<string, Student>();
+      students.forEach((s) => {
+        const key = `${s.className.trim().toLowerCase()}_${s.rollNo.trim().toLowerCase()}`;
+        existingMap.set(key, s);
+      });
+
+      newStudents.forEach((ns) => {
+        const key = `${ns.className.trim().toLowerCase()}_${ns.rollNo.trim().toLowerCase()}`;
+        if (existingMap.has(key)) {
+          const old = existingMap.get(key)!;
+          existingMap.set(key, {
+            ...ns,
+            id: old.id,
+            marks: (ns.marks && typeof ns.marks === 'object' && Object.keys(ns.marks).length > 0) ? ns.marks : (old.marks || {}),
+            photoUrl: ns.photoUrl || old.photoUrl,
+          });
+        } else {
+          existingMap.set(key, {
+            ...ns,
+            marks: ns.marks && typeof ns.marks === 'object' ? ns.marks : {},
+          });
+        }
+      });
+      finalStudents = Array.from(existingMap.values()).map((s) => ({
+        ...s,
+        marks: s.marks && typeof s.marks === 'object' ? s.marks : {},
+      }));
+    }
+
+    onSaveStudents(finalStudents);
+    setBulkNotice(`✓ ${newStudents.length} छात्रों का डेटा सफलतापूर्वक इम्पोर्ट हो गया!`);
+    setTimeout(() => setBulkNotice(null), 7000);
+
+    // Persist to Firebase Realtime Database
+    syncAllDataToFirebase({
+      schoolSettings,
+      students: finalStudents,
+      subjects,
+      gradeRules,
+    }).catch((err) => console.warn('[Firebase Bulk Sync] Error:', err));
+  };
+
+  const handleSaveBulkMarks = (updatedStudents: Student[]) => {
+    onSaveStudents(updatedStudents);
+    setBulkNotice('✓ सभी छात्रों के अर्द्धवार्षिक व वार्षिक अंक सफलतापूर्वक सुरक्षित हो गए!');
+    setTimeout(() => setBulkNotice(null), 7000);
+
+    // Persist to Firebase Realtime Database
+    syncAllDataToFirebase({
+      schoolSettings,
+      students: updatedStudents,
+      subjects,
+      gradeRules,
+    }).catch((err) => console.warn('[Firebase Bulk Marks Sync] Error:', err));
+  };
 
   const handleSyncAllDevicesNow = async () => {
     setIsCloudSyncing(true);
@@ -481,11 +550,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleSaveCredentialsOnly = async () => {
-    const newId = settingsForm.adminUserId?.trim();
+    const newId = settingsForm.adminUserId?.trim() || 'Kld7522';
     const newPass = settingsForm.adminPassword?.trim();
+    const newEmail = settingsForm.adminEmail?.trim() || 'kuldeeprai75220@gmail.com';
 
-    if (!newId || !newPass) {
-      alert('कृपया वैध यूज़र आईडी और पासवर्ड दर्ज करें। ये खाली नहीं हो सकते।');
+    if (!newPass) {
+      alert('कृपया वैध पासवर्ड दर्ज करें। यह खाली नहीं हो सकता।');
       return;
     }
 
@@ -494,7 +564,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       await fetch('/api/admin/change-credentials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newUserId: newId, newPassword: newPass }),
+        body: JSON.stringify({ newUserId: newId, newPassword: newPass, newEmail }),
       });
     } catch (e) {
       console.warn('Backend credential save notification failed:', e);
@@ -503,17 +573,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     // 2. Persist in local storage keys for instant multi-tab sync and offline mode
     localStorage.setItem('school_admin_user', newId);
     localStorage.setItem('school_admin_pass', newPass);
+    localStorage.setItem('school_admin_email', newEmail);
     sessionStorage.setItem('school_admin_user', newId);
+    sessionStorage.setItem('school_admin_email', newEmail);
 
     const updated = normalizeSchoolSettings({
       ...settingsForm,
       adminUserId: newId,
       adminPassword: newPass,
+      adminEmail: newEmail,
     });
     setSettingsForm(updated);
     onSaveSchoolSettings(updated);
 
-    setCredentialsSavedToast(`नया यूजर आईडी "${newId}" और पासवर्ड सफलतापूर्वक सुरक्षित हो गया! पुराना पासवर्ड तुरंत अमान्य कर दिया गया है।`);
+    setCredentialsSavedToast(`व्यवस्थापक ईमेल (${newEmail}) और पासवर्ड सफलतापूर्वक सुरक्षित हो गया! नया पासवर्ड तुरंत सक्रिय है।`);
     setTimeout(() => setCredentialsSavedToast(null), 6000);
   };
 
@@ -608,9 +681,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const headers = 'Student_ID,Subject,Half_Max,Half_Obtained,Annual_Max,Annual_Obtained\n';
     const rows: string[] = [];
     students.forEach((s) => {
+      const studentMarks = s.marks || {};
       subjects.forEach((subj) => {
-        const m = s.marks[subj.id] || { halfObtained: 0, annualObtained: 0 };
-        rows.push(`"${s.id}","${subj.name}",${subj.halfMax},${m.halfObtained},${subj.annualMax},${m.annualObtained}`);
+        const m = (studentMarks && studentMarks[subj.id]) || { halfObtained: 0, annualObtained: 0 };
+        rows.push(`"${s.id}","${subj.name}",${subj.halfMax},${m.halfObtained ?? 0},${subj.annualMax},${m.annualObtained ?? 0}`);
       });
     });
     downloadCsv('2_Marks.csv', headers + rows.join('\n'));
@@ -1033,6 +1107,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* Main Tab Content */}
       <main className="flex-1 p-3 sm:p-4 md:p-6 max-w-7xl w-full mx-auto min-w-0 overflow-x-hidden">
+        {bulkNotice && (
+          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs font-bold flex items-center justify-between shadow-2xs">
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+              {bulkNotice}
+            </span>
+            <button
+              type="button"
+              onClick={() => setBulkNotice(null)}
+              className="text-emerald-700 hover:text-emerald-950 text-xs underline cursor-pointer shrink-0 ml-2"
+            >
+              बंद करें
+            </button>
+          </div>
+        )}
         {/* TAB 1: DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
@@ -1167,13 +1256,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   Manage student profiles, registration details, photos, and academic sessions.
                 </p>
               </div>
-              <button
-                onClick={handleStartAddStudent}
-                className="px-4 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 self-start sm:self-auto cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add New Student</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBulkImportModal(true)}
+                  className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all"
+                  title="Excel या CSV से एक साथ कई छात्रों का डेटा इम्पोर्ट करें"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
+                  <span>बल्क इम्पोर्ट (Bulk Import Students)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStartAddStudent}
+                  className="px-4 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add New Student</span>
+                </button>
+              </div>
             </div>
 
             <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
@@ -1540,8 +1641,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </select>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
                 <button
+                  type="button"
+                  onClick={() => setShowBulkMarksModal(true)}
+                  className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer transition-all"
+                  title="Excel से सभी बच्चों के अंक एक साथ अपलोड करें"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>बल्क अंक अपलोड (Bulk Marks CSV/Excel)</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => onViewStudentResult(selectedStudentIdForMarks)}
                   className="px-3.5 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
@@ -1550,11 +1662,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleSaveMarks}
-                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>Save All Marks</span>
+                  <span>Save Student Marks</span>
                 </button>
               </div>
             </div>
@@ -1599,7 +1712,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {subjects.filter((s) => s.active).map((subj, idx) => {
-                      const studentMark = currentMarks[subj.id] || { halfObtained: 0, annualObtained: 0 };
+                      const studentMark = (currentMarks && currentMarks[subj.id]) || { halfObtained: 0, annualObtained: 0 };
                       const halfErr = marksValidationErrors[`${subj.id}_half`];
                       const annualErr = marksValidationErrors[`${subj.id}_annual`];
 
@@ -1998,7 +2111,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   {/* Logo Preview */}
-                  <div className="w-20 h-20 rounded-lg border-2 border-slate-300 bg-white p-1 flex items-center justify-center shadow-xs shrink-0 overflow-hidden">
+                  <div
+                    className="rounded-lg border-2 border-slate-300 bg-white p-1.5 flex items-center justify-center shadow-xs shrink-0 overflow-hidden transition-all"
+                    style={{
+                      width: `${Math.min(100, Math.max(64, settingsForm.logoSize || 85))}px`,
+                      height: `${Math.min(100, Math.max(64, settingsForm.logoSize || 85))}px`,
+                    }}
+                  >
                     {settingsForm.logoUrl ? (
                       <img
                         src={settingsForm.logoUrl}
@@ -2044,6 +2163,105 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         onChange={(e) => setSettingsForm({ ...settingsForm, logoUrl: e.target.value })}
                         placeholder="https://... or base64"
                         className="w-full p-2 border border-slate-300 rounded text-slate-900 bg-white font-mono text-[11px]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logo Size Increaser / Decreaser Control */}
+                <div className="pt-3 border-t border-slate-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-800 uppercase">
+                        अंकपत्र पर लोगो का आकार (Marksheet Logo Size):
+                      </label>
+                      <p className="text-[11px] text-slate-500 font-normal mt-0.5">
+                        मार्कशीट के शीर्ष पर दिखने वाले लोगो का साइज घटाएं (-) या बढ़ाएं (+) [Standard: 85px]।
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Decreaser Button (-) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const curr = settingsForm.logoSize || 85;
+                          const next = Math.max(50, curr - 5);
+                          setSettingsForm({ ...settingsForm, logoSize: next });
+                        }}
+                        className="w-8 h-8 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 flex items-center justify-center font-bold text-base text-slate-800 shadow-2xs active:scale-95 transition-all cursor-pointer"
+                        title="लोगो छोटा करें (-5px)"
+                      >
+                        -
+                      </button>
+
+                      {/* Display Size & Direct Input */}
+                      <div className="flex items-center bg-white border border-slate-300 rounded-lg px-2.5 py-1 shadow-2xs">
+                        <input
+                          type="number"
+                          min={50}
+                          max={140}
+                          step={5}
+                          value={settingsForm.logoSize || 85}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setSettingsForm({ ...settingsForm, logoSize: Math.max(40, Math.min(150, val || 85)) });
+                          }}
+                          className="w-10 text-center font-bold text-xs text-[#0f2b48] focus:outline-hidden"
+                        />
+                        <span className="text-[10px] text-slate-400 font-bold">px</span>
+                      </div>
+
+                      {/* Increaser Button (+) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const curr = settingsForm.logoSize || 85;
+                          const next = Math.min(140, curr + 5);
+                          setSettingsForm({ ...settingsForm, logoSize: next });
+                        }}
+                        className="w-8 h-8 rounded-lg bg-[#0f2b48] hover:bg-[#1b4975] flex items-center justify-center font-bold text-base text-white shadow-2xs active:scale-95 transition-all cursor-pointer"
+                        title="लोगो बड़ा करें (+5px)"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Preset Buttons & Slider */}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">त्वरित आकार (Presets):</span>
+                    {[
+                      { label: 'Small (65px)', size: 65 },
+                      { label: 'Medium (75px)', size: 75 },
+                      { label: 'Standard (85px)', size: 85 },
+                      { label: 'Large (100px)', size: 100 },
+                      { label: 'X-Large (115px)', size: 115 },
+                    ].map((p) => (
+                      <button
+                        key={p.size}
+                        type="button"
+                        onClick={() => setSettingsForm({ ...settingsForm, logoSize: p.size })}
+                        className={`px-2.5 py-1 text-[10.5px] font-bold rounded-md border transition-all cursor-pointer ${
+                          (settingsForm.logoSize || 85) === p.size
+                            ? 'bg-[#0f2b48] text-white border-[#0f2b48] shadow-2xs'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className="text-[10px] text-slate-400 font-bold">स्लाइडर:</span>
+                      <input
+                        type="range"
+                        min={50}
+                        max={135}
+                        step={5}
+                        value={settingsForm.logoSize || 85}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, logoSize: Number(e.target.value) })}
+                        className="w-28 accent-[#0f2b48] cursor-pointer"
                       />
                     </div>
                   </div>
@@ -2708,19 +2926,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   एडमिन पैनल का पासवर्ड आप यहीं से बदल सकते हैं। यदि आप चाहें तो <strong>रैंडम पासवर्ड बनाएं</strong> बटन दबाकर नया सुरक्षित पासवर्ड भी उत्पन्न कर सकते हैं। यह पासवर्ड गूगल शीट और सभी डिवाइसों में सुरक्षित हो जाएगा।
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end bg-white p-3.5 rounded-lg border border-amber-200">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end bg-white p-3.5 rounded-lg border border-amber-200">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                      एडमिन यूज़र आईडी (Admin User ID)
+                      एकमात्र अधिकृत व्यवस्थापक ईमेल (Sole Authorized Admin)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        readOnly
+                        value="kuldeeprai75220@gmail.com"
+                        className="w-full p-2 border border-slate-300 rounded font-bold text-slate-900 bg-slate-100 text-xs cursor-not-allowed"
+                      />
+                      <span className="absolute inset-y-0 right-0 flex items-center pr-2">
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
+                          ✓ केवल कुलदीप राय
+                        </span>
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-emerald-700 font-semibold mt-0.5 block">
+                      सुरक्षा नीति: एडमिन का पूर्ण अधिकार केवल kuldeeprai75220@gmail.com के पास है
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                      एडमिन यूज़र आईडी (Admin User ID - Optional)
                     </label>
                     <input
                       type="text"
-                      value={settingsForm.adminUserId ?? ''}
+                      value={settingsForm.adminUserId ?? 'Kld7522'}
                       onChange={(e) => setSettingsForm({ ...settingsForm, adminUserId: e.target.value })}
                       placeholder="Admin User ID"
                       className="w-full p-2 border border-slate-300 rounded font-bold text-slate-800 bg-white text-xs"
                     />
-                    <span className="text-[10px] text-slate-400 mt-0.5 block">एडमिन लॉगिन के लिए यूज़र आईडी</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">वैकल्पिक यूज़र आईडी</span>
                   </div>
 
                   <div>
@@ -2746,7 +2986,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </button>
                     </div>
                     <span className="text-[10px] text-slate-500 mt-0.5 block">
-                      यहाँ से आप अपना नया पासवर्ड टाइप कर सकते हैं या 'रैंडम पासवर्ड' बटन से बना सकते हैं।
+                      यहाँ से आप अपना नया पासवर्ड टाइप कर सकते हैं।
                     </span>
                   </div>
                 </div>
@@ -3247,6 +3487,45 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
+            {/* Bulk Import from CSV / Excel Card */}
+            <div className="bg-emerald-50/70 border-2 border-emerald-300 rounded-xl p-4 sm:p-5 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2.5 bg-emerald-700 text-white rounded-xl shrink-0">
+                    <FileSpreadsheet className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-emerald-950 uppercase">
+                      बल्क डेटा इम्पोर्ट (Bulk Import from Excel / Google Sheets)
+                    </h3>
+                    <p className="text-xs text-emerald-800 mt-0.5">
+                      एक-एक करके डेटा डालने के बजाय पूरी कक्षा के छात्रों का विवरण या सभी विषयों के अंक सीधे Excel से अपलोड करें।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkImportModal(true)}
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition-all active:scale-95"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>1. बल्क छात्र इम्पोर्ट (Import Students)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkMarksModal(true)}
+                    className="px-4 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow cursor-pointer transition-all active:scale-95"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>2. बल्क अंक इम्पोर्ट (Import Marks)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* 2. Download CSV Templates for 6 Sheets */}
             <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
@@ -3591,6 +3870,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           />
         )}
       </main>
+
+      {/* BULK IMPORT STUDENTS MODAL */}
+      <BulkImportModal
+        isOpen={showBulkImportModal}
+        onClose={() => setShowBulkImportModal(false)}
+        onImport={handleImportStudents}
+        existingStudents={students}
+      />
+
+      {/* BULK MARKS ENTRY / EXCEL MODAL */}
+      <BulkMarksModal
+        isOpen={showBulkMarksModal}
+        onClose={() => setShowBulkMarksModal(false)}
+        students={students}
+        subjects={subjects}
+        onSaveMarks={handleSaveBulkMarks}
+      />
     </div>
   );
 };

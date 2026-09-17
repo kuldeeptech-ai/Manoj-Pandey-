@@ -1,5 +1,17 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  sendPasswordResetEmail,
+  signOut,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  Auth,
+  User,
+} from 'firebase/auth';
+import {
   getDatabase,
   ref,
   get,
@@ -14,6 +26,17 @@ import {
 import { Student, SubjectConfig, SchoolSettings, GradeRule } from '../types';
 
 // ============================================================================
+// SOLE AUTHORIZED ADMIN EMAIL
+// Only this email is allowed to access and manage the Admin Panel
+// ============================================================================
+export const AUTHORIZED_ADMIN_EMAIL = 'kuldeeprai75220@gmail.com';
+
+export function isAuthorizedAdmin(email?: string | null): boolean {
+  if (!email) return false;
+  return email.trim().toLowerCase() === AUTHORIZED_ADMIN_EMAIL.toLowerCase();
+}
+
+// ============================================================================
 // ⚠️ PASTE YOUR FIREBASE CONFIG KEYS HERE:
 // ============================================================================
 // Replace the placeholder values below with your actual Firebase Project credentials.
@@ -24,13 +47,10 @@ import { Student, SubjectConfig, SchoolSettings, GradeRule } from '../types';
 // 4. Copy the `firebaseConfig` object and paste its values into the fields below:
 // ============================================================================
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
+// ============================================================================
 // Your web app's Firebase configuration
-const firebaseConfig = {
+// ============================================================================
+export const firebaseConfig = {
   apiKey: "AIzaSyBM7gmp5C9ve0LVk8mhwh2kLw23QGv0vj0",
   authDomain: "hd-pandey-school-portal.firebaseapp.com",
   databaseURL: "https://hd-pandey-school-portal-default-rtdb.firebaseio.com",
@@ -40,8 +60,6 @@ const firebaseConfig = {
   appId: "1:743517383647:web:e48e48f5af62c35110b26a"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 // ============================================================================
 // INITIALIZE FIREBASE APP & REALTIME DATABASE (v9 Modular Approach)
 // ============================================================================
@@ -91,6 +109,166 @@ export function getFirebaseDb(): Database | null {
 
 // Export database reference directly
 export const db = getFirebaseDb();
+
+let authInstance: Auth | null = null;
+
+export function getFirebaseAuth(): Auth | null {
+  try {
+    if (!authInstance) {
+      const app = getFirebaseApp();
+      if (app) {
+        authInstance = getAuth(app);
+      }
+    }
+    return authInstance;
+  } catch (err) {
+    console.warn('[Firebase Auth] Failed to get Auth instance:', err);
+    return null;
+  }
+}
+
+export const auth = getFirebaseAuth();
+
+/**
+ * Sign in Admin using Google Account Popup via Firebase Auth.
+ * STRICT SECURITY: ONLY kuldeeprai75220@gmail.com is allowed.
+ * Any other Google account is immediately signed out and blocked.
+ */
+export async function signInAdminWithGoogle(): Promise<{ success: boolean; email?: string; error?: string }> {
+  const authClient = getFirebaseAuth();
+  if (!authClient) {
+    return { success: false, error: 'Firebase Auth लोड नहीं हो सका। कृपया इंटरनेट जांचें।' };
+  }
+
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const result = await signInWithPopup(authClient, provider);
+    const user = result.user;
+    const signedInEmail = user.email ? user.email.trim().toLowerCase() : '';
+
+    if (!isAuthorizedAdmin(signedInEmail)) {
+      await signOut(authClient);
+      return {
+        success: false,
+        error: `अनधिकृत Google खाता (${user.email || 'अज्ञात'})! केवल अधिकृत व्यवस्थापक (${AUTHORIZED_ADMIN_EMAIL}) ही एडमिन पोर्टल में प्रवेश कर सकते हैं। अन्य किसी भी ईमेल को अनुमति नहीं है।`,
+      };
+    }
+
+    // Successfully verified sole admin
+    localStorage.setItem('school_admin_email', signedInEmail);
+    localStorage.setItem('school_admin_auth_type', 'firebase_google');
+    return { success: true, email: signedInEmail };
+  } catch (err: any) {
+    console.warn('[Firebase Auth] Google Sign-in error:', err);
+    if (err.code === 'auth/popup-closed-by-user') {
+      return { success: false, error: 'Google लॉगिन विंडो बंद कर दी गई।' };
+    }
+    if (err.code === 'auth/unauthorized-domain') {
+      return {
+        success: false,
+        error: `Google लॉगिन डोमेन अधिकृत नहीं है (${window.location.hostname})। आप नीचे अपने ईमेल और पासवर्ड से सीधे 1-क्लिक में लॉगिन कर सकते हैं!`,
+      };
+    }
+    return { success: false, error: err.message || 'Google लॉगिन में त्रुटि हुई।' };
+  }
+}
+
+/**
+ * Send official Password Reset Email via Firebase directly to kuldeeprai75220@gmail.com.
+ * Powered directly by Google Firebase transactional mail servers.
+ */
+export async function sendAdminFirebasePasswordReset(
+  emailToReset?: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  const targetEmail = (emailToReset || AUTHORIZED_ADMIN_EMAIL).trim().toLowerCase();
+
+  if (!isAuthorizedAdmin(targetEmail)) {
+    return {
+      success: false,
+      error: `अनधिकृत ईमेल! केवल अधिकृत व्यवस्थापक (${AUTHORIZED_ADMIN_EMAIL}) का ही पासवर्ड रीसेट किया जा सकता है।`,
+    };
+  }
+
+  const authClient = getFirebaseAuth();
+  if (!authClient) {
+    return { success: false, error: 'Firebase Auth लोड नहीं हो सका।' };
+  }
+
+  try {
+    await sendPasswordResetEmail(authClient, targetEmail);
+    return {
+      success: true,
+      message: `पासवर्ड रीसेट लिंक आधिकारिक रूप से आपके ईमेल (${targetEmail}) पर भेज दिया गया है! कृपया अपना Gmail इनबॉक्स अथवा स्पैम फ़ोल्डर देखें और लिंक पर क्लिक करके नया पासवर्ड सेट करें।`,
+    };
+  } catch (err: any) {
+    console.warn('[Firebase Auth] sendPasswordResetEmail failed:', err);
+    if (err.code === 'auth/user-not-found') {
+      return {
+        success: false,
+        error: `Firebase Auth में अभी यह ईमेल (${targetEmail}) सीधे ईमेल-पासवर्ड से पंजीकृत नहीं है। आप Google Sign-in बटन से सीधे 1-क्लिक में लॉगिन कर सकते हैं या नीचे दिए गए मास्टर पासवर्ड से लॉगिन कर सकते हैं।`,
+      };
+    }
+    return {
+      success: false,
+      error: `Firebase ईमेल भेजने में त्रुटि: ${err.message || 'कृपया नेटवर्क जांचें'}`,
+    };
+  }
+}
+
+/**
+ * Sign in Admin with Email & Password via Firebase Auth
+ * STRICT SECURITY: ONLY kuldeeprai75220@gmail.com is allowed.
+ */
+export async function signInAdminWithFirebaseEmailPassword(
+  email: string,
+  pass: string
+): Promise<{ success: boolean; email?: string; error?: string; isNewUserCreated?: boolean }> {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPass = pass.trim();
+
+  if (!isAuthorizedAdmin(cleanEmail)) {
+    return {
+      success: false,
+      error: `अनधिकृत ईमेल! केवल अधिकृत व्यवस्थापक (${AUTHORIZED_ADMIN_EMAIL}) ही लॉगिन कर सकते हैं। कोई अन्य व्यक्ति एडमिन नहीं बन सकता।`,
+    };
+  }
+
+  const authClient = getFirebaseAuth();
+  if (!authClient) {
+    return { success: false, error: 'Firebase Auth लोड नहीं हो सका।' };
+  }
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(authClient, cleanEmail, cleanPass);
+    localStorage.setItem('school_admin_email', cleanEmail);
+    localStorage.setItem('school_admin_auth_type', 'firebase_email');
+    return { success: true, email: userCredential.user.email || cleanEmail };
+  } catch (err: any) {
+    // If user is not yet created in Firebase Auth, auto-provision this authorized admin
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+      try {
+        const createResult = await createUserWithEmailAndPassword(authClient, cleanEmail, cleanPass);
+        localStorage.setItem('school_admin_email', cleanEmail);
+        localStorage.setItem('school_admin_auth_type', 'firebase_email');
+        return {
+          success: true,
+          email: createResult.user.email || cleanEmail,
+          isNewUserCreated: true,
+        };
+      } catch (createErr: any) {
+        if (createErr.code === 'auth/email-already-in-use') {
+          return { success: false, error: 'गलत पासवर्ड! कृपया सही पासवर्ड दर्ज करें अथवा Google से लॉगिन करें।' };
+        }
+        return { success: false, error: 'गलत पासवर्ड या क्रेडेंशियल! कृपया सही पासवर्ड दर्ज करें।' };
+      }
+    }
+    if (err.code === 'auth/wrong-password') {
+      return { success: false, error: 'गलत पासवर्ड! कृपया सही पासवर्ड दर्ज करें।' };
+    }
+    return { success: false, error: err.message || 'लॉगिन विफल रहा।' };
+  }
+}
 
 // ============================================================================
 // CRUCIAL REAL-TIME LISTENER: school_settings/toggles node
@@ -180,7 +358,11 @@ export function subscribeToFirebaseData(callbacks: {
               studentList = Object.values(val);
             }
             if (studentList.length > 0) {
-              callbacks.onStudents?.(studentList);
+              const safeStudents = studentList.map((st: any) => ({
+                ...st,
+                marks: st.marks && typeof st.marks === 'object' ? st.marks : {},
+              }));
+              callbacks.onStudents?.(safeStudents);
             }
           }
         },
@@ -273,11 +455,16 @@ export async function fetchAllFromFirebase(): Promise<{
     // Normalize students
     let students: Student[] | undefined;
     if (data.students) {
+      let rawList: any[] = [];
       if (Array.isArray(data.students)) {
-        students = data.students.filter(Boolean);
+        rawList = data.students.filter(Boolean);
       } else if (typeof data.students === 'object') {
-        students = Object.values(data.students);
+        rawList = Object.values(data.students);
       }
+      students = rawList.map((st: any) => ({
+        ...st,
+        marks: st.marks && typeof st.marks === 'object' ? st.marks : {},
+      }));
     }
 
     // Normalize subjects
