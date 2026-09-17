@@ -180,6 +180,24 @@ body {
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+
+  /* Force background colors on academic table headers & borders in print */
+  .academic-table th,
+  th.bg-\[\#0f2b48\],
+  .bg-\[\#0f2b48\] {
+    background-color: #0f2b48 !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .border-\[\#0f2b48\] {
+    border-color: #0f2b48 !important;
+  }
+
+  .border-\[\#b8860b\] {
+    border-color: #b8860b !important;
+  }
 }
 
 /* Image constraints for print & export - allows dynamic inline style sizing */

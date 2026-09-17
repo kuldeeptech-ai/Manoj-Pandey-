@@ -845,41 +845,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Top Header */}
-      <header className="bg-[#0f2b48] text-white px-3 sm:px-6 py-3 border-b-4 border-[#b8860b] shadow flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 sm:gap-3">
+      <header className="bg-[#0f2b48] text-white px-3 sm:px-6 py-3 border-b-4 border-[#b8860b] shadow flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sticky top-0 z-30">
+        <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 min-w-0">
           <button
             onClick={onBackToPublic}
-            className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-[#0f2b48] rounded-md transition-all font-black flex items-center gap-1.5 text-xs cursor-pointer shadow-md border border-amber-200 active:scale-95 shrink-0"
+            className="px-2.5 sm:px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-[#0f2b48] rounded-md transition-all font-black flex items-center gap-1.5 text-xs cursor-pointer shadow-md border border-amber-200 active:scale-95 shrink-0"
             title="पब्लिक छात्र रिजल्ट पोर्टल पर वापस जाएं"
           >
             <ArrowLeft className="w-4 h-4 text-[#0f2b48]" />
             <Globe className="w-3.5 h-3.5 text-[#0f2b48]" />
-            <span className="font-black whitespace-nowrap">छात्र पोर्टल (Public Search)</span>
+            <span className="font-black whitespace-nowrap">छात्र पोर्टल</span>
           </button>
-          <div>
-            <h1 className="text-sm sm:text-base font-bold tracking-tight uppercase leading-tight">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xs sm:text-base font-bold tracking-tight uppercase leading-tight truncate">
               School Administration Console
             </h1>
-            <p className="text-[11px] sm:text-xs text-slate-300 font-medium">
+            <p className="text-[10px] sm:text-xs text-slate-300 font-medium truncate">
               {schoolSettings.schoolName}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center justify-between sm:justify-end gap-2 flex-wrap shrink-0">
           <button
             onClick={handleSyncAllDevicesNow}
             disabled={isCloudSyncing}
-            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-md bg-[#b8860b] hover:bg-[#9a7009] text-white shadow transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-md bg-[#b8860b] hover:bg-[#9a7009] text-white shadow transition-all cursor-pointer disabled:opacity-50 shrink-0"
             title="Press to instantly push all updates to Google Sheet and all student phones"
           >
             <Cloud className={`w-3.5 h-3.5 ${isCloudSyncing ? 'animate-spin' : ''}`} />
-            <span>{isCloudSyncing ? 'Syncing...' : 'Sync All (लाइव भेजें)'}</span>
+            <span>{isCloudSyncing ? 'Syncing...' : 'Sync All (लाइव)'}</span>
           </button>
 
           {getGoogleSheetUrl(schoolSettings) ? (
             <span
-              className="hidden md:flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40"
+              className="hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0"
               title="Google Sheet Cloud Sync Active: Any updates you make will be live on all student phones"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -888,20 +888,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           ) : (
             <button
               onClick={() => setActiveTab('sheets')}
-              className="hidden md:flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 hover:bg-amber-500/30 transition-all cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 hover:bg-amber-500/30 transition-all cursor-pointer shrink-0"
               title="Google Sheet कनेक्ट करें ताकि सभी छात्रों के फोन में रिजल्ट दिखे"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-300" />
               <span>Connect Google Sheet</span>
             </button>
           )}
-          <span className="hidden lg:inline-block text-xs font-semibold px-2.5 py-1 rounded bg-emerald-600/30 text-emerald-300 border border-emerald-500/30">
+          <span className="hidden lg:inline-block text-xs font-semibold px-2.5 py-1 rounded bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 shrink-0">
             ● {schoolSettings.adminUserId || 'Admin'}
           </span>
           {onLogout && (
             <button
               onClick={onLogout}
-              className="px-2.5 sm:px-3 py-1.5 bg-rose-700/80 hover:bg-rose-700 text-white rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-rose-500/40"
+              className="px-2.5 sm:px-3 py-1.5 bg-rose-700/80 hover:bg-rose-700 text-white rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-rose-500/40 shrink-0"
               title="Logout from Admin Panel"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -913,20 +913,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* Manual Sync Toast / Banner */}
       {manualSyncMsg && (
-        <div className="bg-emerald-700 text-white px-4 sm:px-6 py-2.5 text-xs font-bold flex items-center justify-between shadow">
-          <div className="flex items-center gap-2">
+        <div className="bg-emerald-700 text-white px-3 sm:px-6 py-2.5 text-xs font-bold flex items-center justify-between shadow">
+          <div className="flex items-center gap-2 min-w-0">
             <CheckCircle className="w-4 h-4 text-emerald-300 shrink-0" />
-            <span>{manualSyncMsg}</span>
+            <span className="truncate">{manualSyncMsg}</span>
           </div>
-          <button onClick={() => setManualSyncMsg(null)} className="text-white/80 hover:text-white cursor-pointer ml-2">✕</button>
+          <button onClick={() => setManualSyncMsg(null)} className="text-white/80 hover:text-white cursor-pointer ml-2 shrink-0">✕</button>
         </div>
       )}
 
       {/* Navigation Tabs (Scrollable on mobile) */}
-      <div className="bg-white border-b border-slate-200 px-3 sm:px-6 flex items-center overflow-x-auto gap-1 sm:gap-2 scrollbar-thin">
+      <div className="bg-white border-b border-slate-200 px-2 sm:px-6 flex items-center overflow-x-auto gap-1 sm:gap-2 scrollbar-none sm:scrollbar-thin">
         <button
           onClick={() => setActiveTab('dashboard')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
             activeTab === 'dashboard'
               ? 'border-[#0f2b48] text-[#0f2b48]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -938,7 +938,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         <button
           onClick={() => setActiveTab('students')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
             activeTab === 'students'
               ? 'border-[#0f2b48] text-[#0f2b48]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -950,7 +950,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         <button
           onClick={() => setActiveTab('marks')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
             activeTab === 'marks'
               ? 'border-[#0f2b48] text-[#0f2b48]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -962,7 +962,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         <button
           onClick={() => setActiveTab('subjects')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
             activeTab === 'subjects'
               ? 'border-[#0f2b48] text-[#0f2b48]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -974,7 +974,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         <button
           onClick={() => setActiveTab('school')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
             activeTab === 'school'
               ? 'border-[#0f2b48] text-[#0f2b48]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -986,7 +986,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         <button
           onClick={() => setActiveTab('teachers')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
             activeTab === 'teachers'
               ? 'border-[#0f2b48] text-[#0f2b48]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -998,7 +998,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         <button
           onClick={() => setActiveTab('grades')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
             activeTab === 'grades'
               ? 'border-[#0f2b48] text-[#0f2b48]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -1010,7 +1010,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         <button
           onClick={() => setActiveTab('sheets')}
-          className={`px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
             activeTab === 'sheets'
               ? 'border-[#0f2b48] text-[#0f2b48]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -1022,7 +1022,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         <button
           onClick={onBackToPublic}
-          className="ml-auto my-1.5 px-3 py-1.5 bg-[#0f2b48] hover:bg-[#18426d] text-amber-300 hover:text-white text-xs font-black rounded-md flex items-center gap-1.5 shrink-0 shadow transition-all cursor-pointer border border-amber-400/40 active:scale-95"
+          className="ml-auto my-1.5 px-3 py-1.5 bg-[#0f2b48] hover:bg-[#18426d] text-amber-300 hover:text-white text-xs font-black rounded-md flex items-center gap-1.5 shrink-0 shadow transition-all cursor-pointer border border-amber-400/40 active:scale-95 whitespace-nowrap"
           title="पब्लिक छात्र परिणाम खोज पोर्टल खोलें"
         >
           <ExternalLink className="w-3.5 h-3.5 text-amber-300" />
@@ -1032,7 +1032,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       </div>
 
       {/* Main Tab Content */}
-      <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+      <main className="flex-1 p-3 sm:p-4 md:p-6 max-w-7xl w-full mx-auto min-w-0 overflow-x-hidden">
         {/* TAB 1: DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
@@ -1158,9 +1158,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 2: STUDENTS MANAGEMENT */}
         {activeTab === 'students' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold text-[#0f2b48] uppercase">
+                <h2 className="text-sm sm:text-base font-bold text-[#0f2b48] uppercase">
                   Student Records Management
                 </h2>
                 <p className="text-xs text-slate-500">
@@ -1169,7 +1169,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
               <button
                 onClick={handleStartAddStudent}
-                className="px-4 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded shadow-xs flex items-center gap-1.5"
+                className="px-4 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 self-start sm:self-auto cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add New Student</span>
@@ -1177,98 +1177,100 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
-                  <tr>
-                    <th className="py-3 px-4">Photo</th>
-                    <th className="py-3 px-4">Roll</th>
-                    <th className="py-3 px-4">Admission No</th>
-                    <th className="py-3 px-4">Student Name</th>
-                    <th className="py-3 px-4">Father / Mother</th>
-                    <th className="py-3 px-4">Class</th>
-                    <th className="py-3 px-4">Mobile & Aadhar</th>
-                    <th className="py-3 px-4">DOB</th>
-                    <th className="py-3 px-4">Gender</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {students.map((st) => (
-                    <tr key={st.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-2.5 px-4">
-                        <div className="w-8 h-10 border border-slate-300 rounded overflow-hidden bg-slate-100">
-                          {st.photoUrl ? (
-                            <img src={st.photoUrl} alt={st.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[7px] text-slate-400">
-                              N/A
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-4 font-bold text-[#0f2b48]">{st.rollNo}</td>
-                      <td className="py-2.5 px-4 font-bold text-slate-700">{st.admissionNo}</td>
-                      <td className="py-2.5 px-4 font-bold text-slate-900 uppercase">{st.name}</td>
-                      <td className="py-2.5 px-4 text-slate-600 uppercase">
-                        <div>F: {st.fatherName}</div>
-                        <div className="text-[10px] text-slate-400">M: {st.motherName}</div>
-                      </td>
-                      <td className="py-2.5 px-4 font-semibold">{st.className} - {st.section}</td>
-                      <td className="py-2.5 px-4 text-[11px] text-slate-600">
-                        <div><span className="font-semibold text-slate-400">Mob:</span> {st.mobile || '—'}</div>
-                        <div className="font-mono text-[10px]"><span className="font-semibold text-slate-400">Aad:</span> {st.aadharNo || '—'}</div>
-                      </td>
-                      <td className="py-2.5 px-4 text-slate-700 font-mono text-xs">{formatDisplayDate(st.dob)}</td>
-                      <td className="py-2.5 px-4 font-medium">{st.gender}</td>
-                      <td className="py-2.5 px-4 text-right space-x-1.5">
-                        <button
-                          onClick={() => onViewStudentResult(st.id)}
-                          className="p-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded"
-                          title="View Result Marksheet"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsNewStudent(false);
-                            setEditingStudent(st);
-                          }}
-                          className="p-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded"
-                          title="Edit Student Info"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteStudent(st.id)}
-                          className="p-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded"
-                          title="Delete Student"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[800px]">
+                  <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
+                    <tr>
+                      <th className="py-3 px-4">Photo</th>
+                      <th className="py-3 px-4">Roll</th>
+                      <th className="py-3 px-4">Admission No</th>
+                      <th className="py-3 px-4">Student Name</th>
+                      <th className="py-3 px-4">Father / Mother</th>
+                      <th className="py-3 px-4">Class</th>
+                      <th className="py-3 px-4">Mobile & Aadhar</th>
+                      <th className="py-3 px-4">DOB</th>
+                      <th className="py-3 px-4">Gender</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {students.map((st) => (
+                      <tr key={st.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-2.5 px-4">
+                          <div className="w-8 h-10 border border-slate-300 rounded overflow-hidden bg-slate-100">
+                            {st.photoUrl ? (
+                              <img src={st.photoUrl} alt={st.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[7px] text-slate-400">
+                                N/A
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-4 font-bold text-[#0f2b48]">{st.rollNo}</td>
+                        <td className="py-2.5 px-4 font-bold text-slate-700">{st.admissionNo}</td>
+                        <td className="py-2.5 px-4 font-bold text-slate-900 uppercase">{st.name}</td>
+                        <td className="py-2.5 px-4 text-slate-600 uppercase">
+                          <div>F: {st.fatherName}</div>
+                          <div className="text-[10px] text-slate-400">M: {st.motherName}</div>
+                        </td>
+                        <td className="py-2.5 px-4 font-semibold">{st.className} - {st.section}</td>
+                        <td className="py-2.5 px-4 text-[11px] text-slate-600">
+                          <div><span className="font-semibold text-slate-400">Mob:</span> {st.mobile || '—'}</div>
+                          <div className="font-mono text-[10px]"><span className="font-semibold text-slate-400">Aad:</span> {st.aadharNo || '—'}</div>
+                        </td>
+                        <td className="py-2.5 px-4 text-slate-700 font-mono text-xs">{formatDisplayDate(st.dob)}</td>
+                        <td className="py-2.5 px-4 font-medium">{st.gender}</td>
+                        <td className="py-2.5 px-4 text-right space-x-1.5">
+                          <button
+                            onClick={() => onViewStudentResult(st.id)}
+                            className="p-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded"
+                            title="View Result Marksheet"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsNewStudent(false);
+                              setEditingStudent(st);
+                            }}
+                            className="p-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded"
+                            title="Edit Student Info"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStudent(st.id)}
+                            className="p-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded"
+                            title="Delete Student"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Student Edit Modal */}
             {editingStudent && (
-              <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-                <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                  <div className="p-4 bg-[#0f2b48] text-white flex justify-between items-center">
-                    <h3 className="font-bold text-sm uppercase">
+              <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+                <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[92vh] flex flex-col my-auto overflow-hidden">
+                  <div className="p-3 sm:p-4 bg-[#0f2b48] text-white flex justify-between items-center shrink-0">
+                    <h3 className="font-bold text-xs sm:text-sm uppercase truncate pr-2">
                       {isNewStudent ? 'Add New Student' : `Edit Student: ${editingStudent.name}`}
                     </h3>
                     <button
                       onClick={() => setEditingStudent(null)}
-                      className="text-slate-300 hover:text-white text-lg font-bold"
+                      className="text-slate-300 hover:text-white text-lg font-bold p-1 cursor-pointer"
                     >
                       ✕
                     </button>
                   </div>
 
-                  <form onSubmit={handleSaveStudent} className="p-6 space-y-4 text-xs font-semibold text-slate-700">
+                  <form onSubmit={handleSaveStudent} className="p-3 sm:p-6 space-y-4 text-xs font-semibold text-slate-700 overflow-y-auto flex-1">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block mb-1 text-[11px] uppercase font-bold">Student Name *</label>
@@ -1522,13 +1524,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {activeTab === 'marks' && (
           <div className="space-y-6">
             {/* Student Picker Banner */}
-            <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-slate-600 uppercase">Select Student:</span>
+            <div className="bg-white p-3 sm:p-4 rounded-lg border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                <span className="text-xs font-bold text-slate-600 uppercase shrink-0">Select Student:</span>
                 <select
                   value={selectedStudentIdForMarks}
                   onChange={(e) => handleSelectStudentForMarks(e.target.value)}
-                  className="p-2 border-2 border-[#0f2b48] rounded text-xs font-bold text-[#0f2b48] bg-[#f8faff]"
+                  className="p-2 border-2 border-[#0f2b48] rounded text-xs font-bold text-[#0f2b48] bg-[#f8faff] w-full sm:w-auto"
                 >
                   {students.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -1538,18 +1540,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <button
                   onClick={() => onViewStudentResult(selectedStudentIdForMarks)}
-                  className="px-3.5 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs"
+                  className="px-3.5 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  <span>Preview Marksheet</span>
+                  <span>Preview</span>
                 </button>
 
                 <button
                   onClick={handleSaveMarks}
-                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs"
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>Save All Marks</span>
@@ -1574,75 +1576,77 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             {/* Marks Grid */}
             <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
-              <div className="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center text-xs">
+              <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-xs">
                 <span className="font-bold text-[#0f2b48] uppercase">
                   Subject Marks Entry — {currentStudent?.name} (Roll: {currentStudent?.rollNo})
                 </span>
-                <span className="text-slate-500 font-medium">
+                <span className="text-slate-500 font-medium text-[11px]">
                   Rule: Obtained Marks ≤ Maximum Marks
                 </span>
               </div>
 
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
-                  <tr>
-                    <th className="py-2.5 px-4 w-12 text-center">S.No.</th>
-                    <th className="py-2.5 px-4">Subject Name</th>
-                    <th className="py-2.5 px-4 text-center bg-blue-50/50">Half-Yearly Max</th>
-                    <th className="py-2.5 px-4 text-center bg-blue-50">Half-Yearly Obtained</th>
-                    <th className="py-2.5 px-4 text-center bg-emerald-50/50">Annual Max</th>
-                    <th className="py-2.5 px-4 text-center bg-emerald-50">Annual Obtained</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {subjects.filter((s) => s.active).map((subj, idx) => {
-                    const studentMark = currentMarks[subj.id] || { halfObtained: 0, annualObtained: 0 };
-                    const halfErr = marksValidationErrors[`${subj.id}_half`];
-                    const annualErr = marksValidationErrors[`${subj.id}_annual`];
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[640px]">
+                  <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
+                    <tr>
+                      <th className="py-2.5 px-4 w-12 text-center">S.No.</th>
+                      <th className="py-2.5 px-4">Subject Name</th>
+                      <th className="py-2.5 px-4 text-center bg-blue-50/50">Half-Yearly Max</th>
+                      <th className="py-2.5 px-4 text-center bg-blue-50">Half-Yearly Obtained</th>
+                      <th className="py-2.5 px-4 text-center bg-emerald-50/50">Annual Max</th>
+                      <th className="py-2.5 px-4 text-center bg-emerald-50">Annual Obtained</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {subjects.filter((s) => s.active).map((subj, idx) => {
+                      const studentMark = currentMarks[subj.id] || { halfObtained: 0, annualObtained: 0 };
+                      const halfErr = marksValidationErrors[`${subj.id}_half`];
+                      const annualErr = marksValidationErrors[`${subj.id}_annual`];
 
-                    return (
-                      <tr key={subj.id} className="hover:bg-slate-50">
-                        <td className="py-2 px-4 text-center font-bold text-slate-500">{idx + 1}</td>
-                        <td className="py-2 px-4 font-bold text-slate-900 uppercase">
-                          {subj.name}
-                        </td>
-                        <td className="py-2 px-4 text-center font-bold text-slate-600 bg-blue-50/20">
-                          {subj.halfMax}
-                        </td>
-                        <td className="py-2 px-4 text-center bg-blue-50/40">
-                          <input
-                            type="number"
-                            min="0"
-                            max={subj.halfMax}
-                            value={studentMark.halfObtained}
-                            onChange={(e) => handleMarkChange(subj.id, 'half', e.target.value)}
-                            className={`w-20 text-center py-1 font-bold text-xs border rounded ${
-                              halfErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
-                            }`}
-                          />
-                          {halfErr && <span className="text-[9px] text-red-600 block mt-0.5">{halfErr}</span>}
-                        </td>
-                        <td className="py-2 px-4 text-center font-bold text-slate-600 bg-emerald-50/20">
-                          {subj.annualMax}
-                        </td>
-                        <td className="py-2 px-4 text-center bg-emerald-50/40">
-                          <input
-                            type="number"
-                            min="0"
-                            max={subj.annualMax}
-                            value={studentMark.annualObtained}
-                            onChange={(e) => handleMarkChange(subj.id, 'annual', e.target.value)}
-                            className={`w-20 text-center py-1 font-bold text-xs border rounded ${
-                              annualErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
-                            }`}
-                          />
-                          {annualErr && <span className="text-[9px] text-red-600 block mt-0.5">{annualErr}</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                      return (
+                        <tr key={subj.id} className="hover:bg-slate-50">
+                          <td className="py-2 px-4 text-center font-bold text-slate-500">{idx + 1}</td>
+                          <td className="py-2 px-4 font-bold text-slate-900 uppercase">
+                            {subj.name}
+                          </td>
+                          <td className="py-2 px-4 text-center font-bold text-slate-600 bg-blue-50/20">
+                            {subj.halfMax}
+                          </td>
+                          <td className="py-2 px-4 text-center bg-blue-50/40">
+                            <input
+                              type="number"
+                              min="0"
+                              max={subj.halfMax}
+                              value={studentMark.halfObtained}
+                              onChange={(e) => handleMarkChange(subj.id, 'half', e.target.value)}
+                              className={`w-20 text-center py-1 font-bold text-xs border rounded ${
+                                halfErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
+                              }`}
+                            />
+                            {halfErr && <span className="text-[9px] text-red-600 block mt-0.5">{halfErr}</span>}
+                          </td>
+                          <td className="py-2 px-4 text-center font-bold text-slate-600 bg-emerald-50/20">
+                            {subj.annualMax}
+                          </td>
+                          <td className="py-2 px-4 text-center bg-emerald-50/40">
+                            <input
+                              type="number"
+                              min="0"
+                              max={subj.annualMax}
+                              value={studentMark.annualObtained}
+                              onChange={(e) => handleMarkChange(subj.id, 'annual', e.target.value)}
+                              className={`w-20 text-center py-1 font-bold text-xs border rounded ${
+                                annualErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
+                              }`}
+                            />
+                            {annualErr && <span className="text-[9px] text-red-600 block mt-0.5">{annualErr}</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
               {/* Dynamic Live Totals & Percentage Summary */}
               {liveResult && (
@@ -1881,91 +1885,93 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
-                  <tr>
-                    <th className="py-2.5 px-4 w-16">Order</th>
-                    <th className="py-2.5 px-4">Subject Name</th>
-                    <th className="py-2.5 px-4 text-center">Half-Yearly Max</th>
-                    <th className="py-2.5 px-4 text-center">Annual Max</th>
-                    <th className="py-2.5 px-4 text-center">Passing Marks</th>
-                    <th className="py-2.5 px-4 text-center">Status</th>
-                    <th className="py-2.5 px-4 text-right">Delete</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {editingSubjects.map((subj) => (
-                    <tr key={subj.id} className="hover:bg-slate-50">
-                      <td className="py-2 px-4">
-                        <input
-                          type="number"
-                          value={subj.displayOrder}
-                          onChange={(e) => handleSubjectChange(subj.id, 'displayOrder', Number(e.target.value))}
-                          className="w-12 text-center p-1 border rounded text-xs font-bold"
-                        />
-                      </td>
-                      <td className="py-2 px-4">
-                        <input
-                          type="text"
-                          value={subj.name}
-                          onChange={(e) => handleSubjectChange(subj.id, 'name', e.target.value)}
-                          className="p-1 border rounded text-xs font-bold w-48 uppercase"
-                        />
-                      </td>
-                      <td className="py-2 px-4 text-center">
-                        <input
-                          type="number"
-                          value={subj.halfMax}
-                          onChange={(e) => handleSubjectChange(subj.id, 'halfMax', Number(e.target.value))}
-                          className="w-16 text-center p-1 border rounded text-xs font-bold"
-                        />
-                      </td>
-                      <td className="py-2 px-4 text-center">
-                        <input
-                          type="number"
-                          value={subj.annualMax}
-                          onChange={(e) => handleSubjectChange(subj.id, 'annualMax', Number(e.target.value))}
-                          className="w-16 text-center p-1 border rounded text-xs font-bold"
-                        />
-                      </td>
-                      <td className="py-2 px-4 text-center">
-                        <input
-                          type="number"
-                          value={subj.passingMarks}
-                          onChange={(e) => handleSubjectChange(subj.id, 'passingMarks', Number(e.target.value))}
-                          className="w-16 text-center p-1 border rounded text-xs font-bold"
-                        />
-                      </td>
-                      <td className="py-2 px-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleSubjectChange(subj.id, 'active', !subj.active)}
-                          className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
-                            subj.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
-                          }`}
-                        >
-                          {subj.active ? 'ACTIVE' : 'DISABLED'}
-                        </button>
-                      </td>
-                      <td className="py-2 px-4 text-right">
-                        <button
-                          onClick={() => handleDeleteSubject(subj.id)}
-                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[650px]">
+                  <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
+                    <tr>
+                      <th className="py-2.5 px-4 w-16">Order</th>
+                      <th className="py-2.5 px-4">Subject Name</th>
+                      <th className="py-2.5 px-4 text-center">Half-Yearly Max</th>
+                      <th className="py-2.5 px-4 text-center">Annual Max</th>
+                      <th className="py-2.5 px-4 text-center">Passing Marks</th>
+                      <th className="py-2.5 px-4 text-center">Status</th>
+                      <th className="py-2.5 px-4 text-right">Delete</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {editingSubjects.map((subj) => (
+                      <tr key={subj.id} className="hover:bg-slate-50">
+                        <td className="py-2 px-4">
+                          <input
+                            type="number"
+                            value={subj.displayOrder}
+                            onChange={(e) => handleSubjectChange(subj.id, 'displayOrder', Number(e.target.value))}
+                            className="w-12 text-center p-1 border rounded text-xs font-bold"
+                          />
+                        </td>
+                        <td className="py-2 px-4">
+                          <input
+                            type="text"
+                            value={subj.name}
+                            onChange={(e) => handleSubjectChange(subj.id, 'name', e.target.value)}
+                            className="p-1 border rounded text-xs font-bold w-48 uppercase"
+                          />
+                        </td>
+                        <td className="py-2 px-4 text-center">
+                          <input
+                            type="number"
+                            value={subj.halfMax}
+                            onChange={(e) => handleSubjectChange(subj.id, 'halfMax', Number(e.target.value))}
+                            className="w-16 text-center p-1 border rounded text-xs font-bold"
+                          />
+                        </td>
+                        <td className="py-2 px-4 text-center">
+                          <input
+                            type="number"
+                            value={subj.annualMax}
+                            onChange={(e) => handleSubjectChange(subj.id, 'annualMax', Number(e.target.value))}
+                            className="w-16 text-center p-1 border rounded text-xs font-bold"
+                          />
+                        </td>
+                        <td className="py-2 px-4 text-center">
+                          <input
+                            type="number"
+                            value={subj.passingMarks}
+                            onChange={(e) => handleSubjectChange(subj.id, 'passingMarks', Number(e.target.value))}
+                            className="w-16 text-center p-1 border rounded text-xs font-bold"
+                          />
+                        </td>
+                        <td className="py-2 px-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleSubjectChange(subj.id, 'active', !subj.active)}
+                            className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                              subj.active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                            }`}
+                          >
+                            {subj.active ? 'ACTIVE' : 'DISABLED'}
+                          </button>
+                        </td>
+                        <td className="py-2 px-4 text-right">
+                          <button
+                            onClick={() => handleDeleteSubject(subj.id)}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
 
         {/* TAB 5: SCHOOL SETTINGS */}
         {activeTab === 'school' && (
-          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs max-w-4xl">
+          <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-xs max-w-4xl">
             <div className="border-b border-slate-200 pb-3 mb-6 flex justify-between items-center">
               <div>
                 <h2 className="text-base font-bold text-[#0f2b48] uppercase">
@@ -2931,70 +2937,74 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             <form onSubmit={handleSaveGrades} className="space-y-4">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
-                  <tr>
-                    <th className="py-2.5 px-3">Grade</th>
-                    <th className="py-2.5 px-3">Min %</th>
-                    <th className="py-2.5 px-3">Max %</th>
-                    <th className="py-2.5 px-3">Description</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-bold">
-                  {rulesForm.map((rule, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50">
-                      <td className="py-2 px-3">
-                        <input
-                          type="text"
-                          value={rule.grade}
-                          onChange={(e) => {
-                            const updated = [...rulesForm];
-                            updated[idx].grade = e.target.value;
-                            setRulesForm(updated);
-                          }}
-                          className="w-16 p-1 border rounded text-center text-[#b8860b]"
-                        />
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="number"
-                          value={rule.minPercentage}
-                          onChange={(e) => {
-                            const updated = [...rulesForm];
-                            updated[idx].minPercentage = Number(e.target.value);
-                            setRulesForm(updated);
-                          }}
-                          className="w-20 p-1 border rounded text-center"
-                        />
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="number"
-                          value={rule.maxPercentage}
-                          onChange={(e) => {
-                            const updated = [...rulesForm];
-                            updated[idx].maxPercentage = Number(e.target.value);
-                            setRulesForm(updated);
-                          }}
-                          className="w-20 p-1 border rounded text-center"
-                        />
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="text"
-                          value={rule.description}
-                          onChange={(e) => {
-                            const updated = [...rulesForm];
-                            updated[idx].description = e.target.value;
-                            setRulesForm(updated);
-                          }}
-                          className="w-full p-1 border rounded"
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs min-w-[500px]">
+                    <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3">Grade</th>
+                        <th className="py-2.5 px-3">Min %</th>
+                        <th className="py-2.5 px-3">Max %</th>
+                        <th className="py-2.5 px-3">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-bold">
+                      {rulesForm.map((rule, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={rule.grade}
+                              onChange={(e) => {
+                                const updated = [...rulesForm];
+                                updated[idx].grade = e.target.value;
+                                setRulesForm(updated);
+                              }}
+                              className="w-16 p-1 border rounded text-center text-[#b8860b]"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="number"
+                              value={rule.minPercentage}
+                              onChange={(e) => {
+                                const updated = [...rulesForm];
+                                updated[idx].minPercentage = Number(e.target.value);
+                                setRulesForm(updated);
+                              }}
+                              className="w-20 p-1 border rounded text-center"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="number"
+                              value={rule.maxPercentage}
+                              onChange={(e) => {
+                                const updated = [...rulesForm];
+                                updated[idx].maxPercentage = Number(e.target.value);
+                                setRulesForm(updated);
+                              }}
+                              className="w-20 p-1 border rounded text-center"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={rule.description}
+                              onChange={(e) => {
+                                const updated = [...rulesForm];
+                                updated[idx].description = e.target.value;
+                                setRulesForm(updated);
+                              }}
+                              className="w-full p-1 border rounded"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
               <div className="pt-4 border-t border-slate-200 flex justify-end">
                 <button
@@ -3044,11 +3054,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* 1. Google Sheets Live Integration Box */}
-            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs">
-              <div className="flex items-center justify-between mb-2">
+            <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
-                  <h2 className="text-base font-bold text-[#0f2b48] uppercase">
+                  <FileSpreadsheet className="w-6 h-6 text-emerald-600 shrink-0" />
+                  <h2 className="text-sm sm:text-base font-bold text-[#0f2b48] uppercase">
                     Google Sheets Live Integration (Google Apps Script)
                   </h2>
                 </div>
@@ -3238,11 +3248,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* 2. Download CSV Templates for 6 Sheets */}
-            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                 <div>
                   <h3 className="text-sm font-bold text-[#0f2b48] uppercase flex items-center gap-1.5">
-                    <Download className="w-4 h-4 text-emerald-600" />
+                    <Download className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Download Ready CSV Sheets (Google Sheets Templates)</span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">

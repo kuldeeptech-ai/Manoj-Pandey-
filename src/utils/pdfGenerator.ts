@@ -326,11 +326,13 @@ function fallbackDownloadDataUrl(canvas: HTMLCanvasElement, fileName: string): v
 
 /**
  * Bulletproof Print Function
- * Uses the browser's native window.print() directly on the active document,
- * which takes advantage of the print rules in index.css to isolate
- * #printable-marksheet to exact A4 portrait dimensions with all colors and fonts intact.
- * If printing is blocked by an iframe sandbox or browser restriction, it automatically
- * generates the exact A4 PDF so the user is never stuck.
+ * Renders the marksheet element to a pixel-perfect 2.0x canvas first, capturing
+ * 100% of the preview's exact colors (#0f2b48 navy headers, #b8860b gold lines, table borders,
+ * fonts, student photo, and signatures).
+ * Then prints the rendered high-definition document via a dedicated print iframe.
+ * Because the foreground rendered image is used in print, browsers NEVER strip background colors
+ * (even if "Background graphics" is disabled in the printer dialog!).
+ * If printing is blocked by an iframe sandbox, it automatically downloads the exact A4 PDF.
  */
 export async function printMarksheet(
   elementId: string = 'printable-marksheet',
@@ -344,23 +346,16 @@ export async function printMarksheet(
     throw new Error(`Element #${elementId} not found in DOM`);
   }
 
-  options?.onProgress?.('Preparing print document & graphics...');
-  try {
-    await waitForImages(element);
-    await inlineImagesAsDataUrls(element);
-  } catch {}
+  options?.onProgress?.('Preparing high-definition print graphics (100% रंग एवं लेआउट)...');
 
-  // Collect all stylesheets, style tags, and font links from host document
-  const headElements = Array.from(
-    document.querySelectorAll('style, link[rel="stylesheet"], link[as="font"], link[rel="preconnect"]')
-  )
-    .map((el) => el.outerHTML)
-    .join('\n');
-
-  // 1. Primary Print Technique: Dedicated hidden print iframe with full stylesheet injection
-  // This completely eliminates interference from parent navigation bars, zoom scaling,
-  // gray backgrounds, and scrollbars, guaranteeing an exact 1-page A4 print matching the preview!
   try {
+    // 1. Render pixel-perfect canvas identical to preview
+    const canvas = await renderMarksheetToCanvas(elementId, options?.onProgress);
+    const highResImageDataUrl = canvas.toDataURL('image/png', 1.0);
+
+    options?.onProgress?.('Opening print dialog (प्रिंटर डायलॉग खुल रहा है)...');
+
+    // 2. Primary Print Technique: Dedicated hidden print iframe with foreground high-res A4 image
     const printIframe = document.createElement('iframe');
     printIframe.style.position = 'fixed';
     printIframe.style.right = '0';
@@ -378,64 +373,83 @@ export async function printMarksheet(
 <head>
   <meta charset="utf-8">
   <title>${options?.fileName || 'Academic Marksheet'}</title>
-  ${headElements}
   <style>
     @page {
       size: 210mm 297mm;
-      margin: 0;
+      margin: 0mm;
     }
     @media print {
       @page {
         size: 210mm 297mm;
-        margin: 0;
+        margin: 0mm;
+      }
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        box-sizing: border-box !important;
+      }
+      html, body {
+        width: 210mm !important;
+        height: 297mm !important;
+        max-height: 297mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        background: #ffffff !important;
+      }
+      img.print-marksheet-canvas-img {
+        width: 210mm !important;
+        height: 297mm !important;
+        max-width: 210mm !important;
+        max-height: 297mm !important;
+        display: block !important;
+        margin: 0 auto !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-after: avoid !important;
+        break-inside: avoid !important;
+        object-fit: fill !important;
+        image-rendering: -webkit-optimize-contrast !important;
       }
     }
-    *, *::before, *::after {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-      color-adjust: exact !important;
-      box-sizing: border-box !important;
-    }
     html, body {
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 210mm !important;
-      height: 297mm !important;
-      max-height: 297mm !important;
-      background: #ffffff !important;
-      overflow: hidden !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+      width: 210mm;
+      height: 297mm;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      overflow: hidden;
     }
-    #printable-marksheet,
-    .marksheet-a4-page {
-      width: 210mm !important;
-      height: 297mm !important;
-      min-height: 297mm !important;
-      max-height: 297mm !important;
-      margin: 0 !important;
-      box-sizing: border-box !important;
-      box-shadow: none !important;
-      border: none !important;
-      page-break-after: avoid !important;
-      page-break-inside: avoid !important;
-      overflow: hidden !important;
-      display: flex !important;
-      flex-direction: column !important;
-      justify-content: space-between !important;
-    }
-    @media print {
-      body { width: 210mm !important; height: 297mm !important; }
+    img.print-marksheet-canvas-img {
+      width: 210mm;
+      height: 297mm;
+      max-width: 210mm;
+      max-height: 297mm;
+      display: block;
+      margin: 0 auto;
+      object-fit: fill;
     }
   </style>
 </head>
-<body style="background: #ffffff; margin: 0; padding: 0;">
-  ${element.outerHTML}
+<body>
+  <img src="${highResImageDataUrl}" class="print-marksheet-canvas-img" alt="Academic Marksheet" />
 </body>
 </html>`);
       priDoc.close();
 
-      // Wait a moment for iframe DOM and images to settle
-      await new Promise((r) => setTimeout(r, 350));
+      // Wait for image to settle in iframe
+      await new Promise<void>((resolve) => {
+        const img = priDoc.querySelector('img');
+        if (!img) return resolve();
+        if (img.complete) return resolve();
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        setTimeout(resolve, 500);
+      });
+
+      // Small delay before invoking print dialog
+      await new Promise((r) => setTimeout(r, 200));
 
       printIframe.contentWindow?.focus();
       printIframe.contentWindow?.print();
@@ -445,25 +459,17 @@ export async function printMarksheet(
         if (printIframe.parentNode) {
           printIframe.parentNode.removeChild(printIframe);
         }
-      }, 4000);
+      }, 5000);
 
-      options?.onProgress?.('Print dialog sent successfully');
+      options?.onProgress?.('Print dialog sent successfully (100% रंग व लेआउट सुरक्षित)');
       return { success: true, method: 'print' };
     }
-  } catch (iframeErr) {
-    console.warn('Iframe print failed or restricted, trying window.print():', iframeErr);
+  } catch (printErr) {
+    console.warn('Iframe canvas print failed, falling back to PDF download:', printErr);
   }
 
-  // 2. Fallback 1: Direct window.print() on the live document
-  try {
-    window.print();
-    return { success: true, method: 'print' };
-  } catch (windowErr) {
-    console.warn('Direct window.print() failed or blocked:', windowErr);
-  }
-
-  // 3. Fallback 2: If modal/printing is blocked by iframe sandbox, automatically generate A4 PDF
-  options?.onProgress?.('Print blocked by sandbox, downloading A4 PDF...');
+  // 3. Fallback: If printing is blocked by sandbox or browser restriction, automatically generate A4 PDF
+  options?.onProgress?.('Print blocked by browser sandbox, downloading exact A4 PDF...');
   const downloaded = await downloadMarksheetPdf(elementId, {
     fileName: options?.fileName || 'Marksheet_A4_Print',
     onProgress: options?.onProgress,

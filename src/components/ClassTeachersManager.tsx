@@ -783,31 +783,31 @@ export const ClassTeachersManager: React.FC<ClassTeachersManagerProps> = ({
 
       {/* DRAW SIGNATURE MODAL */}
       {drawTeacher && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[95vh] flex flex-col">
             {/* Modal Header */}
-            <div className="bg-[#0f2b48] text-white px-5 py-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <PenTool className="w-4 h-4 text-blue-300" />
-                <div>
-                  <h4 className="text-sm font-bold">
+            <div className="bg-[#0f2b48] text-white px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <PenTool className="w-4 h-4 text-blue-300 shrink-0" />
+                <div className="min-w-0">
+                  <h4 className="text-xs sm:text-sm font-bold truncate">
                     Draw Signature: {drawTeacher.teacherName} (Class {drawTeacher.className})
                   </h4>
-                  <p className="text-[11px] text-slate-300">
+                  <p className="text-[10px] sm:text-[11px] text-slate-300 truncate">
                     नीचे बॉक्स में अपनी उंगली (Touch) या माउस से हस्ताक्षर करें
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setDrawModalTeacherId(null)}
-                className="p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                className="p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer shrink-0 ml-2"
               >
                 <X className="w-5 h-5 text-slate-300 hover:text-white" />
               </button>
             </div>
 
             {/* Drawing Surface */}
-            <div className="p-5 space-y-4">
+            <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
               {/* Canvas Box */}
               <div className="border-2 border-dashed border-blue-400 bg-[#f8fafc] rounded-xl p-2 flex flex-col items-center">
                 <canvas
@@ -911,31 +911,31 @@ export const ClassTeachersManager: React.FC<ClassTeachersManagerProps> = ({
 
       {/* PRESET STYLES MODAL */}
       {presetTeacher && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[95vh] flex flex-col">
             {/* Header */}
-            <div className="bg-[#0f2b48] text-white px-5 py-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <div>
-                  <h4 className="text-sm font-bold">
+            <div className="bg-[#0f2b48] text-white px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                <div className="min-w-0">
+                  <h4 className="text-xs sm:text-sm font-bold truncate">
                     Select Digital Signature Style ({presetTeacher.teacherName})
                   </h4>
-                  <p className="text-[11px] text-slate-300">
+                  <p className="text-[10px] sm:text-[11px] text-slate-300 truncate">
                     नीचे दिए गए किसी भी एक स्टाइलिश हस्ताक्षर पर क्लिक करके तुरंत लागू करें
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setPresetModalTeacherId(null)}
-                className="p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                className="p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer shrink-0 ml-2"
               >
                 <X className="w-5 h-5 text-slate-300 hover:text-white" />
               </button>
             </div>
 
             {/* Styles Grid */}
-            <div className="p-5 space-y-3">
+            <div className="p-4 sm:p-5 space-y-3 overflow-y-auto flex-1">
               {[0, 1, 2, 3].map((styleIdx) => {
                 const sampleSig = generateTeacherSvgSignature(presetTeacher.teacherName, styleIdx);
                 const styleNames = [
@@ -981,24 +981,24 @@ export const ClassTeachersManager: React.FC<ClassTeachersManagerProps> = ({
 
       {/* MARKSHEET PREVIEW MODAL */}
       {previewTeacher && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="bg-[#0f2b48] text-white px-5 py-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-emerald-400" />
-                <h4 className="text-sm font-bold">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[95vh] flex flex-col">
+            <div className="bg-[#0f2b48] text-white px-4 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Eye className="w-4 h-4 text-emerald-400 shrink-0" />
+                <h4 className="text-xs sm:text-sm font-bold truncate">
                   Marksheet Footer Preview (Class {previewTeacher.className})
                 </h4>
               </div>
               <button
                 onClick={() => setPreviewTeacherId(null)}
-                className="p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                className="p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer shrink-0 ml-2"
               >
                 <X className="w-5 h-5 text-slate-300 hover:text-white" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <p className="text-xs text-slate-600">
                 कक्षा <strong className="text-blue-900">{previewTeacher.className}</strong> के छात्र की मार्कशीट पर हस्ताक्षर ब्लॉक इस प्रकार दिखाई देगा:
               </p>
