@@ -24,29 +24,24 @@ import { Student, SubjectConfig, SchoolSettings, GradeRule } from '../types';
 // 4. Copy the `firebaseConfig` object and paste its values into the fields below:
 // ============================================================================
 
-export const firebaseConfig = {
-  // ⬇️ Paste your apiKey here
-  apiKey: (import.meta as any).env?.VITE_FIREBASE_API_KEY || "YOUR_API_KEY_HERE",
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-  // ⬇️ Paste your authDomain here (e.g. "my-school-portal.firebaseapp.com")
-  authDomain: (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN || "YOUR_PROJECT_ID.firebaseapp.com",
-
-  // ⬇️ Paste your databaseURL here (e.g. "https://my-school-portal-default-rtdb.firebaseio.com")
-  databaseURL: (import.meta as any).env?.VITE_FIREBASE_DATABASE_URL || "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-
-  // ⬇️ Paste your projectId here
-  projectId: (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID || "YOUR_PROJECT_ID",
-
-  // ⬇️ Paste your storageBucket here
-  storageBucket: (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET || "YOUR_PROJECT_ID.appspot.com",
-
-  // ⬇️ Paste your messagingSenderId here
-  messagingSenderId: (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_MESSAGING_SENDER_ID",
-
-  // ⬇️ Paste your appId here
-  appId: (import.meta as any).env?.VITE_FIREBASE_APP_ID || "YOUR_APP_ID",
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBM7gmp5C9ve0LVk8mhwh2kLw23QGv0vj0",
+  authDomain: "hd-pandey-school-portal.firebaseapp.com",
+  databaseURL: "https://hd-pandey-school-portal-default-rtdb.firebaseio.com",
+  projectId: "hd-pandey-school-portal",
+  storageBucket: "hd-pandey-school-portal.firebasestorage.app",
+  messagingSenderId: "743517383647",
+  appId: "1:743517383647:web:e48e48f5af62c35110b26a"
 };
 
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 // ============================================================================
 // INITIALIZE FIREBASE APP & REALTIME DATABASE (v9 Modular Approach)
 // ============================================================================
