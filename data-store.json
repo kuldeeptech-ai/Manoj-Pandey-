@@ -1,0 +1,807 @@
+{
+  "schoolSettings": {
+    "schoolName": "H.D. PANDEY PUBLIC JUNIOR HIGH SCHOOL",
+    "address": "Baurbyas, Shiv Mandir Side S.K.N. (U.P.) – 272154",
+    "managedBy": "Manoj Panday",
+    "mobile": "9838767297",
+    "tagline": "Discipline • Knowledge • Character • Bright Future",
+    "logoUrl": "https://i.ibb.co/zHby2DZM/12362.jpg",
+    "schoolBadgeType": "OFFICIAL RESULT",
+    "resultTitle": "ACADEMIC RESULT — HALF-YEARLY & ANNUAL",
+    "resultTitleHalfYearly": "ACADEMIC RESULT — HALF-YEARLY EXAMINATION",
+    "session": "2025–2026",
+    "footerText": "Keep Learning • Keep Growing • Keep Shining!",
+    "teacherSignatureUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAgNjAiIHdpZHRoPSIxNjAiIGhlaWdodD0iNjAiPgogIDxwYXRoIGQ9Ik0gMjAgNDAgUSAzNSAxNSA1MCAzNSBUIDc1IDI1IFQgMTAwIDM4IFQgMTM1IDIyIiBmaWxsPSJub25lIiBzdHJva2U9IiMxYTM2NWQiIHN0cm9rZS13aWR0aD0iMi4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8cGF0aCBkPSJNIDMwIDM4IFEgNjAgNDggMTIwIDMyIiBmaWxsPSJub25lIiBzdHJva2U9IiMxYTM2NWQiIHN0cm9rZS13aWR0aD0iMS42IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+",
+    "principalSignatureUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAgNjAiIHdpZHRoPSIxNjAiIGhlaWdodD0iNjAiPgogIDxwYXRoIGQ9Ik0gMTUgMzUgUSAyNSAxMCA0MCAyNSBUIDY1IDE1IFQgODUgNDAgVCAxMTUgMTggVCAxNDUgMzAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzBmMmI0OCIgc3Ryb2tlLXdpZHRoPSIyLjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0gMjUgMzIgUSA1NSA0NSAxMzAgMjgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzBmMmI0OCIgc3Ryb2tlLXdpZHRoPSIxLjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=",
+    "principalStampUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCI+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFlM2E4YSIgc3Ryb2tlLXdpZHRoPSIyLjUiIG9wYWNpdHk9IjAuNjUiIHN0cm9rZS1kYXNoYXJyYXk9IjIsMSIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQxIiBmaWxsPSJub25lIiBzdHJva2U9IiMxZTNhOGEiIHN0cm9rZS13aWR0aD0iMS41IiBvcGFjaXR5PSIwLjY1Ii8+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iMjgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFlM2E4YSIgc3Ryb2tlLXdpZHRoPSIxIiBvcGFjaXR5PSIwLjUiLz4KICA8dGV4dCB4PSI1MCIgeT0iMzIiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNiIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMxZTNhOGEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIG9wYWNpdHk9IjAuNzUiIGxldHRlci1zcGFjaW5nPSIwLjUiPkguRC4gUEFOREVZIFBVQkxJQyBKLkguUy48L3RleHQ+CiAgPHRleHQgeD0iNTAiIHk9IjUyIiBmb250LWZhbWlseT0iJ1JvYm90byBDb25kZW5zZWQnLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjcuNSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMxZTNhOGEiIHRleHQtYW5jaG9yPSJtaWRkbGUiIG9wYWNpdHk9IjAuODUiPuKYhSBQUklOQ0lQQUwg4piFPC90ZXh0PgogIDx0ZXh0IHg9IjUwIiB5PSI2OCIgZm9udC1mYW1pbHk9IidSb2JvdG8gQ29uZGVuc2VkJywgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI2IiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzFlM2E4YSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgb3BhY2l0eT0iMC43NSI+T0ZGSUNJQUwgU0VBTDwvdGV4dD4KPC9zdmc+",
+    "showDigitalStamp": true,
+    "stampType": "digital",
+    "defaultExamMode": "combined",
+    "activeClasses": ["5th", "6th", "7th", "8th"],
+    "googleSheetWebAppUrl": "https://script.google.com/macros/s/AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ/exec",
+    "classTeachers": [
+      {
+        "id": "ct-8",
+        "className": "8th",
+        "teacherName": "Mrs. Sunita Sharma",
+        "designation": "Class Teacher (8th)",
+        "signatureUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAgNjAiIHdpZHRoPSIxNjAiIGhlaWdodD0iNjAiPgogIDxwYXRoIGQ9Ik0gMTggMzggUSAzMiAxMiA0OCAzMCBUIDcwIDIwIFQgOTIgMzYgVCAxMjAgMTggVCAxNDUgMjgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFlM2E4YSIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik0gMjggNDIgUSA2NSA1MiAxMzUgMzQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFlM2E4YSIgc3Ryb2tlLXdpZHRoPSIxLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4=",
+        "phone": "9838700008"
+      },
+      {
+        "id": "ct-7",
+        "className": "7th",
+        "teacherName": "Shri R.K. Yadav",
+        "designation": "Class Teacher (7th)",
+        "signatureUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAgNjAiIHdpZHRoPSIxNjAiIGhlaWdodD0iNjAiPgogIDxwYXRoIGQ9Ik0gMTUgNDIgUSAzMCAxNSA0NSAzNSBUIDc1IDE1IFQgMTA1IDM4IFQgMTMwIDIwIiBmaWxsPSJub25lIiBzdHJva2U9IiMwZjJiNDgiIHN0cm9rZS13aWR0aD0iMi4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNIDI1IDQwIFEgNzAgNDggMTM1IDMyIiBmaWxsPSJub25lIiBzdHJva2U9IiMwZjJiNDgiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+",
+        "phone": "9838700007"
+      },
+      {
+        "id": "ct-6",
+        "className": "6th",
+        "teacherName": "Smt. Rekha Gupta",
+        "designation": "Class Teacher (6th)",
+        "signatureUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNjAgNjAiIHdpZHRoPSIxNjAiIGhlaWdodD0iNjAiPgogIDxwYXRoIGQ9Ik0gMjAgMzYgUSAzOCAxOCA1NSAzMiBUIDg1IDIyIFQgMTE1IDM1IFQgMTQwIDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMxZTNhOGEiIHN0cm9rZS13aWR0aD0iMi4wIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8cGF0aCBkPSJNIDMwIDQyIFEgNjAgNTAgMTI1IDM1IiBmaWxsPSJub25lIiBzdHJva2U9IiMxZTNhOGEiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+",
+        "phone": "9838700006"
+      },
+      {
+        "id": "ct-5",
+        "className": "5th",
+        "teacherName": "Shri Anand Singh",
+        "designation": "Class Teacher (5th)",
+        "phone": "9838700005"
+      },
+      {
+        "id": "ct-4",
+        "className": "4th",
+        "teacherName": "Smt. Pooja Mishra",
+        "designation": "Class Teacher (4th)",
+        "phone": "9838700004"
+      },
+      {
+        "id": "ct-3",
+        "className": "3rd",
+        "teacherName": "Shri Manoj Tiwari",
+        "designation": "Class Teacher (3rd)",
+        "phone": "9838700003"
+      },
+      {
+        "id": "ct-2",
+        "className": "2nd",
+        "teacherName": "Smt. Anita Yadav",
+        "designation": "Class Teacher (2nd)",
+        "phone": "9838700002"
+      },
+      {
+        "id": "ct-1",
+        "className": "1st",
+        "teacherName": "Smt. Suman Pandey",
+        "designation": "Class Teacher (1st)",
+        "phone": "9838700001"
+      },
+      {
+        "id": "ct-ukg",
+        "className": "U.K.G.",
+        "teacherName": "Smt. Meena Devi",
+        "designation": "Class Teacher (UKG)",
+        "phone": "9838700010"
+      },
+      {
+        "id": "ct-lkg",
+        "className": "L.K.G.",
+        "teacherName": "Smt. Radha Maurya",
+        "designation": "Class Teacher (LKG)",
+        "phone": "9838700011"
+      },
+      {
+        "id": "ct-nur",
+        "className": "NURSERY",
+        "teacherName": "Smt. Kavita Sharma",
+        "designation": "Class Teacher (Nursery)",
+        "phone": "9838700012"
+      }
+    ],
+    "adminUserId": "Kld75",
+    "adminPassword": "Kld@2314",
+    "showHalfYearlyExam": true,
+    "showAnnualExam": false,
+    "showTeacherRemarks": true,
+    "showStudentPhoto": true,
+    "showSignatures": false,
+    "showPercentage": true,
+    "showGrade": false,
+    "showProgressGraph": true,
+    "allowPublicSearch": true,
+    "maintenanceNotice": "",
+    "showStudentMobile": true,
+    "showStudentAadhar": true
+  },
+  "subjects": [
+    {
+      "id": "sub-hindi",
+      "name": "Hindi",
+      "displayOrder": 1,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-english",
+      "name": "English",
+      "displayOrder": 2,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-maths",
+      "name": "Mathematics",
+      "displayOrder": 3,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-science",
+      "name": "Science",
+      "displayOrder": 4,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-social",
+      "name": "Social Science",
+      "displayOrder": 5,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-sanskrit",
+      "name": "Sanskrit",
+      "displayOrder": 6,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-computer",
+      "name": "Computer",
+      "displayOrder": 7,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-gk",
+      "name": "General Knowledge",
+      "displayOrder": 8,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-moral",
+      "name": "Moral Science / Knowledge",
+      "displayOrder": 9,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-1789291043759",
+      "name": "Hindi ii",
+      "displayOrder": 10,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    },
+    {
+      "id": "sub-1789291370377",
+      "name": "dgg",
+      "displayOrder": 11,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 33,
+      "active": true
+    }
+  ],
+  "students": [
+    {
+      "id": "std-17",
+      "name": "PRIYA SHARMA",
+      "fatherName": "RAMESH SHARMA",
+      "motherName": "SUNITA SHARMA",
+      "dob": "15/07/2012",
+      "gender": "FEMALE",
+      "className": "8th",
+      "section": "A",
+      "rollNo": "17",
+      "admissionNo": "ADM-2024-0017",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNlMmU4ZjAiLz4KICA8IS0tIEhlYWQgJiBTaG91bGRlcnMgLS0+CiAgPGNpcmNsZSBjeD0iNjAiIGN5PSI1NSIgcj0iMjgiIGZpbGw9IiNmY2QzNGQiLz4KICA8cGF0aCBkPSJNIDM4IDQ4IEMgMzggMjggODIgMjggODIgNDggQyA4MiA1NiA3NSA1OCA2MCA1OCBDIDQ1IDU4IDM4IDU2IDM4IDQ4IFoiIGZpbGw9IiMxZTI5M2IiLz4KICA8IS0tIFNjaG9vbCBVbmlmb3JtIC0tPgogIDxwYXRoIGQ9Ik0gMjAgMTUwIEwgMzIgMTAwIEMgNDAgOTIgODAgOTIgODggMTAwIEwgMTAwIDE1MCBaIiBmaWxsPSIjMWUzYThhIi8+CiAgPCEtLSBXaGl0ZSBDb2xsYXIgLS0+CiAgPHBvbHlnb24gcG9pbnRzPSI2MCwxMTggNDUsOTggNTYsOTggNjAsMTA4IDY0LDk4IDc1LDk4IiBmaWxsPSIjZmZmZmZmIi8+CiAgPCEtLSBSZWQgVGllIC0tPgogIDxwb2x5Z29uIHBvaW50cz0iNTgsMTA4IDYyLDEwOCA2NCwxMzUgNjAsMTQwIDU2LDEzNSIgZmlsbD0iI2I5MWMxYyIvPgogIDwhLS0gVGV4dCAtLT4KICA8cmVjdCB4PSI1IiB5PSIxMzAiIHdpZHRoPSIxMTAiIGhlaWdodD0iMTYiIGZpbGw9IiMwZjE3MmEiIG9wYWNpdHk9IjAuOCIgcng9IjIiLz4KICA8dGV4dCB4PSI2MCIgeT0iMTQyIiBmb250LWZhbWlseT0iJ1JvYm90byBDb25kZW5zZWQnLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjkiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ST0xMOiAxNyDigKIgUFJJWUE8L3RleHQ+Cjwvc3ZnPg==",
+      "session": "2025–2026",
+      "teacherRemark": "Excellent academic performance! Very attentive, sincere and disciplined in all classroom activities. Keep it up!",
+      "marks": {
+        "sub-hindi": {
+          "halfObtained": 84,
+          "annualObtained": 88
+        },
+        "sub-english": {
+          "halfObtained": 79,
+          "annualObtained": 85
+        },
+        "sub-maths": {
+          "halfObtained": 91,
+          "annualObtained": 95
+        },
+        "sub-science": {
+          "halfObtained": 88,
+          "annualObtained": 92
+        },
+        "sub-social": {
+          "halfObtained": 82,
+          "annualObtained": 86
+        },
+        "sub-sanskrit": {
+          "halfObtained": 85,
+          "annualObtained": 89
+        },
+        "sub-computer": {
+          "halfObtained": 94,
+          "annualObtained": 96
+        },
+        "sub-gk": {
+          "halfObtained": 90,
+          "annualObtained": 94
+        },
+        "sub-moral": {
+          "halfObtained": 88,
+          "annualObtained": 92
+        },
+        "sub-1789291043759": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-1789291370377": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        }
+      },
+      "mobile": "",
+      "aadharNo": ""
+    },
+    {
+      "id": "std-18",
+      "name": "AMAN VERMAh",
+      "fatherName": "RAJESH VERMA",
+      "motherName": "POOJA VERMA",
+      "dob": "11/04/2011",
+      "gender": "MALE",
+      "className": "8th",
+      "section": "A",
+      "rollNo": "18",
+      "admissionNo": "ADM-2024-0018",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNlMmU4ZjAiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjU1IiByPSIyOCIgZmlsbD0iI2ZjZDM0ZCIvPgogIDxwYXRoIGQ9Ik0gMzggNDQgQyA0MCAyNSA4MCAyNSA4MiA0NCBDIDgwIDQ3IDYwIDQ4IDM4IDQ0IFoiIGZpbGw9IiMzMzQxNTUiLz4KICA8cGF0aCBkPSJNIDIwIDE1MCBMIDMyIDEwMCBDIDQwIDkyIDgwIDkyIDg4IDEwMCBMIDEwMCAxNTAgWiIgZmlsbD0iIzFlM2E4YSIvPgogIDxwb2x5Z29uIHBvaW50cz0iNjAsMTE4IDQ1LDk4IDU2LDk4IDYwLDEwOCA2NCw5OCA3NSw5OCIgZmlsbD0iI2ZmZmZmZiIvPgogIDxwb2x5Z29uIHBvaW50cz0iNTgsMTA4IDYyLDEwOCA2NCwxMzUgNjAsMTQwIDU2LDEzNSIgZmlsbD0iI2I5MWMxYyIvPgogIDxyZWN0IHg9IjUiIHk9IjEzMCIgd2lkdGg9IjExMCIgaGVpZ2h0PSIxNiIgZmlsbD0iIzBmMTcyYSIgb3BhY2l0eT0iMC44IiByeD0iMiIvPgogIDx0ZXh0IHg9IjYwIiB5PSIxNDIiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlJPTEw6IDE4IOKAoiBBTUFOPC90ZXh0Pgo8L3N2Zz4=",
+      "session": "2025–2026",
+      "teacherRemark": "Good effort in practical subjects. Needs improvement in Mathematics and English grammar. Focus on regular practice and revision.",
+      "marks": {
+        "sub-hindi": {
+          "halfObtained": 68,
+          "annualObtained": 74
+        },
+        "sub-english": {
+          "halfObtained": 58,
+          "annualObtained": 65
+        },
+        "sub-maths": {
+          "halfObtained": 62,
+          "annualObtained": 70
+        },
+        "sub-science": {
+          "halfObtained": 71,
+          "annualObtained": 76
+        },
+        "sub-social": {
+          "halfObtained": 65,
+          "annualObtained": 72
+        },
+        "sub-sanskrit": {
+          "halfObtained": 60,
+          "annualObtained": 68
+        },
+        "sub-computer": {
+          "halfObtained": 82,
+          "annualObtained": 86
+        },
+        "sub-gk": {
+          "halfObtained": 75,
+          "annualObtained": 80
+        },
+        "sub-moral": {
+          "halfObtained": 78,
+          "annualObtained": 82
+        },
+        "sub-1789291043759": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-1789291370377": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        }
+      },
+      "mobile": "",
+      "aadharNo": ""
+    },
+    {
+      "id": "std-21",
+      "name": "SNEHA GUPTA",
+      "fatherName": "VINOD GUPTA",
+      "motherName": "REKHA GUPTA",
+      "dob": "22/02/2012",
+      "gender": "FEMALE",
+      "className": "8th",
+      "section": "A",
+      "rollNo": "21",
+      "admissionNo": "ADM-2024-0021",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNmMWY1ZjkiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjU1IiByPSIyNiIgZmlsbD0iI2NiZDVlMSIvPgogIDxwYXRoIGQ9Ik0gMjUgMTQwIEMgMjUgMTA1IDQ1IDk1IDYwIDk1IEMgNzUgOTUgOTUgMTA1IDk1IDE0MCBaIiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjEyNSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjE4IiBmaWxsPSIjNDc1NTY5IiBvcGFjaXR5PSIwLjg1IiByeD0iMyIvPgogIDx0ZXh0IHg9IjYwIiB5PSIxMzgiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBU1NQT1JUIFBIT1RPPC90ZXh0Pgo8L3N2Zz4=",
+      "session": "2025–2026",
+      "teacherRemark": "Outstanding performance across all terms! Shows exemplary dedication and leadership in academic projects.",
+      "marks": {
+        "sub-hindi": {
+          "halfObtained": 92,
+          "annualObtained": 95
+        },
+        "sub-english": {
+          "halfObtained": 89,
+          "annualObtained": 92
+        },
+        "sub-maths": {
+          "halfObtained": 96,
+          "annualObtained": 98
+        },
+        "sub-science": {
+          "halfObtained": 94,
+          "annualObtained": 97
+        },
+        "sub-social": {
+          "halfObtained": 88,
+          "annualObtained": 91
+        },
+        "sub-sanskrit": {
+          "halfObtained": 90,
+          "annualObtained": 94
+        },
+        "sub-computer": {
+          "halfObtained": 98,
+          "annualObtained": 99
+        },
+        "sub-gk": {
+          "halfObtained": 95,
+          "annualObtained": 96
+        },
+        "sub-moral": {
+          "halfObtained": 92,
+          "annualObtained": 95
+        },
+        "sub-1789291043759": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-1789291370377": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        }
+      },
+      "mobile": "",
+      "aadharNo": ""
+    },
+    {
+      "id": "std-25",
+      "name": "MOHAMMAD TARIQ",
+      "fatherName": "ALTAF HUSSAIN",
+      "motherName": "NAZIA BANO",
+      "dob": "18/09/2011",
+      "gender": "MALE",
+      "className": "8th",
+      "section": "B",
+      "rollNo": "25",
+      "admissionNo": "ADM-2024-0025",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNmMWY1ZjkiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjU1IiByPSIyNiIgZmlsbD0iI2NiZDVlMSIvPgogIDxwYXRoIGQ9Ik0gMjUgMTQwIEMgMjUgMTA1IDQ1IDk1IDYwIDk1IEMgNzUgOTUgOTUgMTA1IDk1IDE0MCBaIiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjEyNSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjE4IiBmaWxsPSIjNDc1NTY5IiBvcGFjaXR5PSIwLjg1IiByeD0iMyIvPgogIDx0ZXh0IHg9IjYwIiB5PSIxMzgiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBU1NQT1JUIFBIT1RPPC90ZXh0Pgo8L3N2Zz4=",
+      "session": "2025–2026",
+      "teacherRemark": "Punctual and keen learner. Shows steady academic progress throughout the year.",
+      "marks": {
+        "sub-hindi": {
+          "halfObtained": 76,
+          "annualObtained": 80
+        },
+        "sub-english": {
+          "halfObtained": 72,
+          "annualObtained": 78
+        },
+        "sub-maths": {
+          "halfObtained": 80,
+          "annualObtained": 85
+        },
+        "sub-science": {
+          "halfObtained": 82,
+          "annualObtained": 88
+        },
+        "sub-social": {
+          "halfObtained": 74,
+          "annualObtained": 79
+        },
+        "sub-sanskrit": {
+          "halfObtained": 70,
+          "annualObtained": 75
+        },
+        "sub-computer": {
+          "halfObtained": 88,
+          "annualObtained": 90
+        },
+        "sub-gk": {
+          "halfObtained": 82,
+          "annualObtained": 85
+        },
+        "sub-moral": {
+          "halfObtained": 85,
+          "annualObtained": 88
+        },
+        "sub-1789291043759": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-1789291370377": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        }
+      },
+      "mobile": "",
+      "aadharNo": ""
+    },
+    {
+      "id": "std-1789291179305",
+      "name": "sg",
+      "fatherName": "",
+      "motherName": "",
+      "dob": "01/01/2012",
+      "gender": "FEMALE",
+      "className": "8th",
+      "section": "A",
+      "rollNo": "5",
+      "admissionNo": "ADM-2024-0005",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNmMWY1ZjkiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjU1IiByPSIyNiIgZmlsbD0iI2NiZDVlMSIvPgogIDxwYXRoIGQ9Ik0gMjUgMTQwIEMgMjUgMTA1IDQ1IDk1IDYwIDk1IEMgNzUgOTUgOTUgMTA1IDk1IDE0MCBaIiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjEyNSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjE4IiBmaWxsPSIjNDc1NTY5IiBvcGFjaXR5PSIwLjg1IiByeD0iMyIvPgogIDx0ZXh0IHg9IjYwIiB5PSIxMzgiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBU1NQT1JUIFBIT1RPPC90ZXh0Pgo8L3N2Zz4=",
+      "session": "2025–2026",
+      "teacherRemark": "Regular and disciplined student. Shows consistent academic progress.",
+      "marks": {
+        "sub-hindi": {
+          "halfObtained": 64,
+          "annualObtained": 0
+        },
+        "sub-english": {
+          "halfObtained": 46,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 12,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 76,
+          "annualObtained": 0
+        },
+        "sub-social": {
+          "halfObtained": 76,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 55,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 87,
+          "annualObtained": 0
+        },
+        "sub-gk": {
+          "halfObtained": 66,
+          "annualObtained": 0
+        },
+        "sub-moral": {
+          "halfObtained": 76,
+          "annualObtained": 0
+        },
+        "sub-1789291043759": {
+          "halfObtained": 78,
+          "annualObtained": 0
+        },
+        "sub-1789291370377": {
+          "halfObtained": 46,
+          "annualObtained": 0
+        }
+      },
+      "mobile": "",
+      "aadharNo": ""
+    },
+    {
+      "id": "std-1789295269271",
+      "name": "cgh",
+      "fatherName": "",
+      "motherName": "",
+      "dob": "01/01/2012",
+      "gender": "FEMALE",
+      "className": "8th",
+      "section": "A",
+      "rollNo": "6",
+      "admissionNo": "ADM-2024-0006",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNmMWY1ZjkiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjU1IiByPSIyNiIgZmlsbD0iI2NiZDVlMSIvPgogIDxwYXRoIGQ9Ik0gMjUgMTQwIEMgMjUgMTA1IDQ1IDk1IDYwIDk1IEMgNzUgOTUgOTUgMTA1IDk1IDE0MCBaIiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjEyNSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjE4IiBmaWxsPSIjNDc1NTY5IiBvcGFjaXR5PSIwLjg1IiByeD0iMyIvPgogIDx0ZXh0IHg9IjYwIiB5PSIxMzgiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBU1NQT1JUIFBIT1RPPC90ZXh0Pgo8L3N2Zz4=",
+      "session": "2025–2026",
+      "teacherRemark": "Regular and disciplined student. Shows consistent academic progress.",
+      "marks": {
+        "sub-hindi": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-social": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-gk": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-moral": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-1789291043759": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-1789291370377": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        }
+      },
+      "mobile": "",
+      "aadharNo": ""
+    },
+    {
+      "id": "std-1789295286127",
+      "name": "mnmn",
+      "fatherName": "",
+      "motherName": "",
+      "dob": "01/01/2012",
+      "gender": "FEMALE",
+      "className": "8th",
+      "section": "A",
+      "rollNo": "7",
+      "admissionNo": "ADM-2024-0007",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNmMWY1ZjkiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjU1IiByPSIyNiIgZmlsbD0iI2NiZDVlMSIvPgogIDxwYXRoIGQ9Ik0gMjUgMTQwIEMgMjUgMTA1IDQ1IDk1IDYwIDk1IEMgNzUgOTUgOTUgMTA1IDk1IDE0MCBaIiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjEyNSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjE4IiBmaWxsPSIjNDc1NTY5IiBvcGFjaXR5PSIwLjg1IiByeD0iMyIvPgogIDx0ZXh0IHg9IjYwIiB5PSIxMzgiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBU1NQT1JUIFBIT1RPPC90ZXh0Pgo8L3N2Zz4=",
+      "session": "2025–2026",
+      "teacherRemark": "Regular and disciplined student. Shows consistent academic progress.",
+      "marks": {
+        "sub-hindi": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-social": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-gk": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-moral": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-1789291043759": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-1789291370377": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        }
+      },
+      "mobile": "",
+      "aadharNo": ""
+    },
+    {
+      "id": "std-1789357531338",
+      "name": "bcvvbcb",
+      "fatherName": "",
+      "motherName": "",
+      "dob": "01/01/2012",
+      "gender": "FEMALE",
+      "className": "8th",
+      "section": "A",
+      "rollNo": "5557",
+      "admissionNo": "ADM-2024-0008",
+      "session": "2025–2026",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNmMWY1ZjkiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjU1IiByPSIyNiIgZmlsbD0iI2NiZDVlMSIvPgogIDxwYXRoIGQ9Ik0gMjUgMTQwIEMgMjUgMTA1IDQ1IDk1IDYwIDk1IEMgNzUgOTUgOTUgMTA1IDk1IDE0MCBaIiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjEyNSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjE4IiBmaWxsPSIjNDc1NTY5IiBvcGFjaXR5PSIwLjg1IiByeD0iMyIvPgogIDx0ZXh0IHg9IjYwIiB5PSIxMzgiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBU1NQT1JUIFBIT1RPPC90ZXh0Pgo8L3N2Zz4=",
+      "teacherRemark": "Regular and disciplined student. Shows consistent academic progress.",
+      "marks": {},
+      "mobile": "",
+      "aadharNo": ""
+    },
+    {
+      "id": "std-1789357818926",
+      "name": "hgh",
+      "fatherName": "",
+      "motherName": "",
+      "dob": "01/01/2012",
+      "gender": "FEMALE",
+      "className": "8th",
+      "section": "A",
+      "rollNo": "20",
+      "admissionNo": "ADM-2024-0008",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNmMWY1ZjkiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjU1IiByPSIyNiIgZmlsbD0iI2NiZDVlMSIvPgogIDxwYXRoIGQ9Ik0gMjUgMTQwIEMgMjUgMTA1IDQ1IDk1IDYwIDk1IEMgNzUgOTUgOTUgMTA1IDk1IDE0MCBaIiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjEyNSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjE4IiBmaWxsPSIjNDc1NTY5IiBvcGFjaXR5PSIwLjg1IiByeD0iMyIvPgogIDx0ZXh0IHg9IjYwIiB5PSIxMzgiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBU1NQT1JUIFBIT1RPPC90ZXh0Pgo8L3N2Zz4=",
+      "session": "2025–2026",
+      "teacherRemark": "Regular and disciplined student. Shows consistent academic progress.",
+      "marks": {
+        "sub-hindi": {
+          "halfObtained": 8,
+          "annualObtained": 0
+        },
+        "sub-english": {
+          "halfObtained": 8,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 86,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 42,
+          "annualObtained": 0
+        },
+        "sub-social": {
+          "halfObtained": 5,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 57,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 75,
+          "annualObtained": 0
+        },
+        "sub-gk": {
+          "halfObtained": 75,
+          "annualObtained": 0
+        },
+        "sub-moral": {
+          "halfObtained": 24,
+          "annualObtained": 0
+        },
+        "sub-1789291043759": {
+          "halfObtained": 42,
+          "annualObtained": 0
+        },
+        "sub-1789291370377": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        }
+      },
+      "mobile": "",
+      "aadharNo": ""
+    },
+    {
+      "id": "std-1789529499807",
+      "name": "hbi",
+      "fatherName": "",
+      "motherName": "",
+      "dob": "01/01/2012",
+      "gender": "FEMALE",
+      "className": "8th",
+      "section": "A",
+      "rollNo": "10",
+      "admissionNo": "ADM-2024-0010",
+      "session": "2025–2026",
+      "mobile": "4556",
+      "aadharNo": "455",
+      "photoUrl": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTUwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE1MCI+CiAgPHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxNTAiIGZpbGw9IiNmMWY1ZjkiLz4KICA8Y2lyY2xlIGN4PSI2MCIgY3k9IjU1IiByPSIyNiIgZmlsbD0iI2NiZDVlMSIvPgogIDxwYXRoIGQ9Ik0gMjUgMTQwIEMgMjUgMTA1IDQ1IDk1IDYwIDk1IEMgNzUgOTUgOTUgMTA1IDk1IDE0MCBaIiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjEyNSIgd2lkdGg9IjkwIiBoZWlnaHQ9IjE4IiBmaWxsPSIjNDc1NTY5IiBvcGFjaXR5PSIwLjg1IiByeD0iMyIvPgogIDx0ZXh0IHg9IjYwIiB5PSIxMzgiIGZvbnQtZmFtaWx5PSInUm9ib3RvIENvbmRlbnNlZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlBBU1NQT1JUIFBIT1RPPC90ZXh0Pgo8L3N2Zz4=",
+      "teacherRemark": "Regular and disciplined student. Shows consistent academic progress.",
+      "marks": {}
+    }
+  ],
+  "gradeRules": [
+    {
+      "minPercentage": 90,
+      "maxPercentage": 100,
+      "grade": "A+",
+      "description": "Outstanding Academic Performance"
+    },
+    {
+      "minPercentage": 80,
+      "maxPercentage": 89.99,
+      "grade": "A",
+      "description": "Excellent Academic Performance"
+    },
+    {
+      "minPercentage": 70,
+      "maxPercentage": 79.99,
+      "grade": "B+",
+      "description": "Very Good Academic Performance"
+    },
+    {
+      "minPercentage": 60,
+      "maxPercentage": 69.99,
+      "grade": "B",
+      "description": "Good Academic Performance"
+    },
+    {
+      "minPercentage": 50,
+      "maxPercentage": 59.99,
+      "grade": "C+",
+      "description": "Satisfactory Academic Performance"
+    },
+    {
+      "minPercentage": 40,
+      "maxPercentage": 49.99,
+      "grade": "C",
+      "description": "Pass - Scope for Improvement"
+    },
+    {
+      "minPercentage": 0,
+      "maxPercentage": 39.99,
+      "grade": "D",
+      "description": "Needs Improvement / Practice"
+    }
+  ],
+  "lastUpdated": "2026-09-16T03:36:48.592Z"
+}

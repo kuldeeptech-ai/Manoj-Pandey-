@@ -1,0 +1,6 @@
+{
+  "name": "Online School Result Portal",
+  "description": "Professional Online School Result Portal with high-quality printable academic result marksheets, search by Roll/Admission number, dynamic subjects & calculations, per-class teacher signatures, A4 print, PDF export, and full admin management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

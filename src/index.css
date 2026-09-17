@@ -1,0 +1,218 @@
+@import "tailwindcss";
+
+/* Bundled Local Fonts for 100% device independence and offline support */
+@font-face {
+  font-family: "ResultFont";
+  src: url("/fonts/RobotoCondensed-Regular.woff2") format("woff2"),
+       url("/fonts/RobotoCondensed-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "ResultFont";
+  src: url("/fonts/RobotoCondensed-Bold.woff2") format("woff2"),
+       url("/fonts/RobotoCondensed-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+/* Base styling */
+:root {
+  --school-navy: #0f2b48;
+  --school-blue: #1b4975;
+  --school-light-blue: #e8f0fe;
+  --school-gold: #b8860b;
+  --school-border: #1a365d;
+}
+
+body {
+  font-family: "ResultFont", "Roboto Condensed", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  color: #1e293b;
+  background-color: #f1f5f9;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Master Marksheet A4 Typography & Design */
+.marksheet-document,
+.marksheet-document * {
+  font-family: "ResultFont", "Roboto Condensed", Arial, sans-serif !important;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+/* Strict A4 Container */
+.marksheet-a4-page {
+  width: 210mm;
+  min-height: 297mm;
+  max-height: 297mm;
+  height: 297mm;
+  background: #ffffff;
+  margin: 0 auto;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+/* Academic Table Borders */
+.academic-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1.8px solid #0f2b48;
+}
+
+.academic-table th,
+.academic-table td {
+  border: 1px solid #0f2b48;
+  padding: 3px 6px;
+  vertical-align: middle;
+}
+
+/* Student Info Box */
+.student-info-grid {
+  border: 1.5px solid #0f2b48;
+}
+
+/* Print CSS - Strict A4 Dimensions (210mm x 297mm) */
+@page {
+  size: 210mm 297mm;
+  margin: 0;
+}
+
+@media print {
+  @page {
+    size: 210mm 297mm;
+    margin: 0;
+  }
+
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html, body {
+    width: 210mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Hide navigation bars, toolbars, buttons, toast alerts and all non-marksheet elements */
+  .no-print,
+  nav,
+  header,
+  footer,
+  button,
+  .toast-container {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Reset ResultViewer zoom container */
+  .marksheet-print-container {
+    transform: none !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: 210mm !important;
+    max-height: 297mm !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Anchor the marksheet to exact 210mm x 297mm A4 page */
+  #printable-marksheet,
+  #printable-marksheet * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  #printable-marksheet,
+  .marksheet-a4-page {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    min-width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    border: none !important;
+    background-color: #ffffff !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    overflow: hidden !important;
+    transform: none !important;
+    z-index: 99999999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  #printable-marksheet *,
+  .marksheet-a4-page * {
+    font-family: "ResultFont", "Roboto Condensed", Arial, sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+
+/* Image constraints for print & export - allows dynamic inline style sizing */
+.marksheet-logo-box {
+  overflow: hidden;
+}
+
+.marksheet-logo-img {
+  object-fit: contain;
+  display: block;
+}
+
+.marksheet-photo-box {
+  overflow: hidden;
+}
+
+.marksheet-photo-img {
+  object-fit: cover;
+  display: block;
+}
+
+.marksheet-stamp-box {
+  overflow: hidden;
+}
+
+.marksheet-stamp-img {
+  object-fit: contain;
+  display: block;
+}
+
+.marksheet-sig-img {
+  max-height: 38px;
+  max-width: 140px;
+  object-fit: contain;
+  display: block;
+}
