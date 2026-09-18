@@ -130,6 +130,32 @@ export function getFirebaseAuth(): Auth | null {
 export const auth = getFirebaseAuth();
 
 /**
+ * Recursively removes any `undefined` properties from an object/array,
+ * ensuring Firebase Realtime Database never throws:
+ * "set failed: value argument contains undefined in property ...".
+ */
+export function cleanForFirebase<T>(obj: T): T {
+  if (obj === undefined) {
+    return null as any;
+  }
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj
+      .filter((item) => item !== undefined)
+      .map((item) => cleanForFirebase(item)) as any;
+  }
+  const cleanObj: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleanObj[key] = cleanForFirebase(value);
+    }
+  }
+  return cleanObj as any;
+}
+
+/**
  * Sign in Admin using Google Account Popup via Firebase Auth.
  * STRICT SECURITY: ONLY kuldeeprai75220@gmail.com is allowed.
  * Any other Google account is immediately signed out and blocked.
@@ -513,7 +539,7 @@ export async function saveStudentToFirebase(student: Student): Promise<boolean> 
 
   try {
     const studentRef = ref(database, `students/${student.id}`);
-    await set(studentRef, student);
+    await set(studentRef, cleanForFirebase(student));
     console.log(`[Firebase RTDB] Student ${student.id} saved successfully.`);
     return true;
   } catch (err) {
@@ -536,7 +562,7 @@ export async function saveAllStudentsToFirebase(students: Student[]): Promise<bo
     students.forEach((s) => {
       studentMap[s.id] = s;
     });
-    await set(studentsRef, studentMap);
+    await set(studentsRef, cleanForFirebase(studentMap));
     console.log(`[Firebase RTDB] All ${students.length} students saved to Firebase.`);
     return true;
   } catch (err) {
@@ -563,7 +589,7 @@ export async function updateStudentMarksInFirebase(
     if (teacherRemark !== undefined) {
       updates.teacherRemark = teacherRemark;
     }
-    await update(studentRef, updates);
+    await update(studentRef, cleanForFirebase(updates));
     console.log(`[Firebase RTDB] Marks for student ${studentId} updated.`);
     return true;
   } catch (err) {
@@ -605,7 +631,7 @@ export async function saveSubjectsToFirebase(subjects: SubjectConfig[]): Promise
     subjects.forEach((s) => {
       subjectsMap[s.id] = s;
     });
-    await set(subjectsRef, subjectsMap);
+    await set(subjectsRef, cleanForFirebase(subjectsMap));
     console.log(`[Firebase RTDB] Subjects saved to Firebase.`);
     return true;
   } catch (err) {
@@ -643,10 +669,10 @@ export async function saveSchoolSettingsToFirebase(settings: SchoolSettings): Pr
       isResultLive: settings.isResultLive !== false,
     };
 
-    const payload = {
+    const payload = cleanForFirebase({
       ...settings,
       toggles,
-    };
+    });
 
     const settingsRef = ref(database, 'school_settings');
     await set(settingsRef, payload);
@@ -675,8 +701,8 @@ export async function updateSchoolToggleInFirebase(
     const settingsRef = ref(database, 'school_settings');
 
     // Update both school_settings/toggles node and the parent school_settings property
-    await update(togglesRef, { [toggleKey]: value });
-    await update(settingsRef, { [toggleKey]: value });
+    await update(togglesRef, cleanForFirebase({ [toggleKey]: value }));
+    await update(settingsRef, cleanForFirebase({ [toggleKey]: value }));
 
     console.log(`[Firebase RTDB] Toggle "${toggleKey}" set to ${value} in real-time.`);
     return true;
@@ -696,7 +722,7 @@ export async function saveGradeRulesToFirebase(gradeRules: GradeRule[]): Promise
 
   try {
     const rulesRef = ref(database, 'grade_rules');
-    await set(rulesRef, gradeRules);
+    await set(rulesRef, cleanForFirebase(gradeRules));
     console.log('[Firebase RTDB] Grade rules saved.');
     return true;
   } catch (err) {
@@ -753,7 +779,7 @@ export async function syncAllDataToFirebase(payload: {
       isResultLive: payload.schoolSettings.isResultLive !== false,
     };
 
-    const rootUpdates: Record<string, any> = {
+    const rootUpdates: Record<string, any> = cleanForFirebase({
       'school_settings': {
         ...payload.schoolSettings,
         toggles,
@@ -762,7 +788,7 @@ export async function syncAllDataToFirebase(payload: {
       'subjects': subjectMap,
       'grade_rules': payload.gradeRules,
       'last_synced_at': new Date().toISOString(),
-    };
+    });
 
     const rootRef = ref(database);
     await update(rootRef, rootUpdates);

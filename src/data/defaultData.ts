@@ -271,6 +271,7 @@ export const DEFAULT_STUDENTS: Student[] = [
     photoUrl: DEFAULT_STUDENT_PHOTO_17,
     session: '2025–2026',
     mobile: '9838123456',
+    address: 'Gram - Baurbyas, Sant Kabir Nagar (U.P.) – 272154',
     aadharNo: '7845 2310 9012',
     teacherRemark: 'Excellent academic performance! Very attentive, sincere and disciplined in all classroom activities. Keep it up!',
     marks: {
@@ -299,6 +300,7 @@ export const DEFAULT_STUDENTS: Student[] = [
     photoUrl: DEFAULT_STUDENT_PHOTO_18,
     session: '2025–2026',
     mobile: '9838123457',
+    address: 'Gram - Rampur, Post - Khalilabad, Sant Kabir Nagar (U.P.)',
     aadharNo: '6789 1234 5678',
     teacherRemark: 'Good effort in practical subjects. Needs improvement in Mathematics and English grammar. Focus on regular practice and revision.',
     marks: {
@@ -327,6 +329,7 @@ export const DEFAULT_STUDENTS: Student[] = [
     photoUrl: DEFAULT_STUDENT_PHOTO_FALLBACK,
     session: '2025–2026',
     mobile: '9838123458',
+    address: 'Gram - Shivpur, Post - Khalilabad, Sant Kabir Nagar (U.P.)',
     aadharNo: '9012 3456 7890',
     teacherRemark: 'Outstanding performance across all terms! Shows exemplary dedication and leadership in academic projects.',
     marks: {
@@ -354,6 +357,7 @@ export const DEFAULT_STUDENTS: Student[] = [
     admissionNo: 'ADM-2024-0025',
     photoUrl: DEFAULT_STUDENT_PHOTO_FALLBACK,
     session: '2025–2026',
+    address: 'Gram - Baurbyas (Purva), Sant Kabir Nagar (U.P.)',
     teacherRemark: 'Punctual and keen learner. Shows steady academic progress throughout the year.',
     marks: {
       'sub-hindi': { halfObtained: 76, annualObtained: 80 },

@@ -98,6 +98,12 @@ export default function App() {
 
   const schoolSettingsRef = useRef(schoolSettings);
   schoolSettingsRef.current = schoolSettings;
+  const studentsRef = useRef(students);
+  studentsRef.current = students;
+  const subjectsRef = useRef(subjects);
+  subjectsRef.current = subjects;
+  const gradeRulesRef = useRef(gradeRules);
+  gradeRulesRef.current = gradeRules;
 
   const [activeResult, setActiveResult] = useState<StudentResultData | null>(null);
   const [resultSource, setResultSource] = useState<'public' | 'admin'>('public');
@@ -356,10 +362,22 @@ export default function App() {
           const resultData: StudentResultData = await res.json();
           if (resultData && resultData.student) {
             if (isClassMatch(resultData.student.className)) {
+              const cleanRoll = resultData.student.rollNo.trim();
+              const cleanCls = resultData.student.className.trim();
+              sessionStorage.setItem(`verified_result_${cleanCls}_${cleanRoll}`, 'true');
+              sessionStorage.setItem('active_verified_roll', cleanRoll);
+              sessionStorage.setItem('active_verified_class', cleanCls);
+              sessionStorage.setItem('active_verified_source', 'public');
+
               setActiveResult(resultData);
               setResultSource('public');
               setViewMode('result_view');
               setIsLoading(false);
+
+              try {
+                const newUrl = `?roll=${encodeURIComponent(cleanRoll)}&class=${encodeURIComponent(cleanCls)}`;
+                window.history.replaceState({}, '', newUrl);
+              } catch {}
               return true;
             } else {
               setErrorMessage(`कक्षा ${selectedClass} में अनुक्रमांक ${query} नहीं मिला। कृपया सही कक्षा चुनें।`);
@@ -382,11 +400,23 @@ export default function App() {
       });
 
       if (matched) {
+        const cleanRoll = matched.rollNo.trim();
+        const cleanCls = matched.className.trim();
+        sessionStorage.setItem(`verified_result_${cleanCls}_${cleanRoll}`, 'true');
+        sessionStorage.setItem('active_verified_roll', cleanRoll);
+        sessionStorage.setItem('active_verified_class', cleanCls);
+        sessionStorage.setItem('active_verified_source', 'public');
+
         const result = calculateStudentResult(matched, subjects, normalizeSchoolSettings(schoolSettings), gradeRules);
         setActiveResult(result);
         setResultSource('public');
         setViewMode('result_view');
         setIsLoading(false);
+
+        try {
+          const newUrl = `?roll=${encodeURIComponent(cleanRoll)}&class=${encodeURIComponent(cleanCls)}`;
+          window.history.replaceState({}, '', newUrl);
+        } catch {}
         return true;
       } else {
         // Check if student exists in another class to give friendly guidance
@@ -412,9 +442,11 @@ export default function App() {
   handleSearchRef.current = handleSearch;
 
   // Address Bar URL Routing & History synchronization
-  // Security Mandate: Direct URL result bypass is strictly disabled.
-  // Address bar (?roll=...) will NOT automatically open marksheet.
-  // The user MUST enter Class, Roll No., and Captcha on the home page form.
+  // Security Mandate:
+  // - Roll number and class appear in the URL (e.g. ?roll=17&class=8th).
+  // - On page refresh (F5), if this browser session has verified this student,
+  //   the marksheet stays displayed and DOES NOT disappear or get cut off!
+  // - Direct URL entry from a fresh/unverified browser is strictly blocked to protect student privacy!
   useEffect(() => {
     const handleUrlChange = () => {
       const path = window.location.pathname.toLowerCase();
@@ -422,9 +454,11 @@ export default function App() {
       const search = window.location.search.toLowerCase();
       const params = new URLSearchParams(window.location.search);
       const viewParam = params.get('view');
-      const roll = params.get('roll');
-      const admission = params.get('admission');
-      const id = params.get('id');
+      const roll = params.get('roll')?.trim();
+      const classParam = params.get('class')?.trim();
+      const admission = params.get('admission')?.trim();
+      const id = params.get('id')?.trim();
+      const queryTerm = roll || admission || id;
 
       const isAdminRoute =
         path.endsWith('/admin') ||
@@ -446,16 +480,53 @@ export default function App() {
           setIsAdminAuthenticated(true);
           setShowAdminLoginModal(false);
         }
-      } else {
-        // Always enforce Public Search view on home page with 3 options: Class, Roll, Captcha
+      } else if (queryTerm) {
+        // Check if verified in this browser session
+        const isVerified =
+          (classParam && roll && sessionStorage.getItem(`verified_result_${classParam}_${roll}`) === 'true') ||
+          (queryTerm && sessionStorage.getItem('active_verified_roll') === queryTerm) ||
+          sessionStorage.getItem('school_admin_auth') === 'true' ||
+          localStorage.getItem('school_admin_auth') === 'true';
+
+        if (isVerified) {
+          // Permitted on refresh! Re-render marksheet without disappearing or cutting off
+          const cleanClass = classParam ? classParam.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+          const target = studentsRef.current.find((s) => {
+            const rollMatch = s.rollNo.trim().toLowerCase() === queryTerm.toLowerCase();
+            const admMatch = s.admissionNo.trim().toLowerCase() === queryTerm.toLowerCase();
+            const idMatch = s.id.toLowerCase() === queryTerm.toLowerCase();
+            if (!rollMatch && !admMatch && !idMatch) return false;
+            if (!cleanClass) return true;
+            const sc = s.className.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+            return sc === cleanClass || sc.includes(cleanClass) || cleanClass.includes(sc);
+          });
+
+          if (target) {
+            const res = calculateStudentResult(
+              target,
+              subjectsRef.current,
+              normalizeSchoolSettings(schoolSettingsRef.current),
+              gradeRulesRef.current
+            );
+            setActiveResult(res);
+            setResultSource(sessionStorage.getItem('active_verified_source') === 'admin' ? 'admin' : 'public');
+            setViewMode('result_view');
+            setShowAdminLoginModal(false);
+            return;
+          }
+        }
+
+        // Not verified (Direct address bar entry attempt) -> Enforce security!
         setViewMode('public_search');
         setShowAdminLoginModal(false);
-        // Clear any direct roll or admission query parameters from the address bar
-        if (roll || admission || id) {
-          try {
-            window.history.replaceState({}, '', window.location.pathname);
-          } catch {}
-        }
+        setErrorMessage('सुरक्षा कारणों से सीधे यूआरएल (Direct URL) द्वारा अंकपत्र देखना प्रतिबंधित है। कृपया नीचे अपना अनुक्रमांक (Roll No.), कक्षा व कैप्चा दर्ज करके परिणाम देखें।');
+        try {
+          window.history.replaceState({}, '', window.location.pathname);
+        } catch {}
+      } else {
+        // Normal public search view
+        setViewMode('public_search');
+        setShowAdminLoginModal(false);
       }
     };
 
@@ -477,7 +548,7 @@ export default function App() {
     setErrorMessage(null);
     setShowAdminLoginModal(false);
     try {
-      window.history.pushState({}, '', '/');
+      window.history.replaceState({}, '', window.location.pathname);
     } catch {
       window.location.hash = '';
     }
@@ -488,7 +559,7 @@ export default function App() {
     setViewMode('admin');
     setActiveResult(null);
     try {
-      window.history.pushState({}, '', '/admin');
+      window.history.replaceState({}, '', '/admin');
     } catch {}
   };
 
@@ -496,10 +567,18 @@ export default function App() {
   const handleViewStudentResult = (studentId: string) => {
     const st = students.find((s) => s.id === studentId);
     if (st) {
+      sessionStorage.setItem(`verified_result_${st.className}_${st.rollNo}`, 'true');
+      sessionStorage.setItem('active_verified_roll', st.rollNo);
+      sessionStorage.setItem('active_verified_class', st.className);
+      sessionStorage.setItem('active_verified_source', 'admin');
       const res = calculateStudentResult(st, subjects, schoolSettings, gradeRules);
       setActiveResult(res);
       setResultSource('admin');
       setViewMode('result_view');
+      try {
+        const newUrl = `?roll=${encodeURIComponent(st.rollNo)}&class=${encodeURIComponent(st.className)}`;
+        window.history.replaceState({}, '', newUrl);
+      } catch {}
     }
   };
 
@@ -563,6 +642,7 @@ export default function App() {
       ...s,
       dob: formatDisplayDate(s.dob),
       mobile: s.mobile ? String(s.mobile).trim() : '',
+      address: s.address ? String(s.address).trim() : '',
       aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
     }));
     setStudents(formatted);

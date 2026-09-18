@@ -85,6 +85,7 @@ import {
   Globe,
   Wrench,
   Radio,
+  X,
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -336,6 +337,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       admissionNo: `ADM-2024-${String(students.length + 1).padStart(4, '0')}`,
       session: schoolSettings.session,
       mobile: '',
+      address: '',
       aadharNo: '',
       photoUrl: DEFAULT_STUDENT_PHOTO_FALLBACK,
       teacherRemark: 'Regular and disciplined student. Shows consistent academic progress.',
@@ -355,6 +357,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       ...editingStudent,
       dob: formatDisplayDate(editingStudent.dob),
       mobile: editingStudent.mobile ? String(editingStudent.mobile).trim() : '',
+      address: editingStudent.address ? String(editingStudent.address).trim() : '',
       aadharNo: editingStudent.aadharNo ? String(editingStudent.aadharNo).trim() : '',
     };
 
@@ -616,11 +619,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [toggleSaveToast, setToggleSaveToast] = useState<string | null>(null);
 
   const handleToggleSetting = (key: keyof SchoolSettings, value: boolean) => {
+    // Mutual exclusivity: When one is turned ON, the other MUST be turned OFF
+    const extraUpdates: Partial<SchoolSettings> = {};
+    if (key === 'isMaintenanceMode' && value === true) {
+      extraUpdates.isResultLive = false;
+      updateSchoolToggleInFirebase('isResultLive', false).catch(() => {});
+    } else if (key === 'isResultLive' && value === true) {
+      extraUpdates.isMaintenanceMode = false;
+      updateSchoolToggleInFirebase('isMaintenanceMode', false).catch(() => {});
+    }
+
     const updated = normalizeSchoolSettings({
       ...settingsForm,
+      ...extraUpdates,
       [key]: value,
       toggles: {
         ...(settingsForm.toggles || {}),
+        ...(extraUpdates.isMaintenanceMode !== undefined ? { isMaintenanceMode: extraUpdates.isMaintenanceMode } : {}),
+        ...(extraUpdates.isResultLive !== undefined ? { isResultLive: extraUpdates.isResultLive } : {}),
         [key]: value,
       },
     });
@@ -634,8 +650,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       console.warn('[Firebase RTDB] Error updating toggle in Realtime Database:', err);
     });
 
-    setToggleSaveToast('टॉगल सुरक्षित! बदलाव तुरंत सभी डिवाइसों व पोर्टल पर लाइव हो गया है।');
-    setTimeout(() => setToggleSaveToast(null), 3500);
+    let toastMsg = 'टॉगल सुरक्षित! बदलाव तुरंत सभी डिवाइसों व अंकपत्रों पर लागू हो गया है।';
+    if (key === 'isResultLive') {
+      toastMsg = value
+        ? '🟢 परिणाम लाइव सक्रिय (Results LIVE) - सभी डिवाइसों व पब्लिक पोर्टल पर रिजल्ट देखना चालू हो गया है!'
+        : '⚪ परिणाम लाइव स्टेटस निष्क्रिय किया गया - रिजल्ट पोर्टल पर लाइव बैनर बंद है।';
+    } else if (key === 'isMaintenanceMode') {
+      toastMsg = value
+        ? '🚧 पोर्टल मेंटेनेंस मोड चालू - पब्लिक पोर्टल पर कार्य प्रगति पर होने की सूचना दिखेगी।'
+        : '✓ मेंटेनेंस मोड बंद किया गया - पोर्टल अब सामान्य रूप से लाइव है।';
+    } else if (key === 'showStudentAddress') {
+      toastMsg = value
+        ? '📍 अंकपत्र पर छात्र का पता (Address) दिखना सक्रिय हुआ।'
+        : '📍 अंकपत्र पर छात्र का पता छुपाया गया।';
+    } else if (key === 'showStudentAadhar') {
+      toastMsg = value
+        ? '🪪 अंकपत्र पर आधार कार्ड नंबर दिखना सक्रिय हुआ।'
+        : '🪪 अंकपत्र पर आधार कार्ड नंबर छुपाया गया।';
+    }
+
+    setToggleSaveToast(toastMsg);
+    setTimeout(() => setToggleSaveToast(null), 4000);
   };
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -672,9 +707,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleExportStudentsCsv = () => {
-    const headers = 'Student_ID,Student_Name,Father_Name,Mother_Name,Date_of_Birth,Gender,Class,Section,Roll_No,Admission_No,Photo_URL,Session,Teacher_Remark,Mobile,Aadhar_No\n';
+    const headers = 'Student_ID,Student_Name,Father_Name,Mother_Name,Date_of_Birth,Gender,Class,Section,Roll_No,Admission_No,Photo_URL,Session,Teacher_Remark,Mobile,Address,Aadhar_No\n';
     const rows = students.map((s) =>
-      `"${s.id}","${s.name}","${s.fatherName}","${s.motherName}","${s.dob}","${s.gender}","${s.className}","${s.section}","${s.rollNo}","${s.admissionNo}","${s.photoUrl || ''}","${s.session}","${(s.teacherRemark || '').replace(/"/g, '""')}","${s.mobile || ''}","${s.aadharNo || ''}"`
+      `"${s.id}","${s.name}","${s.fatherName}","${s.motherName}","${s.dob}","${s.gender}","${s.className}","${s.section}","${s.rollNo}","${s.admissionNo}","${s.photoUrl || ''}","${s.session}","${(s.teacherRemark || '').replace(/"/g, '""')}","${s.mobile || ''}","${(s.address || '').replace(/"/g, '""')}","${s.aadharNo || ''}"`
     ).join('\n');
     downloadCsv('1_Students.csv', headers + rows);
   };
@@ -1339,6 +1374,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <td className="py-2.5 px-4 text-[11px] text-slate-600">
                           <div><span className="font-semibold text-slate-400">Mob:</span> {st.mobile || '—'}</div>
                           <div className="font-mono text-[10px]"><span className="font-semibold text-slate-400">Aad:</span> {st.aadharNo || '—'}</div>
+                          {Boolean(st.address && st.address.trim()) && (
+                            <div className="text-[10px] text-slate-500 truncate max-w-[130px]" title={st.address}>
+                              <span className="font-semibold text-slate-400">पता:</span> {st.address}
+                            </div>
+                          )}
                         </td>
                         <td className="py-2.5 px-4 text-slate-700 font-mono text-xs">{formatDisplayDate(st.dob)}</td>
                         <td className="py-2.5 px-4 font-medium">{st.gender}</td>
@@ -1535,6 +1575,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           onChange={(e) => setEditingStudent({ ...editingStudent, mobile: e.target.value })}
                           placeholder="e.g. 9838123456"
                           className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 focus:bg-white"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block mb-1 text-[11px] uppercase font-bold text-slate-800">
+                          Student Address (छात्र का पता) <span className="text-slate-500 font-normal lowercase">(वैकल्पिक - भरने पर ही मार्कशीट पर आधार नंबर के पास दिखेगा)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={editingStudent.address || ''}
+                          onChange={(e) => setEditingStudent({ ...editingStudent, address: e.target.value })}
+                          placeholder="उदा. ग्राम - रामपुर, पोस्ट - सदर, जिला - संतकबीरनगर (उ.प्र.)"
+                          className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 focus:bg-white text-xs"
                         />
                       </div>
 
@@ -2494,7 +2547,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               {/* SECTION D: SCHOOL CONTACT & REGISTRATION DETAILS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block mb-1 font-bold uppercase text-[11px]">School Name</label>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <label className="font-bold uppercase text-[11px]">School Name (विद्यालय का नाम)</label>
+                  </div>
                   <input
                     type="text"
                     required
@@ -2502,6 +2557,117 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     onChange={(e) => setSettingsForm({ ...settingsForm, schoolName: e.target.value })}
                     className="w-full p-2 border border-slate-300 rounded font-bold text-slate-900"
                   />
+
+                  {/* Header Font Size Customization Box */}
+                  <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Control 1: Marksheet School Name Size */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                          <span>मार्कशीट हेडर: स्कूल नाम का आकार</span>
+                        </label>
+                        <span className="text-xs font-black px-2 py-0.5 bg-blue-100 text-blue-900 rounded font-mono">
+                          {settingsForm.marksheetSchoolNameSize || 20}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="16"
+                        max="32"
+                        step="1"
+                        value={settingsForm.marksheetSchoolNameSize || 20}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, marksheetSchoolNameSize: Number(e.target.value) })}
+                        className="w-full accent-[#0f2b48] cursor-pointer"
+                      />
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold mt-1">
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, marksheetSchoolNameSize: 18 })}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer ${settingsForm.marksheetSchoolNameSize === 18 ? 'bg-[#0f2b48] text-white' : 'bg-slate-200 hover:bg-slate-300'}`}
+                        >
+                          छोटा (18px)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, marksheetSchoolNameSize: 20 })}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer ${(settingsForm.marksheetSchoolNameSize || 20) === 20 ? 'bg-[#0f2b48] text-white' : 'bg-slate-200 hover:bg-slate-300'}`}
+                        >
+                          डिफ़ॉल्ट (20px)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, marksheetSchoolNameSize: 24 })}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer ${settingsForm.marksheetSchoolNameSize === 24 ? 'bg-[#0f2b48] text-white' : 'bg-slate-200 hover:bg-slate-300'}`}
+                        >
+                          बड़ा (24px)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, marksheetSchoolNameSize: 28 })}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer ${settingsForm.marksheetSchoolNameSize === 28 ? 'bg-[#0f2b48] text-white' : 'bg-slate-200 hover:bg-slate-300'}`}
+                        >
+                          अति बड़ा (28px)
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        ✓ मार्कशीट प्रिंट व PDF डाउनलोड के A4 लेआउट में बिना किसी खराबी के सुरक्षित।
+                      </p>
+                    </div>
+
+                    {/* Control 2: Public Portal Header School Name Size */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                          <span>पब्लिक पोर्टल हेडर: स्कूल नाम का आकार</span>
+                        </label>
+                        <span className="text-xs font-black px-2 py-0.5 bg-emerald-100 text-emerald-900 rounded font-mono">
+                          {settingsForm.publicPortalSchoolNameSize || 20}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="16"
+                        max="32"
+                        step="1"
+                        value={settingsForm.publicPortalSchoolNameSize || 20}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, publicPortalSchoolNameSize: Number(e.target.value) })}
+                        className="w-full accent-emerald-700 cursor-pointer"
+                      />
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold mt-1">
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, publicPortalSchoolNameSize: 18 })}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer ${settingsForm.publicPortalSchoolNameSize === 18 ? 'bg-emerald-800 text-white' : 'bg-slate-200 hover:bg-slate-300'}`}
+                        >
+                          छोटा (18px)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, publicPortalSchoolNameSize: 20 })}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer ${(settingsForm.publicPortalSchoolNameSize || 20) === 20 ? 'bg-emerald-800 text-white' : 'bg-slate-200 hover:bg-slate-300'}`}
+                        >
+                          डिफ़ॉल्ट (20px)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, publicPortalSchoolNameSize: 24 })}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer ${settingsForm.publicPortalSchoolNameSize === 24 ? 'bg-emerald-800 text-white' : 'bg-slate-200 hover:bg-slate-300'}`}
+                        >
+                          बड़ा (24px)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, publicPortalSchoolNameSize: 28 })}
+                          className={`px-1.5 py-0.5 rounded cursor-pointer ${settingsForm.publicPortalSchoolNameSize === 28 ? 'bg-emerald-800 text-white' : 'bg-slate-200 hover:bg-slate-300'}`}
+                        >
+                          अति बड़ा (28px)
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        ✓ छात्र/अभिभावक सर्च पोर्टल के शीर्ष हेडर पर अलग से लागू होगा।
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -2687,10 +2853,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   नीचे दिए गए टॉगल से आप तय कर सकते हैं कि अंकपत्र और रिजल्ट पोर्टल में कौन-कौन से कॉलम और तत्व दिखेंगे। किसी भी टॉगल को चालू/बंद करते ही वह <strong>तुरंत सभी फोन, कंप्यूटर और लाइव पोर्टल पर सेव व लागू</strong> हो जाता है:
                 </p>
 
+                {/* Floating Real-time Notification Toast with Animation */}
                 {toggleSaveToast && (
-                  <div className="p-2.5 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold rounded-lg flex items-center gap-2 shadow-xs">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{toggleSaveToast}</span>
+                  <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] max-w-lg w-[92%] sm:w-auto px-4 py-3 bg-slate-900/95 text-white rounded-xl shadow-2xl border border-slate-700/80 flex items-center gap-3 backdrop-blur-md animate-toast-in">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                      <Check className="w-5 h-5 text-emerald-400 animate-pulse" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] uppercase font-black text-emerald-400 tracking-wider">
+                        रियल-टाइम अपडेट (Realtime Synced)
+                      </div>
+                      <div className="text-xs font-semibold text-slate-100 leading-snug">
+                        {toggleSaveToast}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setToggleSaveToast(null)}
+                      className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors shrink-0"
+                      title="बंद करें"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
 
@@ -2698,31 +2882,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   {/* TOP HIGHLIGHTED ROW: PORTAL STATUS & LIVE CONTROLS */}
                   <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3.5 p-3.5 bg-white border-2 border-slate-300 rounded-xl shadow-xs">
                     {/* Toggle 1: Website Maintenance Mode */}
-                    <div className={`p-3.5 rounded-lg border-2 transition-all ${
+                    <div className={`p-3.5 rounded-lg border-2 transition-all duration-300 ${
                       isSettingEnabled(settingsForm.isMaintenanceMode, false)
-                        ? 'bg-amber-50 border-amber-400'
+                        ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-400/50'
                         : 'bg-slate-50 border-slate-200'
                     }`}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-2.5">
-                          <div className={`p-2 rounded-lg shrink-0 ${
+                          <div className={`p-2 rounded-lg shrink-0 transition-all ${
                             isSettingEnabled(settingsForm.isMaintenanceMode, false)
-                              ? 'bg-amber-500 text-white'
+                              ? 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-300'
                               : 'bg-slate-200 text-slate-600'
                           }`}>
-                            <Wrench className="w-5 h-5" />
+                            <Wrench className={`w-5 h-5 ${isSettingEnabled(settingsForm.isMaintenanceMode, false) ? 'animate-bounce' : ''}`} />
                           </div>
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs font-black text-slate-900 uppercase">
                                 पोर्टल मेंटेनेंस मोड (Maintenance Mode)
                               </span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center ${
                                 isSettingEnabled(settingsForm.isMaintenanceMode, false)
                                   ? 'bg-amber-200 text-amber-950 border border-amber-400'
                                   : 'bg-emerald-100 text-emerald-800'
                               }`}>
-                                {isSettingEnabled(settingsForm.isMaintenanceMode, false) ? '🚧 चालू (काम चल रहा है)' : '✓ बंद (पोर्टल चालू है)'}
+                                {isSettingEnabled(settingsForm.isMaintenanceMode, false) ? (
+                                  <>
+                                    <span className="relative flex h-2 w-2 mr-1.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600"></span>
+                                    </span>
+                                    🚧 चालू (काम चल रहा है)
+                                  </>
+                                ) : (
+                                  '✓ बंद (पोर्टल चालू है)'
+                                )}
                               </span>
                             </div>
                             <p className="text-[11px] text-slate-600 mt-1 leading-snug">
@@ -2743,16 +2937,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
 
                     {/* Toggle 2: All Marksheets Live Toggle */}
-                    <div className={`p-3.5 rounded-lg border-2 transition-all ${
+                    <div className={`p-3.5 rounded-lg border-2 transition-all duration-300 relative overflow-hidden ${
                       isSettingEnabled(settingsForm.isResultLive, true)
-                        ? 'bg-emerald-50 border-emerald-400'
+                        ? 'bg-emerald-50/90 border-emerald-500 shadow-md ring-2 ring-emerald-500/40'
                         : 'bg-slate-50 border-slate-200'
                     }`}>
-                      <div className="flex items-start justify-between gap-3">
+                      {isSettingEnabled(settingsForm.isResultLive, true) && (
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-400/20 to-transparent pointer-events-none rounded-bl-full animate-pulse"></div>
+                      )}
+                      <div className="flex items-start justify-between gap-3 relative z-10">
                         <div className="flex items-start gap-2.5">
-                          <div className={`p-2 rounded-lg shrink-0 ${
+                          <div className={`p-2 rounded-lg shrink-0 transition-all ${
                             isSettingEnabled(settingsForm.isResultLive, true)
-                              ? 'bg-emerald-600 text-white'
+                              ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-300 animate-pulse'
                               : 'bg-slate-200 text-slate-600'
                           }`}>
                             <Radio className="w-5 h-5" />
@@ -2762,12 +2959,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               <span className="text-xs font-black text-slate-900 uppercase">
                                 सभी मार्कशीट लाइव हैं (Result Live Badge)
                               </span>
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center ${
                                 isSettingEnabled(settingsForm.isResultLive, true)
                                   ? 'bg-emerald-200 text-emerald-950 border border-emerald-400'
                                   : 'bg-slate-200 text-slate-700'
                               }`}>
-                                {isSettingEnabled(settingsForm.isResultLive, true) ? '🔴 LIVE सक्रिय (दिख रहा है)' : 'लाइव बंद'}
+                                {isSettingEnabled(settingsForm.isResultLive, true) ? (
+                                  <>
+                                    <span className="relative flex h-2 w-2 mr-1.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                                    </span>
+                                    🔴 LIVE सक्रिय (दिख रहा है)
+                                  </>
+                                ) : (
+                                  'लाइव बंद'
+                                )}
                               </span>
                             </div>
                             <p className="text-[11px] text-slate-600 mt-1 leading-snug">
@@ -2784,6 +2991,55 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           />
                           <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
+                      </div>
+
+                      {/* Active Session & Live Banner Customization Sub-section */}
+                      <div className="mt-3 pt-3 border-t border-emerald-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/70 p-2.5 rounded-md">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-800 uppercase mb-1">
+                            सक्रिय शैक्षणिक सत्र (Active Academic Session)
+                          </label>
+                          <input
+                            type="text"
+                            value={settingsForm.session}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, session: e.target.value })}
+                            placeholder="उदा. 2025–2026"
+                            className="w-full p-2 border border-slate-300 rounded font-bold text-slate-900 bg-white text-xs"
+                          />
+                          <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                            <span className="text-[10px] text-slate-500 font-semibold">त्वरित चयन:</span>
+                            {['2024–2025', '2025–2026', '2026–2027', '2027–2028'].map((sess) => (
+                              <button
+                                key={sess}
+                                type="button"
+                                onClick={() => setSettingsForm({ ...settingsForm, session: sess })}
+                                className={`text-[10px] px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${
+                                  settingsForm.session === sess
+                                    ? 'bg-emerald-700 text-white shadow-xs'
+                                    : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                                }`}
+                              >
+                                {sess}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-800 uppercase mb-1">
+                            लाइव बैनर का संदेश (Live Announcement)
+                          </label>
+                          <input
+                            type="text"
+                            value={settingsForm.liveBannerText || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, liveBannerText: e.target.value })}
+                            placeholder={`सत्र ${settingsForm.session || '2025–2026'} का परिणाम लाइव है।`}
+                            className="w-full p-2 border border-slate-300 rounded text-slate-900 bg-white text-xs"
+                          />
+                          <p className="text-[10px] text-slate-500 mt-1 leading-tight">
+                            यह संदेश पब्लिक पोर्टल पर हरे LIVE बैज के साथ प्रदर्शित होता है।
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

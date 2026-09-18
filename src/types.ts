@@ -40,6 +40,7 @@ export interface Student {
   photoUrl?: string;
   session: string;
   mobile?: string;
+  address?: string;
   aadharNo?: string;
   teacherRemark?: string;
   classTeacherName?: string;
@@ -58,6 +59,8 @@ export interface SchoolSettings {
   tagline: string;
   logoUrl?: string;
   logoSize?: number; // Custom marksheet logo size in px (e.g. 50 - 130px, default 85px)
+  marksheetSchoolNameSize?: number; // Custom font size for school name in marksheet header (in px, e.g. 16 - 32px, default 20px)
+  publicPortalSchoolNameSize?: number; // Custom font size for school name on public search portal header (in px, e.g. 16 - 32px, default 20px)
   schoolBadgeType: 'OFFICIAL RESULT' | 'ACADEMIC RESULT';
   resultTitle: string;
   resultTitleHalfYearly?: string;
@@ -90,6 +93,7 @@ export interface SchoolSettings {
   showGrade?: boolean;
   showProgressGraph?: boolean;
   showStudentMobile?: boolean;
+  showStudentAddress?: boolean;
   showStudentAadhar?: boolean;
   showPdfButton?: boolean;
   showPrintButton?: boolean;

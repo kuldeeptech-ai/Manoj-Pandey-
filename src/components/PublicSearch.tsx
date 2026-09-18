@@ -141,7 +141,14 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
                 </div>
               )}
               <div>
-                <h1 className="font-bold text-base sm:text-xl tracking-tight leading-none uppercase">
+                <h1
+                  className="font-bold text-base sm:text-xl tracking-tight leading-none uppercase"
+                  style={{
+                    fontSize: schoolSettings.publicPortalSchoolNameSize
+                      ? `${schoolSettings.publicPortalSchoolNameSize}px`
+                      : undefined,
+                  }}
+                >
                   {schoolSettings.schoolName}
                 </h1>
                 <p className="text-xs text-slate-300 font-medium mt-1">
@@ -251,7 +258,14 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
               </div>
             )}
             <div>
-              <h1 className="font-bold text-base sm:text-xl tracking-tight leading-none uppercase">
+              <h1
+                className="font-bold text-base sm:text-xl tracking-tight leading-none uppercase"
+                style={{
+                  fontSize: schoolSettings.publicPortalSchoolNameSize
+                    ? `${schoolSettings.publicPortalSchoolNameSize}px`
+                    : undefined,
+                }}
+              >
                 {schoolSettings.schoolName}
               </h1>
               <p className="text-xs text-slate-300 font-medium mt-1">
@@ -271,15 +285,19 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 flex flex-col items-center justify-center">
         {/* Live Status Notification Banner */}
         {schoolSettings.isResultLive !== false ? (
-          <div className="w-full mb-5 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white p-3.5 sm:p-4 rounded-xl shadow-lg border-2 border-emerald-400/40 flex items-center gap-3.5">
-            <div className="relative flex items-center justify-center shrink-0 w-8 h-8 bg-emerald-900/60 rounded-full border border-emerald-400/50">
-              <span className="w-3 h-3 bg-red-500 rounded-full animate-ping absolute"></span>
-              <span className="w-3 h-3 bg-red-500 rounded-full relative"></span>
+          <div className="w-full mb-5 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white p-3.5 sm:p-4 rounded-xl shadow-lg border-2 border-emerald-400/50 flex items-center gap-3.5 relative overflow-hidden transition-all duration-300">
+            {/* Ambient light glow */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none animate-pulse"></div>
+            
+            <div className="relative flex items-center justify-center shrink-0 w-9 h-9 bg-emerald-950/70 rounded-full border border-emerald-400/60 shadow-inner">
+              <span className="w-4 h-4 bg-red-500 rounded-full animate-ping absolute opacity-75"></span>
+              <span className="w-3 h-3 bg-red-500 rounded-full relative shadow-sm"></span>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 relative z-10">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider bg-red-600 px-2.5 py-0.5 rounded-full text-white shadow-xs">
-                  🔴 LIVE
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider bg-red-600 px-2.5 py-0.5 rounded-full text-white shadow-xs flex items-center gap-1.5 animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                  LIVE
                 </span>
                 <span className="font-bold text-xs sm:text-sm tracking-tight text-white drop-shadow-xs">
                   सभी मार्कशीट लाइव हैं (Results Announced)

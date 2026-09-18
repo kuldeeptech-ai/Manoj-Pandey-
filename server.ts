@@ -21,6 +21,7 @@ function normalizeStudent(s: any): any {
     marks: s.marks && typeof s.marks === 'object' ? s.marks : {},
     dob: formatDisplayDate(s.dob),
     mobile: s.mobile ? String(s.mobile).trim() : '',
+    address: s.address ? String(s.address).trim() : '',
     aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
   };
 }

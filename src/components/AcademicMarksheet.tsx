@@ -160,8 +160,13 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
               {/* Center: School Branding */}
               <div className="flex-1 text-center px-1">
                 <h1
-                  className={`${isVeryDense ? 'text-[17px]' : isDense ? 'text-[19px]' : 'text-[20px]'} leading-tight font-bold tracking-tight uppercase`}
-                  style={{ color: '#0f2b48' }}
+                  className="leading-tight font-bold tracking-tight uppercase"
+                  style={{
+                    color: '#0f2b48',
+                    fontSize: school.marksheetSchoolNameSize
+                      ? `${school.marksheetSchoolNameSize}px`
+                      : (isVeryDense ? '17px' : isDense ? '19px' : '20px'),
+                  }}
                 >
                   {school.schoolName}
                 </h1>
@@ -301,67 +306,101 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
               </div>
 
               <div className="p-1 flex gap-2 items-stretch" style={{ backgroundColor: '#ffffff' }}>
-                {/* 2-Column Info Flexbox (No CSS Grid to eliminate html2canvas offset bugs) */}
-                <div className="flex-1 flex gap-3">
-                  {/* Left Column */}
-                  <div className={`w-1/2 flex flex-col ${isVeryDense ? 'gap-y-0.5 text-[9.5px]' : 'gap-y-1 text-[10.5px]'}`}>
-                    <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Student Name:</span>
-                      <span className="flex-1 font-bold uppercase truncate" style={{ color: '#0f2b48' }}>{student.name || '—'}</span>
-                    </div>
-
-                    <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Father's Name:</span>
-                      <span className="flex-1 font-bold uppercase truncate" style={{ color: '#0f172a' }}>{student.fatherName || '—'}</span>
-                    </div>
-
-                    <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Mother's Name:</span>
-                      <span className="flex-1 font-bold uppercase truncate" style={{ color: '#0f172a' }}>{student.motherName || '—'}</span>
-                    </div>
-
-                    <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Admission No.:</span>
-                      <span className="flex-1 font-bold" style={{ color: '#0f172a' }}>{student.admissionNo || '—'}</span>
-                    </div>
-
-                    {isSettingEnabled(school.showStudentAadhar, true) && (
+                {/* 2-Column Info Flexbox + Full Width Address Line (Mathematically aligned and fitted) */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div className="flex gap-3">
+                    {/* Left Column (5 balanced rows) */}
+                    <div className={`w-1/2 flex flex-col ${isVeryDense ? 'gap-y-0.5 text-[9.5px]' : 'gap-y-1 text-[10.5px]'}`}>
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Aadhar No.:</span>
-                        <span className="flex-1 font-bold font-mono tracking-tight" style={{ color: '#0f172a' }}>{student.aadharNo || '—'}</span>
+                        <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Student Name:</span>
+                        <span className="flex-1 font-bold uppercase truncate" style={{ color: '#0f2b48' }}>{student.name || '—'}</span>
                       </div>
-                    )}
+
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Father's Name:</span>
+                        <span className="flex-1 font-bold uppercase truncate" style={{ color: '#0f172a' }}>{student.fatherName || '—'}</span>
+                      </div>
+
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Mother's Name:</span>
+                        <span className="flex-1 font-bold uppercase truncate" style={{ color: '#0f172a' }}>{student.motherName || '—'}</span>
+                      </div>
+
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Admission No.:</span>
+                        <span className="flex-1 font-bold" style={{ color: '#0f172a' }}>{student.admissionNo || '—'}</span>
+                      </div>
+
+                      {isSettingEnabled(school.showStudentAadhar, true) ? (
+                        <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                          <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Aadhar No.:</span>
+                          <span className="flex-1 font-bold font-mono tracking-tight" style={{ color: '#0f172a' }}>{student.aadharNo || '—'}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline pb-0.5 opacity-0 pointer-events-none">
+                          <span className="w-[84px] shrink-0 font-bold">&nbsp;</span>
+                          <span className="flex-1 font-bold">&nbsp;</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Column (5 balanced rows matching Left Column exactly) */}
+                    <div className={`w-1/2 flex flex-col ${isVeryDense ? 'gap-y-0.5 text-[9.5px]' : 'gap-y-1 text-[10.5px]'}`}>
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Roll No.:</span>
+                        <span className="flex-1 font-bold text-[11.5px]" style={{ color: '#0f2b48' }}>{student.rollNo || '—'}</span>
+                      </div>
+
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Class & Sec:</span>
+                        <span className="flex-1 font-bold" style={{ color: '#0f172a' }}>{student.className} - {student.section}</span>
+                      </div>
+
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Date of Birth:</span>
+                        <span className="flex-1 font-bold" style={{ color: '#0f172a' }}>{formatDisplayDate(student.dob) || '—'}</span>
+                      </div>
+
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Gender:</span>
+                        <span className="flex-1 font-bold uppercase" style={{ color: '#0f172a' }}>{student.gender || '—'}</span>
+                      </div>
+
+                      {isSettingEnabled(school.showStudentMobile, true) ? (
+                        <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                          <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Mobile No.:</span>
+                          <span className="flex-1 font-bold font-mono tracking-tight" style={{ color: '#0f172a' }}>{student.mobile || '—'}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline pb-0.5 opacity-0 pointer-events-none">
+                          <span className="w-[74px] shrink-0 font-bold">&nbsp;</span>
+                          <span className="flex-1 font-bold">&nbsp;</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Right Column */}
-                  <div className={`w-1/2 flex flex-col ${isVeryDense ? 'gap-y-0.5 text-[9.5px]' : 'gap-y-1 text-[10.5px]'}`}>
-                    <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Roll No.:</span>
-                      <span className="flex-1 font-bold text-[11.5px]" style={{ color: '#0f2b48' }}>{student.rollNo || '—'}</span>
+                  {/* Student Address: Spans smoothly across the entire width right below Aadhar No., perfectly aligned and fitting without disturbing any table layout */}
+                  {Boolean(student.address && student.address.trim()) && (
+                    <div
+                      className={`flex items-baseline pt-1 pb-0.5 mt-0.5 ${isVeryDense ? 'text-[9.5px]' : 'text-[10px]'}`}
+                      style={{ borderTop: '1px solid #e2e8f0' }}
+                    >
+                      <span
+                        className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap"
+                        style={{ color: '#475569' }}
+                      >
+                        Address:
+                      </span>
+                      <span
+                        className="flex-1 font-bold truncate leading-tight"
+                        style={{ color: '#0f172a' }}
+                        title={student.address}
+                      >
+                        {student.address}
+                      </span>
                     </div>
-
-                    <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Class & Sec:</span>
-                      <span className="flex-1 font-bold" style={{ color: '#0f172a' }}>{student.className} - {student.section}</span>
-                    </div>
-
-                    <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Date of Birth:</span>
-                      <span className="flex-1 font-bold" style={{ color: '#0f172a' }}>{formatDisplayDate(student.dob) || '—'}</span>
-                    </div>
-
-                    <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                      <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Gender:</span>
-                      <span className="flex-1 font-bold uppercase" style={{ color: '#0f172a' }}>{student.gender || '—'}</span>
-                    </div>
-
-                    {isSettingEnabled(school.showStudentMobile, true) && (
-                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Mobile No.:</span>
-                        <span className="flex-1 font-bold font-mono tracking-tight" style={{ color: '#0f172a' }}>{student.mobile || '—'}</span>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
 
                 {/* Right: Fixed Student Portrait Photo (Guarded by showPhoto toggle) */}

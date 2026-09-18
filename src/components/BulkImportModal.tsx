@@ -63,6 +63,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
     'Gender',
     'Session',
     'Mobile',
+    'Address',
     'Aadhar_No',
     'Teacher_Remark',
     'Photo_URL',
@@ -96,9 +97,9 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
     const csvContent =
       studentHeaders.join(',') +
       '\n' +
-      `"1","Aarav Kumar","SKN-101","2011-05-15","Rajesh Kumar","Sunita Devi","8th","A","MALE","${currentSession}","9838700001","123456789012","उत्कृष्ट प्रदर्शन (Excellent)","boy1"\n` +
-      `"2","Priya Sharma","SKN-102","2011-08-22","Mukesh Sharma","Kavita Devi","8th","A","FEMALE","${currentSession}","9838700002","123456789013","मेहनती व अनुशासित छात्रा","girl1"\n` +
-      `"3","Rohan Verma","SKN-103","2012-02-10","Sunil Verma","Pooja Verma","7th","A","MALE","${currentSession}","9838700003","123456789014","बहुत अच्छा विद्यार्थी","boy2"\n`;
+      `"1","Aarav Kumar","SKN-101","2011-05-15","Rajesh Kumar","Sunita Devi","8th","A","MALE","${currentSession}","9838700001","Rampur, Varanasi","123456789012","उत्कृष्ट प्रदर्शन (Excellent)","boy1"\n` +
+      `"2","Priya Sharma","SKN-102","2011-08-22","Mukesh Sharma","Kavita Devi","8th","A","FEMALE","${currentSession}","9838700002","Shivpur, Varanasi","123456789013","मेहनती व अनुशासित छात्रा","girl1"\n` +
+      `"3","Rohan Verma","SKN-103","2012-02-10","Sunil Verma","Pooja Verma","7th","A","MALE","${currentSession}","9838700003","Baurbyas, S.K.N.","123456789014","बहुत अच्छा विद्यार्थी","boy2"\n`;
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -175,6 +176,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
     const idxGender = findCol(['gender', 'sex', 'ling']);
     const idxSession = findCol(['session', 'satr']);
     const idxMobile = findCol(['mobile', 'phone', 'contact', 'phoneno']);
+    const idxAddress = findCol(['address', 'pata', 'addr', 'village', 'gram', 'city']);
     const idxAadhar = findCol(['aadhar', 'aadhaar', 'uid', 'aadharno']);
     const idxRemark = findCol(['remark', 'teacherremark', 'tippani']);
     const idxPhoto = findCol(['photo', 'image', 'photourl']);
@@ -229,6 +231,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         gender,
         admissionNo: getVal(idxAdmission, `SKN-${rawRoll || i}`),
         mobile: getVal(idxMobile, ''),
+        address: getVal(idxAddress, ''),
         aadharNo: getVal(idxAadhar, ''),
         photoUrl: getVal(idxPhoto, ''),
         session: getVal(idxSession, currentSession),
