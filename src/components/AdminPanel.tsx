@@ -3876,7 +3876,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         isOpen={showBulkImportModal}
         onClose={() => setShowBulkImportModal(false)}
         onImport={handleImportStudents}
+        onImportStudents={handleImportStudents}
         existingStudents={students}
+        currentSession={settingsForm.academicSession || '2025–2026'}
       />
 
       {/* BULK MARKS ENTRY / EXCEL MODAL */}
@@ -3886,6 +3888,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         students={students}
         subjects={subjects}
         onSaveMarks={handleSaveBulkMarks}
+        onSaveBulkMarks={handleSaveBulkMarks}
       />
     </div>
   );

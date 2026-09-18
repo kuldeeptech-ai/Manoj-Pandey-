@@ -20,7 +20,8 @@ interface BulkMarksModalProps {
   onClose: () => void;
   students: Student[];
   subjects: SubjectConfig[];
-  onSaveBulkMarks: (updatedStudents: Student[]) => void;
+  onSaveMarks?: (updatedStudents: Student[]) => void;
+  onSaveBulkMarks?: (updatedStudents: Student[]) => void;
 }
 
 export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
@@ -29,6 +30,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
   students,
   subjects,
   onSaveBulkMarks,
+  onSaveMarks,
 }) => {
   const [selectedClass, setSelectedClass] = useState<string>('ALL');
   const [activeInputTab, setActiveInputTab] = useState<'paste' | 'upload'>('paste');
@@ -38,6 +40,8 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
   const [hasParsed, setHasParsed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  const saveFn = onSaveBulkMarks || onSaveMarks;
 
   if (!isOpen) return null;
 
@@ -364,7 +368,11 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
     if (updatedStudentsPreview.length === 0) return;
     setIsProcessing(true);
     try {
-      onSaveBulkMarks(updatedStudentsPreview);
+      if (typeof saveFn === 'function') {
+        saveFn(updatedStudentsPreview);
+      } else {
+        throw new Error('अंक सेव करने का फंक्शन उपलब्ध नहीं है।');
+      }
       onClose();
     } catch (err: any) {
       setParseError('अंक सुरक्षित करने में त्रुटि: ' + (err.message || 'Error'));

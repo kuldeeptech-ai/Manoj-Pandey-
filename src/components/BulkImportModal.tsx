@@ -17,9 +17,13 @@ import { Student } from '../types';
 interface BulkImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentSession: string;
-  existingStudents: Student[];
-  onImportStudents: (
+  currentSession?: string;
+  existingStudents?: Student[];
+  onImport?: (
+    newStudents: Student[],
+    importMode: 'merge' | 'append' | 'replace'
+  ) => void;
+  onImportStudents?: (
     newStudents: Student[],
     importMode: 'merge' | 'append' | 'replace'
   ) => void;
@@ -28,9 +32,10 @@ interface BulkImportModalProps {
 export const BulkImportModal: React.FC<BulkImportModalProps> = ({
   isOpen,
   onClose,
-  currentSession,
-  existingStudents,
+  currentSession = '2025–2026',
+  existingStudents = [],
   onImportStudents,
+  onImport,
 }) => {
   const [activeInputTab, setActiveInputTab] = useState<'upload' | 'paste'>('paste');
   const [pasteContent, setPasteContent] = useState('');
@@ -40,6 +45,8 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
   const [hasParsed, setHasParsed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  const importFn = onImportStudents || onImport;
 
   if (!isOpen) return null;
 
@@ -261,7 +268,11 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
     if (parsedStudents.length === 0) return;
     setIsProcessing(true);
     try {
-      onImportStudents(parsedStudents, importMode);
+      if (typeof importFn === 'function') {
+        importFn(parsedStudents, importMode);
+      } else {
+        throw new Error('इम्पोर्ट फंक्शन उपलब्ध नहीं है।');
+      }
       onClose();
     } catch (err: any) {
       setParseError('इम्पोर्ट में त्रुटि: ' + (err.message || 'Unknown error'));
