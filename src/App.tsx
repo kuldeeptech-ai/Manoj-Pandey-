@@ -119,6 +119,30 @@ export default function App() {
     return ['5th', '6th', '7th', '8th'];
   }, [schoolSettings.activeClasses]);
 
+  // Dynamic Favicon Synchronization:
+  // Automatically sets the browser tab favicon to the official school logo
+  useEffect(() => {
+    const faviconUrl = schoolSettings.logoUrl?.trim() || '/favicon.svg';
+    try {
+      const iconLinks = document.querySelectorAll("link[rel*='icon']");
+      if (iconLinks.length > 0) {
+        iconLinks.forEach((link) => {
+          (link as HTMLLinkElement).href = faviconUrl;
+        });
+      } else {
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.type = 'image/svg+xml';
+        link.href = faviconUrl;
+        document.head.appendChild(link);
+      }
+      const appleIcon = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+      if (appleIcon) {
+        appleIcon.href = faviconUrl;
+      }
+    } catch {}
+  }, [schoolSettings.logoUrl]);
+
   // Tracks the timestamp of recent admin mutations (deletions/edits) to prevent polling race conditions
   const lastLocalMutationTimeRef = useRef<number>(0);
 
@@ -265,22 +289,32 @@ export default function App() {
       onSettings: (newSettings) => {
         setSchoolSettings((prev) => {
           const norm = normalizeSchoolSettings({ ...prev, ...newSettings });
+          if (JSON.stringify(prev) === JSON.stringify(norm)) return prev;
           localStorage.setItem('hd_pandey_settings', JSON.stringify(norm));
           return norm;
         });
       },
       onStudents: (newStudents) => {
         const formatted = newStudents.map(normalizeStudentRecord);
-        setStudents(formatted);
-        localStorage.setItem('hd_pandey_students', JSON.stringify(formatted));
+        setStudents((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(formatted)) return prev;
+          localStorage.setItem('hd_pandey_students', JSON.stringify(formatted));
+          return formatted;
+        });
       },
       onSubjects: (newSubjects) => {
-        setSubjects(newSubjects);
-        localStorage.setItem('hd_pandey_subjects', JSON.stringify(newSubjects));
+        setSubjects((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(newSubjects)) return prev;
+          localStorage.setItem('hd_pandey_subjects', JSON.stringify(newSubjects));
+          return newSubjects;
+        });
       },
       onGradeRules: (newRules) => {
-        setGradeRules(newRules);
-        localStorage.setItem('hd_pandey_grades', JSON.stringify(newRules));
+        setGradeRules((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(newRules)) return prev;
+          localStorage.setItem('hd_pandey_grades', JSON.stringify(newRules));
+          return newRules;
+        });
       },
     });
 
@@ -292,10 +326,10 @@ export default function App() {
 
   useEffect(() => {
     syncCloudData();
-    // 4-second multi-device sync cycle for instant changes
+    // Calmed background check cycle (WebSocket already delivers real-time updates)
     const timer = setInterval(() => {
       syncCloudData();
-    }, 4000);
+    }, 25000);
 
     const handleFocus = () => syncCloudData();
     const handleStorageChange = (e: StorageEvent) => {
@@ -514,6 +548,25 @@ export default function App() {
             setShowAdminLoginModal(false);
             return;
           }
+
+          // If not in local ref yet, try retrieving from backend API asynchronously
+          const classParamQuery = classParam ? `&className=${encodeURIComponent(classParam)}` : '';
+          fetch(`/api/result?roll=${encodeURIComponent(queryTerm)}&admission=${encodeURIComponent(queryTerm)}${classParamQuery}&t=${Date.now()}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((resData) => {
+              if (resData && resData.student) {
+                setActiveResult(resData);
+                setResultSource(sessionStorage.getItem('active_verified_source') === 'admin' ? 'admin' : 'public');
+                setViewMode('result_view');
+                setShowAdminLoginModal(false);
+              } else {
+                setViewMode('public_search');
+              }
+            })
+            .catch(() => {
+              setViewMode('public_search');
+            });
+          return;
         }
 
         // Not verified (Direct address bar entry attempt) -> Enforce security!

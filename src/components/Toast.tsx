@@ -17,13 +17,16 @@ interface ToastProps {
 }
 
 export const Toast: React.FC<ToastProps> = ({ toast, onClose, duration = 4000 }) => {
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => {
-      onClose();
+      onCloseRef.current();
     }, duration);
     return () => clearTimeout(timer);
-  }, [toast, duration, onClose]);
+  }, [toast?.id, duration]);
 
   if (!toast) return null;
 

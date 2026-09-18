@@ -404,8 +404,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Synchronize local subjects when parent updates
   useEffect(() => {
-    setEditingSubjects([...subjects]);
-  }, [subjects]);
+    if (activeTab !== 'subjects') {
+      setEditingSubjects((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(subjects)) return prev;
+        return [...subjects];
+      });
+    }
+  }, [subjects, activeTab]);
 
   const handleAddSubject = () => {
     const trimmed = newSubjectName.trim();
@@ -469,8 +474,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Synchronize school settings when parent updates
   useEffect(() => {
-    setSettingsForm({ ...schoolSettings });
-  }, [schoolSettings]);
+    if (activeTab !== 'settings') {
+      setSettingsForm((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(schoolSettings)) return prev;
+        return { ...schoolSettings };
+      });
+    }
+  }, [schoolSettings, activeTab]);
 
   // Admin password random generator
   const handleGenerateRandomPassword = () => {
@@ -1804,6 +1814,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               min="0"
                               max={subj.halfMax}
                               value={studentMark.halfObtained}
+                              onFocus={(e) => e.target.select()}
                               onChange={(e) => handleMarkChange(subj.id, 'half', e.target.value)}
                               className={`w-20 text-center py-1 font-bold text-xs border rounded ${
                                 halfErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
@@ -1820,6 +1831,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               min="0"
                               max={subj.annualMax}
                               value={studentMark.annualObtained}
+                              onFocus={(e) => e.target.select()}
                               onChange={(e) => handleMarkChange(subj.id, 'annual', e.target.value)}
                               className={`w-20 text-center py-1 font-bold text-xs border rounded ${
                                 annualErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
