@@ -95,7 +95,11 @@ export interface SchoolSettings {
   showPrintButton?: boolean;
   showImageButton?: boolean;
   allowPublicSearch?: boolean;
+  isMaintenanceMode?: boolean;
+  isResultLive?: boolean;
   maintenanceNotice?: string;
+  maintenanceMessage?: string;
+  liveBannerText?: string;
   activeClasses?: string[];
   toggles?: Record<string, boolean>;
 }

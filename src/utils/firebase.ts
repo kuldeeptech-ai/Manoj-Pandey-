@@ -639,6 +639,8 @@ export async function saveSchoolSettingsToFirebase(settings: SchoolSettings): Pr
       showPrintButton: settings.showPrintButton !== false,
       showImageButton: settings.showImageButton !== false,
       allowPublicSearch: settings.allowPublicSearch !== false,
+      isMaintenanceMode: Boolean(settings.isMaintenanceMode),
+      isResultLive: settings.isResultLive !== false,
     };
 
     const payload = {
@@ -747,6 +749,8 @@ export async function syncAllDataToFirebase(payload: {
       showPrintButton: payload.schoolSettings.showPrintButton !== false,
       showImageButton: payload.schoolSettings.showImageButton !== false,
       allowPublicSearch: payload.schoolSettings.allowPublicSearch !== false,
+      isMaintenanceMode: Boolean(payload.schoolSettings.isMaintenanceMode),
+      isResultLive: payload.schoolSettings.isResultLive !== false,
     };
 
     const rootUpdates: Record<string, any> = {
@@ -754,7 +758,6 @@ export async function syncAllDataToFirebase(payload: {
         ...payload.schoolSettings,
         toggles,
       },
-      'school_settings/toggles': toggles,
       'students': studentMap,
       'subjects': subjectMap,
       'grade_rules': payload.gradeRules,

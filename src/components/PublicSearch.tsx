@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SchoolSettings } from '../types';
-import { Search, GraduationCap, Award, FileText, ArrowRight, RotateCw, ShieldCheck, Hash, Lock, BookOpen } from 'lucide-react';
+import { Search, GraduationCap, Award, FileText, ArrowRight, RotateCw, ShieldCheck, Hash, Lock, BookOpen, Wrench, Clock, Radio } from 'lucide-react';
 import { Toast, ToastMessage } from './Toast';
 
 interface PublicSearchProps {
@@ -120,6 +120,118 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
     }
   };
 
+  // If Maintenance Mode is active, render dedicated maintenance notice screen
+  if (schoolSettings.isMaintenanceMode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0f2b48]/5 via-amber-50/40 to-slate-100 flex flex-col justify-between">
+        {/* Toast Notification */}
+        <Toast toast={toast} onClose={() => setToast(null)} duration={4000} />
+
+        {/* Top Header */}
+        <header className="bg-[#0f2b48] text-white py-3.5 px-4 sm:px-8 border-b-4 border-amber-500 shadow-md">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {schoolSettings.logoUrl && (
+                <div className="w-12 h-12 bg-white rounded-full p-1 flex items-center justify-center shadow-inner shrink-0">
+                  <img
+                    src={schoolSettings.logoUrl}
+                    alt={schoolSettings.schoolName}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              )}
+              <div>
+                <h1 className="font-bold text-base sm:text-xl tracking-tight leading-none uppercase">
+                  {schoolSettings.schoolName}
+                </h1>
+                <p className="text-xs text-slate-300 font-medium mt-1">
+                  {schoolSettings.address}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 rounded-full border border-amber-400/40 text-xs text-amber-300 font-bold">
+              <Wrench className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+              <span>कार्य प्रगति पर है</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Maintenance Content */}
+        <main className="flex-1 max-w-xl w-full mx-auto px-4 py-8 sm:py-14 flex flex-col items-center justify-center">
+          <div className="w-full bg-white rounded-2xl shadow-xl border-2 border-amber-300 overflow-hidden text-center">
+            <div className="bg-gradient-to-r from-[#0f2b48] via-amber-950/70 to-[#0f2b48] text-white p-6 sm:p-8 relative">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/20 backdrop-blur-xs mb-3 border-2 border-amber-400/40 shadow-inner">
+                <Wrench className="w-8 h-8 text-amber-300 animate-bounce" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase">
+                पोर्टल पर कार्य चल रहा है
+              </h2>
+              <p className="text-amber-200 text-xs sm:text-sm font-semibold mt-1">
+                PORTAL UNDER MAINTENANCE & UPDATING • SESSION {schoolSettings.session}
+              </p>
+            </div>
+
+            <div className="p-6 sm:p-8 space-y-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 border border-amber-300 text-amber-900 rounded-full text-xs font-black">
+                <span className="w-2 h-2 rounded-full bg-amber-600 animate-ping"></span>
+                <span>🚧 मेंटेनेंस मोड सक्रिय (Maintenance Active)</span>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-sm leading-relaxed text-left space-y-2">
+                <p className="font-semibold text-slate-900">
+                  {schoolSettings.maintenanceMessage || 'प्रिय अभिभावक एवं छात्रगण, वर्तमान में वेबसाइट पर परीक्षा परिणाम एवं मार्कशीट अपडेट/मेंटेनेंस का कार्य किया जा रहा है।'}
+                </p>
+                <p className="text-xs text-slate-600">
+                  सर्वर पर परीक्षा परिणाम व अंकपत्र सत्यापन का कार्य प्रगति पर है। कृपया कुछ समय प्रतीक्षा करें एवं बाद में पुनः प्रयास करें।
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-amber-50/70 rounded-lg border border-amber-200 text-xs text-slate-700 space-y-1">
+                <p className="font-bold text-slate-900">{schoolSettings.schoolName}</p>
+                <p>हेल्पलाइन संपर्क: <span className="font-bold text-[#0f2b48]">+91-{schoolSettings.mobile}</span></p>
+                <p className="text-slate-500">{schoolSettings.address}</p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="w-full py-3 px-4 bg-[#0f2b48] hover:bg-[#1b4975] text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+                >
+                  <RotateCw className="w-4 h-4" />
+                  <span>पेज रिफ्रेश करें (Check Again)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* Footer with discrete Admin Login */}
+        <footer className="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+          <p className="font-semibold text-slate-700">
+            {schoolSettings.tagline}
+          </p>
+          <p className="mt-0.5">
+            शैक्षणिक सत्र {schoolSettings.session} • सर्वाधिकार सुरक्षित
+          </p>
+          {onSwitchToAdmin && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={onSwitchToAdmin}
+                className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-700 transition-colors cursor-pointer py-1 px-2.5 rounded hover:bg-slate-100"
+              >
+                <Lock className="w-3 h-3 text-slate-400" />
+                <span>प्रशासनिक लॉगिन (Staff Admin Login)</span>
+              </button>
+            </div>
+          )}
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0f2b48]/5 via-slate-50 to-slate-100 flex flex-col justify-between">
       {/* Toast Notification */}
@@ -157,6 +269,41 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
 
       {/* Main Search Section */}
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 flex flex-col items-center justify-center">
+        {/* Live Status Notification Banner */}
+        {schoolSettings.isResultLive !== false ? (
+          <div className="w-full mb-5 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white p-3.5 sm:p-4 rounded-xl shadow-lg border-2 border-emerald-400/40 flex items-center gap-3.5">
+            <div className="relative flex items-center justify-center shrink-0 w-8 h-8 bg-emerald-900/60 rounded-full border border-emerald-400/50">
+              <span className="w-3 h-3 bg-red-500 rounded-full animate-ping absolute"></span>
+              <span className="w-3 h-3 bg-red-500 rounded-full relative"></span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider bg-red-600 px-2.5 py-0.5 rounded-full text-white shadow-xs">
+                  🔴 LIVE
+                </span>
+                <span className="font-bold text-xs sm:text-sm tracking-tight text-white drop-shadow-xs">
+                  सभी मार्कशीट लाइव हैं (Results Announced)
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-emerald-100 font-medium mt-1 leading-snug">
+                {schoolSettings.liveBannerText || `सत्र ${schoolSettings.session} की सभी कक्षाओं की मार्कशीट लाइव हैं! आप नीचे रोल नंबर व कक्षा दर्ज करके रिजल्ट देख सकते हैं।`}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="w-full mb-5 bg-amber-50 text-amber-950 p-3.5 rounded-xl border border-amber-300 flex items-center gap-3 shadow-xs">
+            <Clock className="w-5 h-5 text-amber-700 shrink-0" />
+            <div className="flex-1 text-xs">
+              <span className="font-bold block text-amber-950">
+                📢 परिणाम सूचना: मार्कशीट प्रक्रियाधीन (Results In Progress)
+              </span>
+              <span className="text-[11px] text-amber-800 block mt-0.5">
+                अंकपत्रों की जांच एवं अपलोड प्रक्रिया जारी है। यदि आपका परिणाम अपलोड हो चुका है तो नीचे विवरण दर्ज करके जांच करें।
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Verification Card */}
         <div className="w-full bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
           {/* Card Header */}

@@ -234,7 +234,11 @@ export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
   showGrade: false,
   showProgressGraph: true,
   allowPublicSearch: true,
+  isMaintenanceMode: false,
+  isResultLive: true,
   maintenanceNotice: '',
+  maintenanceMessage: 'पोर्टल पर वर्तमान में मेंटेनेंस एवं अंकपत्र अपडेट का कार्य चल रहा है। कृपया कुछ समय बाद पुनः प्रयास करें।',
+  liveBannerText: 'सत्र 2025–2026 की सभी कक्षाओं की मार्कशीट लाइव हो चुकी हैं! आप नीचे अपना रोल नंबर व कक्षा दर्ज करके रिजल्ट देख सकते हैं।',
   activeClasses: ['5th', '6th', '7th', '8th'],
 };
 

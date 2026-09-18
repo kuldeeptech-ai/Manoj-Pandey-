@@ -83,6 +83,8 @@ import {
   Copy,
   ExternalLink,
   Globe,
+  Wrench,
+  Radio,
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -984,6 +986,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           )}
         </div>
       </header>
+
+      {/* Maintenance Mode Alert Banner for Admin */}
+      {isSettingEnabled(settingsForm.isMaintenanceMode, false) && (
+        <div className="bg-amber-500 text-slate-950 px-3 sm:px-6 py-2 text-xs font-black flex items-center justify-between gap-3 shadow-md border-b-2 border-amber-600">
+          <div className="flex items-center gap-2 min-w-0">
+            <Wrench className="w-4 h-4 text-slate-950 shrink-0" />
+            <span className="truncate">
+              ⚠️ पोर्टल मेंटेनेंस मोड चालू है: आम जनता व छात्रों को 'कार्य प्रगति पर है' स्क्रीन दिख रही है।
+            </span>
+          </div>
+          <button
+            onClick={() => handleToggleSetting('isMaintenanceMode', false)}
+            className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-[11px] font-black transition-all cursor-pointer shrink-0 shadow-xs"
+          >
+            मेंटेनेंस मोड बंद करें (Live Now)
+          </button>
+        </div>
+      )}
 
       {/* Manual Sync Toast / Banner */}
       {manualSyncMsg && (
@@ -2675,6 +2695,99 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                  {/* TOP HIGHLIGHTED ROW: PORTAL STATUS & LIVE CONTROLS */}
+                  <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3.5 p-3.5 bg-white border-2 border-slate-300 rounded-xl shadow-xs">
+                    {/* Toggle 1: Website Maintenance Mode */}
+                    <div className={`p-3.5 rounded-lg border-2 transition-all ${
+                      isSettingEnabled(settingsForm.isMaintenanceMode, false)
+                        ? 'bg-amber-50 border-amber-400'
+                        : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <div className={`p-2 rounded-lg shrink-0 ${
+                            isSettingEnabled(settingsForm.isMaintenanceMode, false)
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            <Wrench className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-black text-slate-900 uppercase">
+                                पोर्टल मेंटेनेंस मोड (Maintenance Mode)
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                isSettingEnabled(settingsForm.isMaintenanceMode, false)
+                                  ? 'bg-amber-200 text-amber-950 border border-amber-400'
+                                  : 'bg-emerald-100 text-emerald-800'
+                              }`}>
+                                {isSettingEnabled(settingsForm.isMaintenanceMode, false) ? '🚧 चालू (काम चल रहा है)' : '✓ बंद (पोर्टल चालू है)'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                              चालू करने पर आम जनता/छात्रों को पोर्टल पर <strong>'कार्य प्रगति पर है (Under Maintenance)'</strong> की सूचना दिखेगी। आप (एडमिन) सामान्य रूप से काम कर सकते हैं।
+                            </p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                          <input
+                            type="checkbox"
+                            checked={isSettingEnabled(settingsForm.isMaintenanceMode, false)}
+                            onChange={(e) => handleToggleSetting('isMaintenanceMode', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Toggle 2: All Marksheets Live Toggle */}
+                    <div className={`p-3.5 rounded-lg border-2 transition-all ${
+                      isSettingEnabled(settingsForm.isResultLive, true)
+                        ? 'bg-emerald-50 border-emerald-400'
+                        : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <div className={`p-2 rounded-lg shrink-0 ${
+                            isSettingEnabled(settingsForm.isResultLive, true)
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            <Radio className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-black text-slate-900 uppercase">
+                                सभी मार्कशीट लाइव हैं (Result Live Badge)
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                isSettingEnabled(settingsForm.isResultLive, true)
+                                  ? 'bg-emerald-200 text-emerald-950 border border-emerald-400'
+                                  : 'bg-slate-200 text-slate-700'
+                              }`}>
+                                {isSettingEnabled(settingsForm.isResultLive, true) ? '🔴 LIVE सक्रिय (दिख रहा है)' : 'लाइव बंद'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                              चालू करने पर पब्लिक पोर्टल पर <strong>'🔴 LIVE: सभी मार्कशीट लाइव हैं, रिजल्ट चेक करें'</strong> का प्रमुख लाइव बैनर दिखेगा।
+                            </p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                          <input
+                            type="checkbox"
+                            checked={isSettingEnabled(settingsForm.isResultLive, true)}
+                            onChange={(e) => handleToggleSetting('isResultLive', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Half-Yearly Exam Toggle */}
                   <label className="flex items-start justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-all cursor-pointer">
                     <div className="pr-3">
