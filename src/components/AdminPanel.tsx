@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Student,
   SubjectConfig,
@@ -43,7 +43,7 @@ import {
   fetchAllFromFirebase,
 } from '../utils/firebase';
 import { ref, get, set, update, remove } from 'firebase/database';
-import { formatDisplayDate } from '../utils/calculations';
+import { formatDisplayDate, sortStudentsByRoll, compareRollNumbers } from '../utils/calculations';
 import { ClassTeachersManager } from './ClassTeachersManager';
 import { BulkImportModal } from './BulkImportModal';
 import { BulkMarksModal } from './BulkMarksModal';
@@ -86,6 +86,12 @@ import {
   Wrench,
   Radio,
   X,
+  CheckSquare,
+  Square,
+  Search,
+  Filter,
+  ListOrdered,
+  Archive,
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -93,6 +99,7 @@ interface AdminPanelProps {
   subjects: SubjectConfig[];
   schoolSettings: SchoolSettings;
   gradeRules: GradeRule[];
+  deletedStudents?: Student[];
   onSaveStudents: (students: Student[]) => void;
   onSaveSubjects: (subjects: SubjectConfig[]) => void;
   onSaveSchoolSettings: (settings: SchoolSettings) => void;
@@ -101,6 +108,12 @@ interface AdminPanelProps {
   onBackToPublic: () => void;
   onLogout?: () => void;
   initialSelectedStudentId?: string;
+  onDeleteStudent?: (studentId: string) => void;
+  onBatchDeleteStudents?: (studentIds: string[]) => void;
+  onRestoreStudent?: (studentId: string) => void;
+  onRestoreAllStudents?: () => void;
+  onPermanentlyDeleteStudent?: (studentId: string) => void;
+  onEmptyTrash?: () => void;
 }
 
 type TabType = 'dashboard' | 'students' | 'marks' | 'subjects' | 'school' | 'grades' | 'sheets' | 'teachers';
@@ -110,6 +123,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   subjects,
   schoolSettings,
   gradeRules,
+  deletedStudents = [],
   onSaveStudents,
   onSaveSubjects,
   onSaveSchoolSettings,
@@ -118,6 +132,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onBackToPublic,
   onLogout,
   initialSelectedStudentId,
+  onDeleteStudent,
+  onBatchDeleteStudents,
+  onRestoreStudent,
+  onRestoreAllStudents,
+  onPermanentlyDeleteStudent,
+  onEmptyTrash,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(initialSelectedStudentId ? 'marks' : 'dashboard');
   const [selectedStudentIdForMarks, setSelectedStudentIdForMarks] = useState<string>(
@@ -142,6 +162,65 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [showBulkImportModal, setShowBulkImportModal] = useState<boolean>(false);
   const [showBulkMarksModal, setShowBulkMarksModal] = useState<boolean>(false);
   const [bulkNotice, setBulkNotice] = useState<string | null>(null);
+
+  // Student Selection & Filters state
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [studentClassFilter, setStudentClassFilter] = useState<string>('ALL');
+  const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState<boolean>(false);
+  const [trashSearchQuery, setTrashSearchQuery] = useState<string>('');
+  const [undoToast, setUndoToast] = useState<{ message: string; studentIds: string[] } | null>(null);
+
+  // Auto-dismiss undo toast after 6 seconds
+  useEffect(() => {
+    if (!undoToast) return;
+    const t = setTimeout(() => setUndoToast(null), 6000);
+    return () => clearTimeout(t);
+  }, [undoToast]);
+
+  // Derived unique classes for student filter
+  const studentClasses = useMemo(() => {
+    const fromStudents = students.map((s) => (s.className || '').trim()).filter(Boolean);
+    const fromSettings = schoolSettings.activeClasses || [];
+    const combined = Array.from(new Set([...fromStudents, ...fromSettings]));
+    return combined.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+  }, [students, schoolSettings.activeClasses]);
+
+  // Filtered & naturally sorted student records (Roll 1, 2, 3...)
+  const filteredStudents = useMemo(() => {
+    let list = students;
+    if (studentClassFilter && studentClassFilter !== 'ALL') {
+      list = list.filter((s) => (s.className || '').trim().toLowerCase() === studentClassFilter.toLowerCase());
+    }
+    if (studentSearchQuery.trim()) {
+      const q = studentSearchQuery.trim().toLowerCase();
+      list = list.filter(
+        (s) =>
+          (s.name || '').toLowerCase().includes(q) ||
+          (s.rollNo || '').toLowerCase().includes(q) ||
+          (s.admissionNo || '').toLowerCase().includes(q) ||
+          (s.fatherName || '').toLowerCase().includes(q) ||
+          (s.mobile || '').includes(q)
+      );
+    }
+    return sortStudentsByRoll(list);
+  }, [students, studentClassFilter, studentSearchQuery]);
+
+  // Filtered trash records
+  const filteredTrashStudents = useMemo(() => {
+    let list = deletedStudents;
+    if (trashSearchQuery.trim()) {
+      const q = trashSearchQuery.trim().toLowerCase();
+      list = list.filter(
+        (s) =>
+          (s.name || '').toLowerCase().includes(q) ||
+          (s.rollNo || '').toLowerCase().includes(q) ||
+          (s.admissionNo || '').toLowerCase().includes(q) ||
+          (s.className || '').toLowerCase().includes(q)
+      );
+    }
+    return sortStudentsByRoll(list);
+  }, [deletedStudents, trashSearchQuery]);
 
   const handleImportStudents = (newStudents: Student[], mode: 'merge' | 'append' | 'replace') => {
     let finalStudents: Student[] = [];
@@ -362,9 +441,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     };
 
     if (isNewStudent) {
-      onSaveStudents([...students, sanitizedStudent]);
+      onSaveStudents(sortStudentsByRoll([...students, sanitizedStudent]));
     } else {
-      onSaveStudents(students.map((s) => (s.id === sanitizedStudent.id ? sanitizedStudent : s)));
+      onSaveStudents(sortStudentsByRoll(students.map((s) => (s.id === sanitizedStudent.id ? sanitizedStudent : s))));
     }
 
     // Realtime Database CRUD: set student record at students/{id}
@@ -375,23 +454,92 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setEditingStudent(null);
   };
 
-  const handleDeleteStudent = async (id: string) => {
-    if (confirm('Are you sure you want to delete this student record?')) {
-      const remaining = students.filter((s) => s.id !== id);
-      onSaveStudents(remaining);
-      if (selectedStudentIdForMarks === id) {
+  const handleDeleteStudent = (st: Student) => {
+    if (
+      confirm(
+        `क्या आप छात्र "${st.name}" (रोल नं. ${st.rollNo}, कक्षा ${st.className}) को हटाना चाहते हैं?\n(नोट: यह छात्र रीसायकल बिन में सुरक्षित रहेगा और आप इसे कभी भी वापस ला सकते हैं)`
+      )
+    ) {
+      if (onDeleteStudent) {
+        onDeleteStudent(st.id);
+      } else {
+        const remaining = students.filter((s) => s.id !== st.id);
+        onSaveStudents(remaining);
+        deleteStudentFromFirebase(st.id).catch(console.warn);
+      }
+      if (selectedStudentIdForMarks === st.id) {
+        setSelectedStudentIdForMarks(students.find((s) => s.id !== st.id)?.id || '');
+      }
+      setSelectedStudentIds((prev) => prev.filter((id) => id !== st.id));
+      setUndoToast({
+        message: `छात्र "${st.name}" को रीसायकल बिन में भेज दिया गया है।`,
+        studentIds: [st.id],
+      });
+    }
+  };
+
+  const handleBatchDeleteStudents = () => {
+    if (selectedStudentIds.length === 0) return;
+    const count = selectedStudentIds.length;
+    if (
+      confirm(
+        `क्या आप सचमुच चुने हुए ${count} छात्रों को हटाना चाहते हैं?\n(नोट: ये छात्र रीसायकल बिन में सुरक्षित रहेंगे और आप इन्हें कभी भी वापस ला सकते हैं)`
+      )
+    ) {
+      const idsToDelete = [...selectedStudentIds];
+      if (onBatchDeleteStudents) {
+        onBatchDeleteStudents(idsToDelete);
+      } else {
+        const remaining = students.filter((s) => !idsToDelete.includes(s.id));
+        onSaveStudents(remaining);
+        idsToDelete.forEach((id) => deleteStudentFromFirebase(id).catch(console.warn));
+      }
+      if (idsToDelete.includes(selectedStudentIdForMarks)) {
+        const remaining = students.filter((s) => !idsToDelete.includes(s.id));
         setSelectedStudentIdForMarks(remaining[0]?.id || '');
       }
-
-      // Realtime Database CRUD: remove student record at students/{id}
-      deleteStudentFromFirebase(id).catch((err) => {
-        console.warn('[Firebase RTDB] Error deleting student:', err);
+      setSelectedStudentIds([]);
+      setUndoToast({
+        message: `${count} छात्र रीसायकल बिन में भेज दिए गए हैं।`,
+        studentIds: idsToDelete,
       });
-
-      try {
-        await fetch(`/api/admin/student/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      } catch {}
     }
+  };
+
+  const handleAutoSequenceRollNumbers = () => {
+    const targetClass = studentClassFilter && studentClassFilter !== 'ALL' ? studentClassFilter : null;
+    const targetLabel = targetClass ? `कक्षा "${targetClass}"` : 'सभी कक्षाओं';
+    if (
+      !confirm(
+        `क्या आप ${targetLabel} के छात्रों के रोल नंबर स्वतः 1, 2, 3, 4... क्रम में सेट करना चाहते हैं?\n(छात्रों के मौजूदा रोल नंबर व नाम के आधार पर उन्हें 1 से क्रमबद्ध किया जाएगा)`
+      )
+    ) {
+      return;
+    }
+
+    const updated = [...students];
+    const classesToProcess = targetClass
+      ? [targetClass]
+      : Array.from(new Set(students.map((s) => (s.className || '').trim()).filter(Boolean)));
+
+    for (const cls of classesToProcess) {
+      const classStudents = updated.filter(
+        (s) => (s.className || '').trim().toLowerCase() === cls.toLowerCase()
+      );
+      // Sort existing class students first by current roll or name
+      classStudents.sort((a, b) => compareRollNumbers(a.rollNo, b.rollNo) || a.name.localeCompare(b.name));
+      // Reassign roll numbers 1, 2, 3...
+      classStudents.forEach((st, idx) => {
+        const found = updated.find((s) => s.id === st.id);
+        if (found) {
+          found.rollNo = String(idx + 1);
+        }
+      });
+    }
+
+    const sortedUpdated = sortStudentsByRoll(updated);
+    onSaveStudents(sortedUpdated);
+    alert(`${targetLabel} के सभी रोल नंबर सफलतापूर्वक 1, 2, 3... क्रम में सेट कर दिए गए हैं!`);
   };
 
   // Subject management state
@@ -1258,7 +1406,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-                    {students.map((st) => {
+                    {sortStudentsByRoll(students).map((st) => {
                       const res = calculateStudentResult(st, subjects, schoolSettings, gradeRules);
                       return (
                         <tr key={st.id} className="hover:bg-slate-50 transition-colors">
@@ -1312,29 +1460,51 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 2: STUDENTS MANAGEMENT */}
         {activeTab === 'students' && (
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Header & Main Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-xs">
               <div>
-                <h2 className="text-sm sm:text-base font-bold text-[#0f2b48] uppercase">
-                  Student Records Management
+                <h2 className="text-sm sm:text-base font-bold text-[#0f2b48] uppercase flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#0f2b48]" />
+                  <span>Student Records Management (विद्यार्थी प्रबंधन)</span>
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Manage student profiles, registration details, photos, and academic sessions.
+                  छात्रों का रोल नंबर (1, 2, 3...) क्रमबद्ध करें, चयन कर एक साथ डिलीट करें या रीसायकल बिन से वापस लाएं।
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => setIsTrashModalOpen(true)}
+                  className={`px-3 py-2 text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all border ${
+                    deletedStudents.length > 0
+                      ? 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-300'
+                  }`}
+                  title="रीसायकल बिन: हटाए गए छात्रों को देखें और वापस लाएं"
+                >
+                  <Archive className="w-4 h-4 text-amber-600" />
+                  <span>रीसायकल बिन / Trash</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      deletedStudents.length > 0 ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {deletedStudents.length}
+                  </span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setShowBulkImportModal(true)}
-                  className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all"
+                  className="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all"
                   title="Excel या CSV से एक साथ कई छात्रों का डेटा इम्पोर्ट करें"
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
-                  <span>बल्क इम्पोर्ट (Bulk Import Students)</span>
+                  <span>बल्क इम्पोर्ट (Bulk Import)</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleStartAddStudent}
-                  className="px-4 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                  className="px-3.5 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add New Student</span>
@@ -1342,13 +1512,138 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
+            {/* Filter, Search & Roll Auto-sequence toolbar */}
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Class Filter */}
+                <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 border border-slate-300 rounded shadow-2xs">
+                  <Filter className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="font-semibold text-slate-600">कक्षा:</span>
+                  <select
+                    value={studentClassFilter}
+                    onChange={(e) => setStudentClassFilter(e.target.value)}
+                    className="font-bold text-[#0f2b48] bg-transparent focus:outline-hidden cursor-pointer"
+                  >
+                    <option value="ALL">सभी कक्षाएं (All Classes)</option>
+                    {studentClasses.map((cls) => (
+                      <option key={cls} value={cls}>
+                        कक्षा {cls}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Search Input */}
+                <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 border border-slate-300 rounded shadow-2xs w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={studentSearchQuery}
+                    onChange={(e) => setStudentSearchQuery(e.target.value)}
+                    placeholder="नाम, रोल नं, प्रवेश संख्या खोजें..."
+                    className="w-full bg-transparent focus:outline-hidden text-xs text-slate-800 placeholder:text-slate-400"
+                  />
+                  {studentSearchQuery && (
+                    <button
+                      onClick={() => setStudentSearchQuery('')}
+                      className="text-slate-400 hover:text-slate-600 p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Auto Sequence Roll Number button */}
+                <button
+                  type="button"
+                  onClick={handleAutoSequenceRollNumbers}
+                  className="px-3 py-1.5 bg-white hover:bg-blue-50 text-[#0f2b48] font-bold border border-blue-200 rounded shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all"
+                  title="वर्तमान कक्षा या सभी कक्षाओं के छात्रों का रोल नंबर 1, 2, 3... क्रम में स्वतः री-सीक्वेंस करें"
+                >
+                  <ListOrdered className="w-3.5 h-3.5 text-blue-600" />
+                  <span>रोल नंबर 1, 2, 3... क्रमबद्ध करें</span>
+                </button>
+
+                <div className="px-2.5 py-1.5 bg-white text-slate-600 font-bold border border-slate-200 rounded shadow-2xs">
+                  कुल छात्र: <span className="text-[#0f2b48]">{filteredStudents.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Batch Selection Action Bar */}
+            {selectedStudentIds.length > 0 && (
+              <div className="bg-blue-900 text-white p-3 rounded-lg shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <CheckSquare className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    <span className="text-emerald-300 font-black text-sm">{selectedStudentIds.length}</span> छात्र चयनित हैं
+                  </span>
+                  <span className="text-blue-300 text-[11px] hidden sm:inline">(Select Multiple Students)</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleBatchDeleteStudents}
+                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded shadow-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                    title="चुने हुए सभी छात्रों को रीसायकल बिन में भेजें (हटाएं)"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>चयनित हटाएं (Move Selected to Trash)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allIds = filteredStudents.map((s) => s.id);
+                      setSelectedStudentIds(allIds);
+                    }}
+                    className="px-2.5 py-1.5 bg-blue-800 hover:bg-blue-700 text-white text-xs font-semibold rounded cursor-pointer transition-all"
+                  >
+                    सभी चुनें ({filteredStudents.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStudentIds([])}
+                    className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded cursor-pointer transition-all"
+                  >
+                    चयन रद्द करें
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Student Table */}
             <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs min-w-[800px]">
+                <table className="w-full text-left text-xs min-w-[850px]">
                   <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
                     <tr>
-                      <th className="py-3 px-4">Photo</th>
-                      <th className="py-3 px-4">Roll</th>
+                      <th className="py-3 px-3 text-center w-10">
+                        <input
+                          type="checkbox"
+                          checked={
+                            filteredStudents.length > 0 &&
+                            filteredStudents.every((s) => selectedStudentIds.includes(s.id))
+                          }
+                          onChange={() => {
+                            const isAllSelected =
+                              filteredStudents.length > 0 &&
+                              filteredStudents.every((s) => selectedStudentIds.includes(s.id));
+                            if (isAllSelected) {
+                              const fIds = new Set(filteredStudents.map((s) => s.id));
+                              setSelectedStudentIds((prev) => prev.filter((id) => !fIds.has(id)));
+                            } else {
+                              const fIds = filteredStudents.map((s) => s.id);
+                              setSelectedStudentIds((prev) => Array.from(new Set([...prev, ...fIds])));
+                            }
+                          }}
+                          className="w-4 h-4 rounded text-[#0f2b48] border-slate-300 focus:ring-[#0f2b48] cursor-pointer"
+                          title="सभी छात्र चुनें / हटाएं"
+                        />
+                      </th>
+                      <th className="py-3 px-3">Photo</th>
+                      <th className="py-3 px-3">Roll (1, 2, 3...)</th>
                       <th className="py-3 px-4">Admission No</th>
                       <th className="py-3 px-4">Student Name</th>
                       <th className="py-3 px-4">Father / Mother</th>
@@ -1360,66 +1655,108 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {students.map((st) => (
-                      <tr key={st.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-2.5 px-4">
-                          <div className="w-8 h-10 border border-slate-300 rounded overflow-hidden bg-slate-100">
-                            {st.photoUrl ? (
-                              <img src={st.photoUrl} alt={st.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[7px] text-slate-400">
-                                N/A
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-4 font-bold text-[#0f2b48]">{st.rollNo}</td>
-                        <td className="py-2.5 px-4 font-bold text-slate-700">{st.admissionNo}</td>
-                        <td className="py-2.5 px-4 font-bold text-slate-900 uppercase">{st.name}</td>
-                        <td className="py-2.5 px-4 text-slate-600 uppercase">
-                          <div>F: {st.fatherName}</div>
-                          <div className="text-[10px] text-slate-400">M: {st.motherName}</div>
-                        </td>
-                        <td className="py-2.5 px-4 font-semibold">{st.className} - {st.section}</td>
-                        <td className="py-2.5 px-4 text-[11px] text-slate-600">
-                          <div><span className="font-semibold text-slate-400">Mob:</span> {st.mobile || '—'}</div>
-                          <div className="font-mono text-[10px]"><span className="font-semibold text-slate-400">Aad:</span> {st.aadharNo || '—'}</div>
-                          {Boolean(st.address && st.address.trim()) && (
-                            <div className="text-[10px] text-slate-500 truncate max-w-[130px]" title={st.address}>
-                              <span className="font-semibold text-slate-400">पता:</span> {st.address}
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-4 text-slate-700 font-mono text-xs">{formatDisplayDate(st.dob)}</td>
-                        <td className="py-2.5 px-4 font-medium">{st.gender}</td>
-                        <td className="py-2.5 px-4 text-right space-x-1.5">
-                          <button
-                            onClick={() => onViewStudentResult(st.id)}
-                            className="p-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded"
-                            title="View Result Marksheet"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsNewStudent(false);
-                              setEditingStudent(st);
-                            }}
-                            className="p-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded"
-                            title="Edit Student Info"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteStudent(st.id)}
-                            className="p-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded"
-                            title="Delete Student"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                    {filteredStudents.length === 0 ? (
+                      <tr>
+                        <td colSpan={11} className="py-8 text-center text-slate-400 font-medium">
+                          कोई छात्र नहीं मिला।
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredStudents.map((st) => {
+                        const isSelected = selectedStudentIds.includes(st.id);
+                        return (
+                          <tr
+                            key={st.id}
+                            className={`hover:bg-slate-50 transition-colors ${
+                              isSelected ? 'bg-blue-50/60' : ''
+                            }`}
+                          >
+                            <td className="py-2.5 px-3 text-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                  setSelectedStudentIds((prev) =>
+                                    prev.includes(st.id)
+                                      ? prev.filter((id) => id !== st.id)
+                                      : [...prev, st.id]
+                                  );
+                                }}
+                                className="w-4 h-4 rounded text-[#0f2b48] border-slate-300 focus:ring-[#0f2b48] cursor-pointer"
+                              />
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="w-8 h-10 border border-slate-300 rounded overflow-hidden bg-slate-100">
+                                {st.photoUrl ? (
+                                  <img src={st.photoUrl} alt={st.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[7px] text-slate-400">
+                                    N/A
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded font-black text-[#0f2b48] bg-blue-50 border border-blue-200 text-xs">
+                                {st.rollNo}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-4 font-bold text-slate-700">{st.admissionNo}</td>
+                            <td className="py-2.5 px-4 font-bold text-slate-900 uppercase">{st.name}</td>
+                            <td className="py-2.5 px-4 text-slate-600 uppercase">
+                              <div>F: {st.fatherName}</div>
+                              <div className="text-[10px] text-slate-400">M: {st.motherName}</div>
+                            </td>
+                            <td className="py-2.5 px-4 font-semibold">
+                              {st.className} - {st.section}
+                            </td>
+                            <td className="py-2.5 px-4 text-[11px] text-slate-600">
+                              <div>
+                                <span className="font-semibold text-slate-400">Mob:</span> {st.mobile || '—'}
+                              </div>
+                              <div className="font-mono text-[10px]">
+                                <span className="font-semibold text-slate-400">Aad:</span> {st.aadharNo || '—'}
+                              </div>
+                              {Boolean(st.address && st.address.trim()) && (
+                                <div className="text-[10px] text-slate-500 truncate max-w-[130px]" title={st.address}>
+                                  <span className="font-semibold text-slate-400">पता:</span> {st.address}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-4 text-slate-700 font-mono text-xs">
+                              {formatDisplayDate(st.dob)}
+                            </td>
+                            <td className="py-2.5 px-4 font-medium">{st.gender}</td>
+                            <td className="py-2.5 px-4 text-right space-x-1.5">
+                              <button
+                                onClick={() => onViewStudentResult(st.id)}
+                                className="p-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded cursor-pointer"
+                                title="View Result Marksheet"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setIsNewStudent(false);
+                                  setEditingStudent(st);
+                                }}
+                                className="p-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded cursor-pointer"
+                                title="Edit Student Info"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteStudent(st)}
+                                className="p-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded cursor-pointer"
+                                title="रीसायकल बिन में भेजें (Delete to Trash)"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1701,6 +2038,197 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Trash / Recycle Bin Modal */}
+            {isTrashModalOpen && (
+              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+                <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-3xl w-full max-h-[90vh] flex flex-col my-auto overflow-hidden animate-fade-in">
+                  <div className="p-3 sm:p-4 bg-[#0f2b48] text-white flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Archive className="w-5 h-5 text-amber-400" />
+                      <div>
+                        <h3 className="font-bold text-sm sm:text-base">रीसायकल बिन (Recycle Bin / Trash)</h3>
+                        <p className="text-[11px] text-slate-300">
+                          हटाए गए छात्र यहाँ सुरक्षित हैं। आप किसी भी छात्र को 1-क्लिक में कभी भी वापस ला सकते हैं।
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsTrashModalOpen(false)}
+                      className="p-1 hover:bg-white/10 rounded-full cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Toolbar inside Trash */}
+                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 bg-white px-2.5 py-1.5 border border-slate-300 rounded shadow-2xs w-full sm:w-72">
+                      <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        value={trashSearchQuery}
+                        onChange={(e) => setTrashSearchQuery(e.target.value)}
+                        placeholder="हटाए गए छात्रों में खोजें..."
+                        className="w-full bg-transparent focus:outline-hidden text-xs text-slate-800 placeholder:text-slate-400"
+                      />
+                      {trashSearchQuery && (
+                        <button
+                          onClick={() => setTrashSearchQuery('')}
+                          className="text-slate-400 hover:text-slate-600 p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {deletedStudents.length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm('क्या आप रीसायकल बिन के सभी छात्रों को वापस मुख्य सूची में लाना चाहते हैं?')) {
+                                if (onRestoreAllStudents) onRestoreAllStudents();
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded shadow-xs flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>सभी वापस लाएं (Restore All)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                confirm(
+                                  'चेतावनी: क्या आप रीसायकल बिन को पूरी तरह खाली करना चाहते हैं? इसके बाद छात्र हमेशा के लिए हट जाएंगे।'
+                                )
+                              ) {
+                                if (onEmptyTrash) onEmptyTrash();
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>बिन खाली करें (Empty)</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Trash List Table */}
+                  <div className="overflow-y-auto max-h-[55vh] p-2">
+                    {filteredTrashStudents.length === 0 ? (
+                      <div className="py-12 text-center text-slate-400">
+                        <Archive className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                        <p className="font-bold text-xs">रीसायकल बिन खाली है।</p>
+                        <p className="text-[11px] text-slate-400">यहाँ कोई हटाया गया छात्र नहीं है।</p>
+                      </div>
+                    ) : (
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-100 text-slate-700 font-bold uppercase sticky top-0 border-b border-slate-200">
+                          <tr>
+                            <th className="py-2.5 px-3">Roll</th>
+                            <th className="py-2.5 px-3">छात्र का नाम</th>
+                            <th className="py-2.5 px-3">कक्षा</th>
+                            <th className="py-2.5 px-3">पिता का नाम</th>
+                            <th className="py-2.5 px-3">हटाने का समय</th>
+                            <th className="py-2.5 px-3 text-right">कार्रवाई (Actions)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium">
+                          {filteredTrashStudents.map((st) => (
+                            <tr key={st.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="py-2 px-3 font-bold text-[#0f2b48]">{st.rollNo}</td>
+                              <td className="py-2 px-3 font-bold uppercase text-slate-900">{st.name}</td>
+                              <td className="py-2 px-3">
+                                {st.className} - {st.section}
+                              </td>
+                              <td className="py-2 px-3 text-slate-600 uppercase">{st.fatherName}</td>
+                              <td className="py-2 px-3 text-[11px] text-slate-400 font-mono">
+                                {st.deletedAt ? new Date(st.deletedAt).toLocaleString('hi-IN') : '—'}
+                              </td>
+                              <td className="py-2 px-3 text-right space-x-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (onRestoreStudent) onRestoreStudent(st.id);
+                                  }}
+                                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                                  title="इस छात्र को वापस लाएं"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  <span>वापस लाएं (Restore)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (
+                                      confirm(
+                                        `क्या आप "${st.name}" को हमेशा के लिए हटाना चाहते हैं? यह वापस नहीं लाया जा सकेगा।`
+                                      )
+                                    ) {
+                                      if (onPermanentlyDeleteStudent) onPermanentlyDeleteStudent(st.id);
+                                    }
+                                  }}
+                                  className="p-1 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"
+                                  title="स्थायी रूप से हटाएं"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsTrashModalOpen(false)}
+                      className="px-4 py-1.5 bg-[#0f2b48] text-white text-xs font-bold rounded cursor-pointer"
+                    >
+                      बंद करें (Close)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Floating Undo Toast */}
+            {undoToast && (
+              <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-2xl border border-slate-700 flex items-center gap-3 animate-fade-in">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="text-xs font-medium">{undoToast.message}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (undoToast.studentIds.length > 0) {
+                      undoToast.studentIds.forEach((id) => {
+                        if (onRestoreStudent) onRestoreStudent(id);
+                      });
+                    }
+                    setUndoToast(null);
+                  }}
+                  className="ml-2 px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs rounded cursor-pointer flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>वापस लाएं (Undo)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUndoToast(null)}
+                  className="text-slate-400 hover:text-white p-0.5 ml-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -1716,7 +2244,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   onChange={(e) => handleSelectStudentForMarks(e.target.value)}
                   className="p-2 border-2 border-[#0f2b48] rounded text-xs font-bold text-[#0f2b48] bg-[#f8faff] w-full sm:w-auto"
                 >
-                  {students.map((s) => (
+                  {sortStudentsByRoll(students).map((s) => (
                     <option key={s.id} value={s.id}>
                       Roll {s.rollNo}: {s.name} ({s.className}-{s.section})
                     </option>

@@ -45,6 +45,7 @@ export interface Student {
   teacherRemark?: string;
   classTeacherName?: string;
   classTeacherSignatureUrl?: string;
+  deletedAt?: string;
   marks: Record<string, {
     halfObtained: number;
     annualObtained: number;

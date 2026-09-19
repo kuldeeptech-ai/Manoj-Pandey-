@@ -424,3 +424,50 @@ export function calculateStudentResult(
     validationIssues: validationIssues.length > 0 ? validationIssues : undefined,
   };
 }
+
+/**
+ * Natural numerical comparison for Student Roll Numbers:
+ * Ensures sequence 1, 2, 3... instead of scrambled (1, 3, 2) or lexicographical (1, 10, 2).
+ */
+export function compareRollNumbers(aRoll?: string | number, bRoll?: string | number): number {
+  const strA = String(aRoll ?? '').trim();
+  const strB = String(bRoll ?? '').trim();
+
+  // Try extracting standard integer
+  const numA = parseInt(strA.replace(/[^0-9]/g, ''), 10);
+  const numB = parseInt(strB.replace(/[^0-9]/g, ''), 10);
+
+  if (!isNaN(numA) && !isNaN(numB)) {
+    if (numA !== numB) {
+      return numA - numB;
+    }
+  }
+
+  // Fallback to numeric-aware natural string comparison
+  return strA.localeCompare(strB, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+/**
+ * Sorts students list naturally:
+ * First by Class (e.g. 5th, 6th, 7th, 8th), then Section, then numerically by Roll Number (1, 2, 3, 4...)
+ */
+export function sortStudentsByRoll(studentsList: Student[]): Student[] {
+  if (!Array.isArray(studentsList)) return [];
+  return [...studentsList].sort((a, b) => {
+    // 1. Compare Class (numeric aware)
+    const classA = (a.className || '').trim();
+    const classB = (b.className || '').trim();
+    const classComp = classA.localeCompare(classB, undefined, { numeric: true, sensitivity: 'base' });
+    if (classComp !== 0) return classComp;
+
+    // 2. Compare Section
+    const secA = (a.section || '').trim();
+    const secB = (b.section || '').trim();
+    const secComp = secA.localeCompare(secB, undefined, { sensitivity: 'base' });
+    if (secComp !== 0) return secComp;
+
+    // 3. Compare Roll Number numerically (1, 2, 3...)
+    return compareRollNumbers(a.rollNo, b.rollNo);
+  });
+}
+

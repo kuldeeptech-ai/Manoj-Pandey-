@@ -34,6 +34,7 @@ let store = {
   subjects: [...DEFAULT_SUBJECTS],
   students: [...DEFAULT_STUDENTS],
   gradeRules: [...DEFAULT_GRADE_RULES],
+  deletedStudents: [] as any[],
   lastUpdated: new Date().toISOString(),
 };
 
@@ -46,6 +47,7 @@ try {
     if (parsed.subjects) store.subjects = parsed.subjects;
     if (parsed.students) store.students = parsed.students;
     if (parsed.gradeRules) store.gradeRules = parsed.gradeRules;
+    if (parsed.deletedStudents) store.deletedStudents = parsed.deletedStudents;
     if (parsed.lastUpdated) store.lastUpdated = parsed.lastUpdated;
   }
 } catch (e) {
@@ -471,11 +473,86 @@ async function startServer() {
 
   app.delete('/api/admin/student/:id', (req, res) => {
     const { id } = req.params;
+    const toDelete = store.students.find((s) => s.id === id);
+    if (toDelete) {
+      store.deletedStudents = store.deletedStudents || [];
+      store.deletedStudents = [
+        { ...toDelete, deletedAt: new Date().toISOString() },
+        ...store.deletedStudents.filter((s) => s.id !== id),
+      ];
+    }
     store.students = store.students.filter((s) => s.id !== id);
     store.lastUpdated = new Date().toISOString();
     saveStore();
-    res.json({ success: true, students: store.students });
+    res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
     syncToGoogleSheetInBackground();
+  });
+
+  app.post('/api/admin/student/batch-delete', (req, res) => {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'Array of student IDs required' });
+    }
+    const idSet = new Set(ids);
+    const toDeleteList = store.students.filter((s) => idSet.has(s.id));
+    const now = new Date().toISOString();
+    store.deletedStudents = store.deletedStudents || [];
+    const newDeleted = toDeleteList.map((s) => ({ ...s, deletedAt: now }));
+    store.deletedStudents = [...newDeleted, ...store.deletedStudents.filter((s) => !idSet.has(s.id))];
+    store.students = store.students.filter((s) => !idSet.has(s.id));
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
+    syncToGoogleSheetInBackground();
+  });
+
+  app.get('/api/admin/trash', (req, res) => {
+    res.json({ success: true, deletedStudents: store.deletedStudents || [] });
+  });
+
+  app.post('/api/admin/trash/restore/:id', (req, res) => {
+    const { id } = req.params;
+    store.deletedStudents = store.deletedStudents || [];
+    const toRestore = store.deletedStudents.find((s) => s.id === id);
+    if (toRestore) {
+      const { deletedAt, ...active } = toRestore;
+      store.students.push(active);
+      store.deletedStudents = store.deletedStudents.filter((s) => s.id !== id);
+      store.lastUpdated = new Date().toISOString();
+      saveStore();
+    }
+    res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
+    syncToGoogleSheetInBackground();
+  });
+
+  app.post('/api/admin/trash/restore-all', (req, res) => {
+    store.deletedStudents = store.deletedStudents || [];
+    const restored = store.deletedStudents.map((s) => {
+      const { deletedAt, ...active } = s;
+      return active;
+    });
+    store.students.push(...restored);
+    store.deletedStudents = [];
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
+    syncToGoogleSheetInBackground();
+  });
+
+  app.delete('/api/admin/trash/:id', (req, res) => {
+    const { id } = req.params;
+    store.deletedStudents = store.deletedStudents || [];
+    store.deletedStudents = store.deletedStudents.filter((s) => s.id !== id);
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    res.json({ success: true, deletedStudents: store.deletedStudents });
+  });
+
+  app.delete('/api/admin/trash', (req, res) => {
+    store.deletedStudents = [];
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    res.json({ success: true, deletedStudents: [] });
   });
 
   app.post('/api/admin/marks', (req, res) => {

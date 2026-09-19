@@ -17,6 +17,7 @@ import {
   normalizeSchoolSettings,
   formatDisplayDate,
   normalizeStudentRecord,
+  sortStudentsByRoll,
 } from './utils/calculations';
 import { PublicSearch } from './components/PublicSearch';
 import { ResultViewer } from './components/ResultViewer';
@@ -26,12 +27,19 @@ import {
   isFirebaseConfigured,
   subscribeToSchoolSettingsToggles,
   subscribeToFirebaseData,
+  subscribeToDeletedStudents,
   fetchAllFromFirebase,
   saveAllStudentsToFirebase,
   saveSubjectsToFirebase,
   saveSchoolSettingsToFirebase,
   saveGradeRulesToFirebase,
   syncAllDataToFirebase,
+  moveStudentToTrashInFirebase,
+  moveBatchStudentsToTrashInFirebase,
+  restoreStudentFromTrashInFirebase,
+  restoreAllStudentsFromTrashInFirebase,
+  permanentlyDeleteStudentFromTrashInFirebase,
+  emptyTrashInFirebase,
 } from './utils/firebase';
 
 type ViewMode = 'public_search' | 'result_view' | 'admin';
@@ -71,9 +79,19 @@ export default function App() {
     try {
       const saved = localStorage.getItem('hd_pandey_students');
       const raw = saved ? JSON.parse(saved) : DEFAULT_STUDENTS;
+      return sortStudentsByRoll((raw || []).map(normalizeStudentRecord));
+    } catch {
+      return sortStudentsByRoll((DEFAULT_STUDENTS || []).map(normalizeStudentRecord));
+    }
+  });
+
+  const [deletedStudents, setDeletedStudents] = useState<Student[]>(() => {
+    try {
+      const saved = localStorage.getItem('hd_pandey_deleted_students');
+      const raw = saved ? JSON.parse(saved) : [];
       return (raw || []).map(normalizeStudentRecord);
     } catch {
-      return (DEFAULT_STUDENTS || []).map(normalizeStudentRecord);
+      return [];
     }
   });
 
@@ -100,6 +118,8 @@ export default function App() {
   schoolSettingsRef.current = schoolSettings;
   const studentsRef = useRef(students);
   studentsRef.current = students;
+  const deletedStudentsRef = useRef(deletedStudents);
+  deletedStudentsRef.current = deletedStudents;
   const subjectsRef = useRef(subjects);
   subjectsRef.current = subjects;
   const gradeRulesRef = useRef(gradeRules);
@@ -295,7 +315,7 @@ export default function App() {
         });
       },
       onStudents: (newStudents) => {
-        const formatted = newStudents.map(normalizeStudentRecord);
+        const formatted = sortStudentsByRoll(newStudents.map(normalizeStudentRecord));
         setStudents((prev) => {
           if (JSON.stringify(prev) === JSON.stringify(formatted)) return prev;
           localStorage.setItem('hd_pandey_students', JSON.stringify(formatted));
@@ -318,9 +338,19 @@ export default function App() {
       },
     });
 
+    const unsubDeleted = subscribeToDeletedStudents((newDeleted) => {
+      const formatted = newDeleted.map(normalizeStudentRecord);
+      setDeletedStudents((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(formatted)) return prev;
+        localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(formatted));
+        return formatted;
+      });
+    });
+
     return () => {
       unsubToggles();
       unsubAll();
+      unsubDeleted();
     };
   }, []);
 
@@ -691,13 +721,13 @@ export default function App() {
   // Save Handlers (Local state, LocalStorage, Express API, and Firebase Realtime Database)
   const handleSaveStudents = async (newStudents: Student[]) => {
     lastLocalMutationTimeRef.current = Date.now();
-    const formatted = newStudents.map((s) => ({
+    const formatted = sortStudentsByRoll(newStudents.map((s) => ({
       ...s,
       dob: formatDisplayDate(s.dob),
       mobile: s.mobile ? String(s.mobile).trim() : '',
       address: s.address ? String(s.address).trim() : '',
       aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
-    }));
+    })));
     setStudents(formatted);
     localStorage.setItem('hd_pandey_students', JSON.stringify(formatted));
     try {
@@ -717,6 +747,109 @@ export default function App() {
     saveAllStudentsToFirebase(formatted).catch((err) => {
       console.warn('[Firebase RTDB] Error saving students to Firebase:', err);
     });
+  };
+
+  // Move single student to Recycle Bin (Trash)
+  const handleDeleteStudent = (studentId: string) => {
+    lastLocalMutationTimeRef.current = Date.now();
+    const target = students.find((s) => s.id === studentId);
+    if (!target) return;
+
+    const remaining = students.filter((s) => s.id !== studentId);
+    const updatedTrash = [
+      { ...target, deletedAt: new Date().toISOString() },
+      ...deletedStudents.filter((s) => s.id !== studentId),
+    ];
+
+    setStudents(remaining);
+    setDeletedStudents(updatedTrash);
+    localStorage.setItem('hd_pandey_students', JSON.stringify(remaining));
+    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(updatedTrash));
+
+    moveStudentToTrashInFirebase(target).catch(console.warn);
+    fetch(`/api/admin/student/${encodeURIComponent(studentId)}`, { method: 'DELETE' }).catch(() => {});
+  };
+
+  // Move multiple students to Recycle Bin (Trash) in batch
+  const handleBatchDeleteStudents = (studentIds: string[]) => {
+    if (!studentIds || studentIds.length === 0) return;
+    lastLocalMutationTimeRef.current = Date.now();
+    const targetIds = new Set(studentIds);
+    const targets = students.filter((s) => targetIds.has(s.id));
+    const remaining = students.filter((s) => !targetIds.has(s.id));
+
+    const now = new Date().toISOString();
+    const newTrashItems = targets.map((s) => ({ ...s, deletedAt: now }));
+    const updatedTrash = [...newTrashItems, ...deletedStudents.filter((s) => !targetIds.has(s.id))];
+
+    setStudents(remaining);
+    setDeletedStudents(updatedTrash);
+    localStorage.setItem('hd_pandey_students', JSON.stringify(remaining));
+    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(updatedTrash));
+
+    moveBatchStudentsToTrashInFirebase(targets).catch(console.warn);
+    fetch('/api/admin/student/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: studentIds }),
+    }).catch(() => {});
+  };
+
+  // Restore 1 student from Recycle Bin back to active list
+  const handleRestoreStudent = (studentId: string) => {
+    lastLocalMutationTimeRef.current = Date.now();
+    const target = deletedStudents.find((s) => s.id === studentId);
+    if (!target) return;
+
+    const { deletedAt, ...restored } = target;
+    const remainingTrash = deletedStudents.filter((s) => s.id !== studentId);
+    const updatedStudents = sortStudentsByRoll([...students.filter((s) => s.id !== studentId), restored]);
+
+    setStudents(updatedStudents);
+    setDeletedStudents(remainingTrash);
+    localStorage.setItem('hd_pandey_students', JSON.stringify(updatedStudents));
+    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(remainingTrash));
+
+    restoreStudentFromTrashInFirebase(target).catch(console.warn);
+    fetch(`/api/admin/trash/restore/${encodeURIComponent(studentId)}`, { method: 'POST' }).catch(() => {});
+  };
+
+  // Restore all students from Recycle Bin
+  const handleRestoreAllStudents = () => {
+    if (deletedStudents.length === 0) return;
+    lastLocalMutationTimeRef.current = Date.now();
+    const restoredList = deletedStudents.map((s) => {
+      const { deletedAt, ...rest } = s;
+      return rest;
+    });
+    const updatedStudents = sortStudentsByRoll([...students, ...restoredList]);
+
+    setStudents(updatedStudents);
+    setDeletedStudents([]);
+    localStorage.setItem('hd_pandey_students', JSON.stringify(updatedStudents));
+    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify([]));
+
+    restoreAllStudentsFromTrashInFirebase(deletedStudents).catch(console.warn);
+    fetch('/api/admin/trash/restore-all', { method: 'POST' }).catch(() => {});
+  };
+
+  // Permanently delete student from Trash
+  const handlePermanentlyDeleteStudent = (studentId: string) => {
+    const remainingTrash = deletedStudents.filter((s) => s.id !== studentId);
+    setDeletedStudents(remainingTrash);
+    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(remainingTrash));
+
+    permanentlyDeleteStudentFromTrashInFirebase(studentId).catch(console.warn);
+    fetch(`/api/admin/trash/${encodeURIComponent(studentId)}`, { method: 'DELETE' }).catch(() => {});
+  };
+
+  // Empty entire Recycle Bin
+  const handleEmptyTrash = () => {
+    setDeletedStudents([]);
+    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify([]));
+
+    emptyTrashInFirebase().catch(console.warn);
+    fetch('/api/admin/trash', { method: 'DELETE' }).catch(() => {});
   };
 
   const handleSaveSubjects = async (newSubjects: SubjectConfig[]) => {
@@ -841,6 +974,7 @@ export default function App() {
             subjects={subjects}
             schoolSettings={schoolSettings}
             gradeRules={gradeRules}
+            deletedStudents={deletedStudents}
             onSaveStudents={handleSaveStudents}
             onSaveSubjects={handleSaveSubjects}
             onSaveSchoolSettings={handleSaveSchoolSettings}
@@ -849,6 +983,12 @@ export default function App() {
             onBackToPublic={handleBackToSearch}
             onLogout={handleAdminLogout}
             initialSelectedStudentId={selectedStudentForAdminMarks}
+            onDeleteStudent={handleDeleteStudent}
+            onBatchDeleteStudents={handleBatchDeleteStudents}
+            onRestoreStudent={handleRestoreStudent}
+            onRestoreAllStudents={handleRestoreAllStudents}
+            onPermanentlyDeleteStudent={handlePermanentlyDeleteStudent}
+            onEmptyTrash={handleEmptyTrash}
           />
         ) : (
           <div className="w-full min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">

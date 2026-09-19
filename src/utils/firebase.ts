@@ -617,6 +617,170 @@ export async function deleteStudentFromFirebase(studentId: string): Promise<bool
   }
 }
 
+/**
+ * Move student to Recycle Bin (Trash) in Firebase Realtime Database:
+ * 1. Writes to ref(db, `deleted_students/${student.id}`)
+ * 2. Removes from ref(db, `students/${student.id}`)
+ */
+export async function moveStudentToTrashInFirebase(student: Student): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const studentWithTimestamp = {
+      ...student,
+      deletedAt: student.deletedAt || new Date().toISOString(),
+    };
+    const trashRef = ref(database, `deleted_students/${student.id}`);
+    const studentRef = ref(database, `students/${student.id}`);
+
+    await set(trashRef, cleanForFirebase(studentWithTimestamp));
+    await remove(studentRef);
+    console.log(`[Firebase RTDB] Student ${student.id} moved to trash.`);
+    return true;
+  } catch (err) {
+    console.error(`[Firebase RTDB] Error moving student ${student.id} to trash:`, err);
+    return false;
+  }
+}
+
+/**
+ * Move multiple students to Recycle Bin (Trash) in batch
+ */
+export async function moveBatchStudentsToTrashInFirebase(studentsList: Student[]): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database || studentsList.length === 0) return false;
+
+  try {
+    const updates: Record<string, any> = {};
+    const now = new Date().toISOString();
+    for (const st of studentsList) {
+      const studentWithTimestamp = {
+        ...st,
+        deletedAt: st.deletedAt || now,
+      };
+      updates[`deleted_students/${st.id}`] = cleanForFirebase(studentWithTimestamp);
+      updates[`students/${st.id}`] = null;
+    }
+    await update(ref(database), updates);
+    console.log(`[Firebase RTDB] Batch ${studentsList.length} students moved to trash.`);
+    return true;
+  } catch (err) {
+    console.error(`[Firebase RTDB] Error batch moving students to trash:`, err);
+    return false;
+  }
+}
+
+/**
+ * Restore student from Recycle Bin back to active students list
+ */
+export async function restoreStudentFromTrashInFirebase(student: Student): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const { deletedAt, ...activeStudent } = student;
+    const studentRef = ref(database, `students/${student.id}`);
+    const trashRef = ref(database, `deleted_students/${student.id}`);
+
+    await set(studentRef, cleanForFirebase(activeStudent));
+    await remove(trashRef);
+    console.log(`[Firebase RTDB] Student ${student.id} restored from trash.`);
+    return true;
+  } catch (err) {
+    console.error(`[Firebase RTDB] Error restoring student ${student.id}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Restore all students from Recycle Bin back to active students list
+ */
+export async function restoreAllStudentsFromTrashInFirebase(studentsList: Student[]): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database || studentsList.length === 0) return false;
+
+  try {
+    const updates: Record<string, any> = {};
+    for (const st of studentsList) {
+      const { deletedAt, ...activeStudent } = st;
+      updates[`students/${st.id}`] = cleanForFirebase(activeStudent);
+      updates[`deleted_students/${st.id}`] = null;
+    }
+    await update(ref(database), updates);
+    console.log(`[Firebase RTDB] All ${studentsList.length} students restored from trash.`);
+    return true;
+  } catch (err) {
+    console.error(`[Firebase RTDB] Error restoring all students from trash:`, err);
+    return false;
+  }
+}
+
+/**
+ * Permanently delete student from Trash (irreversible)
+ */
+export async function permanentlyDeleteStudentFromTrashInFirebase(studentId: string): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const trashRef = ref(database, `deleted_students/${studentId}`);
+    await remove(trashRef);
+    console.log(`[Firebase RTDB] Student ${studentId} permanently deleted from trash.`);
+    return true;
+  } catch (err) {
+    console.error(`[Firebase RTDB] Error permanently deleting student ${studentId}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Empty entire Recycle Bin in Firebase
+ */
+export async function emptyTrashInFirebase(): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const trashRef = ref(database, 'deleted_students');
+    await remove(trashRef);
+    console.log(`[Firebase RTDB] Trash emptied.`);
+    return true;
+  } catch (err) {
+    console.error(`[Firebase RTDB] Error emptying trash:`, err);
+    return false;
+  }
+}
+
+/**
+ * Subscribe to Deleted Students (Recycle Bin) in Realtime Database
+ */
+export function subscribeToDeletedStudents(callback: (deletedStudents: Student[]) => void): Unsubscribe {
+  const database = getFirebaseDb();
+  if (!database) return () => {};
+
+  try {
+    const trashRef = ref(database, 'deleted_students');
+    return onValue(trashRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        let list: Student[] = [];
+        if (Array.isArray(val)) {
+          list = val.filter(Boolean);
+        } else if (typeof val === 'object' && val !== null) {
+          list = Object.values(val);
+        }
+        callback(list);
+      } else {
+        callback([]);
+      }
+    });
+  } catch (err) {
+    console.warn('[Firebase RTDB] Error subscribing to deleted students:', err);
+    return () => {};
+  }
+}
+
 // ============================================================================
 // CRUD OPERATION: SUBJECTS (ref, set)
 // ============================================================================
