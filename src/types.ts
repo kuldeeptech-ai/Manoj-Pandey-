@@ -42,6 +42,7 @@ export interface Student {
   mobile?: string;
   address?: string;
   aadharNo?: string;
+  aparId?: string;
   teacherRemark?: string;
   classTeacherName?: string;
   classTeacherSignatureUrl?: string;

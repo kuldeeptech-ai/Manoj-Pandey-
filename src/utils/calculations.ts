@@ -114,6 +114,7 @@ export function normalizeStudentRecord(s: any): Student {
     mobile: s.mobile ? String(s.mobile).trim() : '',
     address: s.address ? String(s.address).trim() : '',
     aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
+    aparId: s.aparId ? String(s.aparId).trim() : (s.apaarId ? String(s.apaarId).trim() : ''),
     className: String(s.className || '').trim(),
     rollNo: String(s.rollNo || '').trim(),
     name: String(s.name || '').trim(),

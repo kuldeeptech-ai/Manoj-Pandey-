@@ -418,6 +418,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       mobile: '',
       address: '',
       aadharNo: '',
+      aparId: '',
       photoUrl: DEFAULT_STUDENT_PHOTO_FALLBACK,
       teacherRemark: 'Regular and disciplined student. Shows consistent academic progress.',
       marks: {},
@@ -438,6 +439,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       mobile: editingStudent.mobile ? String(editingStudent.mobile).trim() : '',
       address: editingStudent.address ? String(editingStudent.address).trim() : '',
       aadharNo: editingStudent.aadharNo ? String(editingStudent.aadharNo).trim() : '',
+      aparId: editingStudent.aparId ? String(editingStudent.aparId).trim() : '',
     };
 
     if (isNewStudent) {
@@ -1648,7 +1650,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <th className="py-3 px-4">Student Name</th>
                       <th className="py-3 px-4">Father / Mother</th>
                       <th className="py-3 px-4">Class</th>
-                      <th className="py-3 px-4">Mobile & Aadhar</th>
+                      <th className="py-3 px-4">Mobile, Aadhar & APAAR</th>
                       <th className="py-3 px-4">DOB</th>
                       <th className="py-3 px-4">Gender</th>
                       <th className="py-3 px-4 text-right">Actions</th>
@@ -1717,6 +1719,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               <div className="font-mono text-[10px]">
                                 <span className="font-semibold text-slate-400">Aad:</span> {st.aadharNo || '—'}
                               </div>
+                              {Boolean(st.aparId && st.aparId.trim()) && (
+                                <div className="font-mono text-[10px] text-blue-700 font-semibold">
+                                  <span className="font-semibold text-slate-400">APAAR:</span> {st.aparId}
+                                </div>
+                              )}
                               {Boolean(st.address && st.address.trim()) && (
                                 <div className="text-[10px] text-slate-500 truncate max-w-[130px]" title={st.address}>
                                   <span className="font-semibold text-slate-400">पता:</span> {st.address}
@@ -1925,19 +1932,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         />
                       </div>
 
-                      <div className="sm:col-span-2">
-                        <label className="block mb-1 text-[11px] uppercase font-bold text-slate-800">
-                          Student Address (छात्र का पता) <span className="text-slate-500 font-normal lowercase">(वैकल्पिक - भरने पर ही मार्कशीट पर आधार नंबर के पास दिखेगा)</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={editingStudent.address || ''}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, address: e.target.value })}
-                          placeholder="उदा. ग्राम - रामपुर, पोस्ट - सदर, जिला - संतकबीरनगर (उ.प्र.)"
-                          className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 focus:bg-white text-xs"
-                        />
-                      </div>
-
                       <div>
                         <label className="block mb-1 text-[11px] uppercase font-bold text-slate-800">
                           Aadhaar Card No. (आधार कार्ड नंबर)
@@ -1947,7 +1941,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           value={editingStudent.aadharNo || ''}
                           onChange={(e) => setEditingStudent({ ...editingStudent, aadharNo: e.target.value })}
                           placeholder="e.g. 7845 2310 9012"
-                          className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 focus:bg-white"
+                          className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 focus:bg-white font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block mb-1 text-[11px] uppercase font-bold text-slate-800 flex items-center justify-between">
+                          <span>APAAR ID (अपार आईडी)</span>
+                          <span className="text-[10px] text-blue-600 font-semibold normal-case">12-अंक One Nation Student ID</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={editingStudent.aparId || ''}
+                          onChange={(e) => setEditingStudent({ ...editingStudent, aparId: e.target.value })}
+                          placeholder="उदा. 1234 5678 9012"
+                          className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 focus:bg-white font-mono"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block mb-1 text-[11px] uppercase font-bold text-slate-800 flex items-center justify-between">
+                          <span>बच्चे का पता (Student Address Box)</span>
+                          <span className="text-[10px] text-emerald-700 font-semibold normal-case">✓ मार्कशीट पर प्रदर्शित होगा</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={editingStudent.address || ''}
+                          onChange={(e) => setEditingStudent({ ...editingStudent, address: e.target.value })}
+                          placeholder="उदा. ग्राम - रामपुर, पोस्ट - सदर, जिला - संतकबीरनगर (उ.प्र.)"
+                          className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 focus:bg-white text-xs font-medium"
                         />
                       </div>
                     </div>

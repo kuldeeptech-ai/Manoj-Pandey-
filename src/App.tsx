@@ -727,6 +727,7 @@ export default function App() {
       mobile: s.mobile ? String(s.mobile).trim() : '',
       address: s.address ? String(s.address).trim() : '',
       aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
+      aparId: s.aparId ? String(s.aparId).trim() : ((s as any).apaarId ? String((s as any).apaarId).trim() : ''),
     })));
     setStudents(formatted);
     localStorage.setItem('hd_pandey_students', JSON.stringify(formatted));

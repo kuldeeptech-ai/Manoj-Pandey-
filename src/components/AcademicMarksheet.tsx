@@ -300,16 +300,23 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                 <span className="text-[10px] font-bold uppercase tracking-wider">
                   STUDENT INFORMATION
                 </span>
-                <span className="text-[9px] font-bold" style={{ color: '#e2e8f0' }}>
-                  ADM NO: {student.admissionNo || '—'}
-                </span>
+                <div className="flex items-center gap-3">
+                  {Boolean(student.aparId && student.aparId.trim()) && (
+                    <span className="text-[9px] font-bold text-amber-300 font-mono">
+                      APAAR ID: {student.aparId}
+                    </span>
+                  )}
+                  <span className="text-[9px] font-bold" style={{ color: '#e2e8f0' }}>
+                    ADM NO: {student.admissionNo || '—'}
+                  </span>
+                </div>
               </div>
 
               <div className="p-1 flex gap-2 items-stretch" style={{ backgroundColor: '#ffffff' }}>
-                {/* 2-Column Info Flexbox + Full Width Address Line (Mathematically aligned and fitted) */}
+                {/* 2-Column Info Flexbox (Mathematically aligned 6 rows each side, perfectly matching 100px photo height) */}
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="flex gap-3">
-                    {/* Left Column (5 balanced rows) */}
+                    {/* Left Column (6 balanced rows) */}
                     <div className={`w-1/2 flex flex-col ${isVeryDense ? 'gap-y-0.5 text-[9.5px]' : 'gap-y-1 text-[10.5px]'}`}>
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Student Name:</span>
@@ -342,9 +349,14 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                           <span className="flex-1 font-bold">&nbsp;</span>
                         </div>
                       )}
+
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>APAAR ID:</span>
+                        <span className="flex-1 font-bold font-mono tracking-tight" style={{ color: '#0f2b48' }}>{student.aparId || '—'}</span>
+                      </div>
                     </div>
 
-                    {/* Right Column (5 balanced rows matching Left Column exactly) */}
+                    {/* Right Column (6 balanced rows matching Left Column exactly) */}
                     <div className={`w-1/2 flex flex-col ${isVeryDense ? 'gap-y-0.5 text-[9.5px]' : 'gap-y-1 text-[10.5px]'}`}>
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Roll No.:</span>
@@ -377,30 +389,15 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                           <span className="flex-1 font-bold">&nbsp;</span>
                         </div>
                       )}
+
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Address:</span>
+                        <span className="flex-1 font-bold truncate leading-tight" style={{ color: '#0f172a' }} title={student.address || '—'}>
+                          {student.address || '—'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Student Address: Spans smoothly across the entire width right below Aadhar No., perfectly aligned and fitting without disturbing any table layout */}
-                  {Boolean(student.address && student.address.trim()) && (
-                    <div
-                      className={`flex items-baseline pt-1 pb-0.5 mt-0.5 ${isVeryDense ? 'text-[9.5px]' : 'text-[10px]'}`}
-                      style={{ borderTop: '1px solid #e2e8f0' }}
-                    >
-                      <span
-                        className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap"
-                        style={{ color: '#475569' }}
-                      >
-                        Address:
-                      </span>
-                      <span
-                        className="flex-1 font-bold truncate leading-tight"
-                        style={{ color: '#0f172a' }}
-                        title={student.address}
-                      >
-                        {student.address}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Right: Fixed Student Portrait Photo (Guarded by showPhoto toggle) */}

@@ -65,6 +65,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
     'Mobile',
     'Address',
     'Aadhar_No',
+    'APAAR_ID',
     'Teacher_Remark',
     'Photo_URL',
   ];
@@ -178,6 +179,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
     const idxMobile = findCol(['mobile', 'phone', 'contact', 'phoneno']);
     const idxAddress = findCol(['address', 'pata', 'addr', 'village', 'gram', 'city']);
     const idxAadhar = findCol(['aadhar', 'aadhaar', 'uid', 'aadharno']);
+    const idxApar = findCol(['apar', 'aparid', 'apaar', 'apaarid', 'one_nation', 'student_id']);
     const idxRemark = findCol(['remark', 'teacherremark', 'tippani']);
     const idxPhoto = findCol(['photo', 'image', 'photourl']);
 
@@ -233,6 +235,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         mobile: getVal(idxMobile, ''),
         address: getVal(idxAddress, ''),
         aadharNo: getVal(idxAadhar, ''),
+        aparId: getVal(idxApar, ''),
         photoUrl: getVal(idxPhoto, ''),
         session: getVal(idxSession, currentSession),
         teacherRemark: getVal(idxRemark, 'Good student with positive attitude'),

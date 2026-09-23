@@ -23,6 +23,7 @@ function normalizeStudent(s: any): any {
     mobile: s.mobile ? String(s.mobile).trim() : '',
     address: s.address ? String(s.address).trim() : '',
     aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
+    aparId: s.aparId ? String(s.aparId).trim() : (s.apaarId ? String(s.apaarId).trim() : ''),
   };
 }
 
@@ -123,6 +124,7 @@ async function startServer() {
       if (cleanQuery && cleanQuery.length >= 10) {
         if (s.mobile && s.mobile.replace(/[^0-9]/g, '') === cleanQuery) return true;
         if (s.aadharNo && s.aadharNo.replace(/[^0-9]/g, '') === cleanQuery) return true;
+        if (s.aparId && s.aparId.replace(/[^0-9]/g, '') === cleanQuery) return true;
       }
       return false;
     });
