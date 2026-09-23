@@ -5402,24 +5402,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       </main>
 
       {/* BULK IMPORT STUDENTS MODAL */}
-      <BulkImportModal
-        isOpen={showBulkImportModal}
-        onClose={() => setShowBulkImportModal(false)}
-        onImport={handleImportStudents}
-        onImportStudents={handleImportStudents}
-        existingStudents={students}
-        currentSession={settingsForm.academicSession || schoolSettings.session || '2026–2027'}
-      />
+      {showBulkImportModal && (
+        <BulkImportModal
+          isOpen={showBulkImportModal}
+          onClose={() => setShowBulkImportModal(false)}
+          onImport={handleImportStudents}
+          onImportStudents={handleImportStudents}
+          existingStudents={students}
+          currentSession={settingsForm.academicSession || schoolSettings.session || '2026–2027'}
+        />
+      )}
 
       {/* BULK MARKS ENTRY / EXCEL MODAL */}
-      <BulkMarksModal
-        isOpen={showBulkMarksModal}
-        onClose={() => setShowBulkMarksModal(false)}
-        students={students}
-        subjects={subjects}
-        onSaveMarks={handleSaveBulkMarks}
-        onSaveBulkMarks={handleSaveBulkMarks}
-      />
+      {showBulkMarksModal && (
+        <BulkMarksModal
+          isOpen={showBulkMarksModal}
+          onClose={() => setShowBulkMarksModal(false)}
+          students={students}
+          subjects={subjects}
+          onSaveMarks={handleSaveBulkMarks}
+          onSaveBulkMarks={handleSaveBulkMarks}
+        />
+      )}
     </div>
   );
 };
