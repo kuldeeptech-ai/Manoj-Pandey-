@@ -105,7 +105,9 @@ export async function fetchAllFromGoogleSheet(url: string): Promise<{
           ...s,
           dob: formatDisplayDate(s.dob),
           mobile: s.mobile !== undefined && s.mobile !== null ? String(s.mobile).trim() : '',
+          address: s.address !== undefined && s.address !== null ? String(s.address).trim() : '',
           aadharNo: s.aadharNo !== undefined && s.aadharNo !== null ? String(s.aadharNo).trim() : '',
+          aparId: s.aparId !== undefined && s.aparId !== null ? String(s.aparId).trim() : ((s as any).apaarId ? String((s as any).apaarId).trim() : ''),
         }))
       : undefined;
 
@@ -155,7 +157,9 @@ export async function searchStudentFromGoogleSheet(url: string, query: string): 
         ...st,
         dob: formatDisplayDate(st.dob),
         mobile: st.mobile !== undefined && st.mobile !== null ? String(st.mobile).trim() : '',
+        address: st.address !== undefined && st.address !== null ? String(st.address).trim() : '',
         aadharNo: st.aadharNo !== undefined && st.aadharNo !== null ? String(st.aadharNo).trim() : '',
+        aparId: st.aparId !== undefined && st.aparId !== null ? String(st.aparId).trim() : ((st as any).apaarId ? String((st as any).apaarId).trim() : ''),
       };
       return {
         student: normalizedStudent,

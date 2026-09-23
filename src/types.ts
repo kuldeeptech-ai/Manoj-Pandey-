@@ -161,7 +161,9 @@ export interface StudentResultData {
     photoUrl?: string;
     session: string;
     mobile?: string;
+    address?: string;
     aadharNo?: string;
+    aparId?: string;
     classTeacherName?: string;
     classTeacherSignatureUrl?: string;
   };

@@ -301,9 +301,9 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                   STUDENT INFORMATION
                 </span>
                 <div className="flex items-center gap-3">
-                  {Boolean(student.aparId && student.aparId.trim()) && (
+                  {Boolean((student.aparId || (student as any).apaarId || '').trim()) && (
                     <span className="text-[9px] font-bold text-amber-300 font-mono">
-                      APAAR ID: {student.aparId}
+                      APAAR ID: {(student.aparId || (student as any).apaarId || '').trim()}
                     </span>
                   )}
                   <span className="text-[9px] font-bold" style={{ color: '#e2e8f0' }}>
@@ -352,7 +352,9 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
 
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <span className="w-[84px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>APAAR ID:</span>
-                        <span className="flex-1 font-bold font-mono tracking-tight" style={{ color: '#0f2b48' }}>{student.aparId || '—'}</span>
+                        <span className="flex-1 font-bold font-mono tracking-tight" style={{ color: '#0f2b48' }}>
+                          {student.aparId || (student as any).apaarId || (student as any).apar || '—'}
+                        </span>
                       </div>
                     </div>
 
@@ -392,8 +394,8 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
 
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <span className="w-[74px] shrink-0 font-bold uppercase whitespace-nowrap" style={{ color: '#475569' }}>Address:</span>
-                        <span className="flex-1 font-bold truncate leading-tight" style={{ color: '#0f172a' }} title={student.address || '—'}>
-                          {student.address || '—'}
+                        <span className="flex-1 font-bold truncate leading-tight" style={{ color: '#0f172a' }} title={student.address || (student as any).pata || '—'}>
+                          {student.address || (student as any).pata || '—'}
                         </span>
                       </div>
                     </div>
