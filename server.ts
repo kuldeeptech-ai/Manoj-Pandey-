@@ -18,6 +18,7 @@ function normalizeStudent(s: any): any {
   if (!s || typeof s !== 'object') return s;
   return {
     ...s,
+    session: (s.session && String(s.session).trim()) || store.schoolSettings?.session || '2026–2027',
     marks: s.marks && typeof s.marks === 'object' ? s.marks : {},
     dob: formatDisplayDate(s.dob),
     mobile: s.mobile ? String(s.mobile).trim() : '',
@@ -143,7 +144,15 @@ async function startServer() {
           if (sheetJson?.student) {
             const liveStudent = normalizeStudent(sheetJson.student);
             if (checkClassMatch(liveStudent.className)) {
-              matched = liveStudent;
+              matched = {
+                ...(matched || {}),
+                ...liveStudent,
+                address: liveStudent.address || matched?.address || '',
+                aparId: liveStudent.aparId || matched?.aparId || '',
+                aadharNo: liveStudent.aadharNo || matched?.aadharNo || '',
+                mobile: liveStudent.mobile || matched?.mobile || '',
+                session: liveStudent.session || matched?.session || store.schoolSettings?.session || '2026–2027',
+              };
             }
           }
         }

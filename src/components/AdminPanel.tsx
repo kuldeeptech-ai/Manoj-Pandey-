@@ -165,11 +165,46 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Student Selection & Filters state
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [studentClassFilter, setStudentClassFilter] = useState<string>('ALL');
+  const [studentClassFilter, setStudentClassFilter] = useState<string>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('hd_admin_selected_class');
+      if (saved) return saved;
+    }
+    return 'ALL';
+  });
   const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
   const [isTrashModalOpen, setIsTrashModalOpen] = useState<boolean>(false);
   const [trashSearchQuery, setTrashSearchQuery] = useState<string>('');
   const [undoToast, setUndoToast] = useState<{ message: string; studentIds: string[] } | null>(null);
+  const [headerCopyNotice, setHeaderCopyNotice] = useState<string | null>(null);
+
+  // Persistent class filter handler
+  const handleStudentClassFilterChange = (cls: string) => {
+    setStudentClassFilter(cls);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('hd_admin_selected_class', cls);
+    }
+  };
+
+  // 1-Click Copy all 17 Excel Column Headers including APAAR ID and Address
+  const handleCopyStudentHeaders = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(STUDENTS_SHEET_HEADER);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = STUDENTS_SHEET_HEADER;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setHeaderCopyNotice('✅ APAAR_ID व Address सहित सभी 17 कॉलम हेडर कॉपी हो गए! Excel में Row 1 पर पेस्ट करें।');
+      setTimeout(() => setHeaderCopyNotice(null), 5000);
+    } catch {
+      setHeaderCopyNotice('कॉलम हेडर: ' + STUDENTS_SHEET_HEADER);
+    }
+  };
 
   // Auto-dismiss undo toast after 6 seconds
   useEffect(() => {
@@ -200,11 +235,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           (s.rollNo || '').toLowerCase().includes(q) ||
           (s.admissionNo || '').toLowerCase().includes(q) ||
           (s.fatherName || '').toLowerCase().includes(q) ||
-          (s.mobile || '').includes(q)
+          (s.mobile || '').includes(q) ||
+          (s.aparId || '').includes(q) ||
+          (s.aadharNo || '').includes(q) ||
+          (s.address || '').toLowerCase().includes(q)
       );
     }
     return sortStudentsByRoll(list);
   }, [students, studentClassFilter, studentSearchQuery]);
+
+  // Filtered students for Marks tab by the active class filter
+  const studentsForMarks = useMemo(() => {
+    let list = students;
+    if (studentClassFilter && studentClassFilter !== 'ALL') {
+      list = list.filter((s) => (s.className || '').trim().toLowerCase() === studentClassFilter.toLowerCase());
+    }
+    return sortStudentsByRoll(list);
+  }, [students, studentClassFilter]);
+
+  // Keep selectedStudentIdForMarks in sync when class filter changes
+  useEffect(() => {
+    if (studentsForMarks.length > 0) {
+      const exists = studentsForMarks.some((s) => s.id === selectedStudentIdForMarks);
+      if (!exists) {
+        handleSelectStudentForMarks(studentsForMarks[0].id);
+      }
+    }
+  }, [studentsForMarks, selectedStudentIdForMarks]);
 
   // Filtered trash records
   const filteredTrashStudents = useMemo(() => {
@@ -403,6 +460,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Student CRUD
   const handleStartAddStudent = () => {
     setIsNewStudent(true);
+    const defaultClass = (studentClassFilter && studentClassFilter !== 'ALL') ? studentClassFilter : '8th';
+    const classStudents = students.filter((s) => (s.className || '').trim().toLowerCase() === defaultClass.toLowerCase());
+    const nextRoll = classStudents.length + 1;
+    const defaultSession = schoolSettings.session || '2026–2027';
+
     setEditingStudent({
       id: `std-${Date.now()}`,
       name: '',
@@ -410,11 +472,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       motherName: '',
       dob: '01/01/2012',
       gender: 'FEMALE',
-      className: '8th',
+      className: defaultClass,
       section: 'A',
-      rollNo: String(students.length + 1),
-      admissionNo: `ADM-2024-${String(students.length + 1).padStart(4, '0')}`,
-      session: schoolSettings.session,
+      rollNo: String(nextRoll),
+      admissionNo: `ADM-2026-${String(students.length + 1).padStart(4, '0')}`,
+      session: defaultSession,
       mobile: '',
       address: '',
       aadharNo: '',
@@ -433,8 +495,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
 
+    const defaultSession = schoolSettings.session || '2026–2027';
     const sanitizedStudent: Student = {
       ...editingStudent,
+      session: (editingStudent.session && editingStudent.session.trim()) || defaultSession,
       dob: formatDisplayDate(editingStudent.dob),
       mobile: editingStudent.mobile ? String(editingStudent.mobile).trim() : '',
       address: editingStudent.address ? String(editingStudent.address).trim() : '',
@@ -1476,6 +1540,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
+                  onClick={handleCopyStudentHeaders}
+                  className="px-3 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all hover:scale-[1.02] active:scale-98"
+                  title="APAAR ID, Address, Mobile व Aadhar सहित सभी 17 Excel कॉलम हेडर एक क्लिक में कॉपी करें"
+                >
+                  <Copy className="w-4 h-4 text-amber-300" />
+                  <span>हेडर कॉपी करें (APAAR & Address सहित)</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setIsTrashModalOpen(true)}
                   className={`px-3 py-2 text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all border ${
                     deletedStudents.length > 0
@@ -1514,25 +1587,68 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
+            {/* Header Copy Notice Banner */}
+            {headerCopyNotice && (
+              <div className="p-3 bg-emerald-50 border-2 border-emerald-400 rounded-xl text-emerald-950 font-bold text-xs flex items-center gap-2 animate-in fade-in">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{headerCopyNotice}</span>
+              </div>
+            )}
+
             {/* Filter, Search & Roll Auto-sequence toolbar */}
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
               <div className="flex flex-wrap items-center gap-2">
-                {/* Class Filter */}
+                {/* Class Filter Dropdown */}
                 <div className="flex items-center gap-1.5 bg-white px-2.5 py-1.5 border border-slate-300 rounded shadow-2xs">
                   <Filter className="w-3.5 h-3.5 text-slate-500" />
                   <span className="font-semibold text-slate-600">कक्षा:</span>
                   <select
                     value={studentClassFilter}
-                    onChange={(e) => setStudentClassFilter(e.target.value)}
+                    onChange={(e) => handleStudentClassFilterChange(e.target.value)}
                     className="font-bold text-[#0f2b48] bg-transparent focus:outline-hidden cursor-pointer"
                   >
                     <option value="ALL">सभी कक्षाएं (All Classes)</option>
-                    {studentClasses.map((cls) => (
-                      <option key={cls} value={cls}>
-                        कक्षा {cls}
-                      </option>
-                    ))}
+                    {studentClasses.map((cls) => {
+                      const count = students.filter((s) => (s.className || '').trim().toLowerCase() === cls.toLowerCase()).length;
+                      return (
+                        <option key={cls} value={cls}>
+                          कक्षा {cls} ({count} छात्र)
+                        </option>
+                      );
+                    })}
                   </select>
+                </div>
+
+                {/* Quick 1-click class selection pills */}
+                <div className="hidden xl:flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleStudentClassFilterChange('ALL')}
+                    className={`px-2 py-1 rounded text-[11px] font-bold border cursor-pointer transition-all ${
+                      studentClassFilter === 'ALL'
+                        ? 'bg-[#0f2b48] text-white border-[#0f2b48]'
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                    }`}
+                  >
+                    All ({students.length})
+                  </button>
+                  {studentClasses.map((cls) => {
+                    const count = students.filter((s) => (s.className || '').trim().toLowerCase() === cls.toLowerCase()).length;
+                    return (
+                      <button
+                        key={cls}
+                        type="button"
+                        onClick={() => handleStudentClassFilterChange(cls)}
+                        className={`px-2 py-1 rounded text-[11px] font-bold border cursor-pointer transition-all ${
+                          studentClassFilter.toLowerCase() === cls.toLowerCase()
+                            ? 'bg-[#0f2b48] text-white border-[#0f2b48]'
+                            : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                        }`}
+                      >
+                        {cls} ({count})
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Search Input */}
@@ -1910,13 +2026,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
 
                       <div>
-                        <label className="block mb-1 text-[11px] uppercase font-bold">Session</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] uppercase font-bold text-slate-800">
+                            Session (सत्र - स्वतः 2026-27 भरा हुआ)
+                          </label>
+                          <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                            डिफ़ॉल्ट: {schoolSettings.session || '2026–2027'}
+                          </span>
+                        </div>
                         <input
                           type="text"
-                          value={editingStudent.session}
+                          value={editingStudent.session || schoolSettings.session || '2026–2027'}
                           onChange={(e) => setEditingStudent({ ...editingStudent, session: e.target.value })}
-                          className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48]"
+                          className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 font-bold text-slate-800"
+                          placeholder={schoolSettings.session || '2026–2027'}
                         />
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="text-[10px] text-slate-500 font-semibold">1-क्लिक सत्र:</span>
+                          {[schoolSettings.session || '2026–2027', '2026-27', '2025–2026']
+                            .filter((v, i, a) => a.indexOf(v) === i)
+                            .map((sess) => (
+                              <button
+                                key={sess}
+                                type="button"
+                                onClick={() => setEditingStudent({ ...editingStudent, session: sess })}
+                                className={`text-[10px] px-2 py-0.5 rounded border font-bold cursor-pointer transition-all ${
+                                  (editingStudent.session || schoolSettings.session || '2026–2027') === sess
+                                    ? 'bg-[#0f2b48] text-white border-[#0f2b48]'
+                                    : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-700'
+                                }`}
+                              >
+                                {sess}
+                              </button>
+                            ))}
+                        </div>
                       </div>
 
                       <div>
@@ -1946,10 +2089,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
 
                       <div>
-                        <label className="block mb-1 text-[11px] uppercase font-bold text-slate-800 flex items-center justify-between">
-                          <span>APAAR ID (अपार आईडी)</span>
-                          <span className="text-[10px] text-blue-600 font-semibold normal-case">12-अंक One Nation Student ID</span>
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] uppercase font-bold text-slate-800 flex items-center gap-1">
+                            <span>APAAR ID (अपार आईडी)</span>
+                            <span className="text-[10px] text-blue-600 font-semibold normal-case">12-अंक One Nation</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText('APAAR_ID');
+                              setHeaderCopyNotice('APAAR_ID हेडर कॉपी हो गया!');
+                              setTimeout(() => setHeaderCopyNotice(null), 3000);
+                            }}
+                            className="text-[10px] text-blue-700 hover:text-blue-900 font-bold underline cursor-pointer"
+                            title="Excel के लिए हेडर कॉपी करें"
+                          >
+                            हेडर कॉपी करें
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={editingStudent.aparId || ''}
@@ -1960,10 +2117,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="block mb-1 text-[11px] uppercase font-bold text-slate-800 flex items-center justify-between">
-                          <span>बच्चे का पता (Student Address Box)</span>
-                          <span className="text-[10px] text-emerald-700 font-semibold normal-case">✓ मार्कशीट पर प्रदर्शित होगा</span>
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] uppercase font-bold text-slate-800 flex items-center gap-1">
+                            <span>बच्चे का पता (Student Address Box)</span>
+                            <span className="text-[10px] text-emerald-700 font-semibold normal-case">✓ मार्कशीट पर प्रदर्शित</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText('Address');
+                              setHeaderCopyNotice('Address हेडर कॉपी हो गया!');
+                              setTimeout(() => setHeaderCopyNotice(null), 3000);
+                            }}
+                            className="text-[10px] text-blue-700 hover:text-blue-900 font-bold underline cursor-pointer"
+                            title="Excel के लिए हेडर कॉपी करें"
+                          >
+                            हेडर कॉपी करें
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={editingStudent.address || ''}
@@ -2258,20 +2429,109 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {activeTab === 'marks' && (
           <div className="space-y-6">
             {/* Student Picker Banner */}
-            <div className="bg-white p-3 sm:p-4 rounded-lg border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                <span className="text-xs font-bold text-slate-600 uppercase shrink-0">Select Student:</span>
-                <select
-                  value={selectedStudentIdForMarks}
-                  onChange={(e) => handleSelectStudentForMarks(e.target.value)}
-                  className="p-2 border-2 border-[#0f2b48] rounded text-xs font-bold text-[#0f2b48] bg-[#f8faff] w-full sm:w-auto"
-                >
-                  {sortStudentsByRoll(students).map((s) => (
-                    <option key={s.id} value={s.id}>
-                      Roll {s.rollNo}: {s.name} ({s.className}-{s.section})
-                    </option>
-                  ))}
-                </select>
+            <div className="bg-white p-3 sm:p-4 rounded-lg border border-slate-200 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full xl:w-auto flex-wrap">
+                {/* 1. Class Filter Dropdown (Remembers selection & filters students) */}
+                <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 border border-slate-300 rounded shadow-2xs">
+                  <Filter className="w-3.5 h-3.5 text-[#0f2b48]" />
+                  <span className="text-xs font-bold text-slate-700 shrink-0">कक्षा (Class):</span>
+                  <select
+                    value={studentClassFilter}
+                    onChange={(e) => {
+                      const newCls = e.target.value;
+                      handleStudentClassFilterChange(newCls);
+                      const inClass =
+                        newCls === 'ALL'
+                          ? students
+                          : students.filter(
+                              (s) => (s.className || '').trim().toLowerCase() === newCls.toLowerCase()
+                            );
+                      const sorted = sortStudentsByRoll(inClass);
+                      if (sorted.length > 0) {
+                        handleSelectStudentForMarks(sorted[0].id);
+                      }
+                    }}
+                    className="p-1 border border-slate-300 rounded text-xs font-bold text-[#0f2b48] bg-white cursor-pointer"
+                  >
+                    <option value="ALL">सभी कक्षाएं (All Classes)</option>
+                    {studentClasses.map((cls) => {
+                      const count = students.filter(
+                        (s) => (s.className || '').trim().toLowerCase() === cls.toLowerCase()
+                      ).length;
+                      return (
+                        <option key={cls} value={cls}>
+                          कक्षा {cls} ({count} छात्र)
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Quick 1-click class pills for Marks */}
+                <div className="hidden sm:flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleStudentClassFilterChange('ALL');
+                      if (students.length > 0) handleSelectStudentForMarks(sortStudentsByRoll(students)[0].id);
+                    }}
+                    className={`px-2 py-1 rounded text-[11px] font-bold border cursor-pointer transition-all ${
+                      studentClassFilter === 'ALL'
+                        ? 'bg-[#0f2b48] text-white border-[#0f2b48]'
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {studentClasses.map((cls) => {
+                    const count = students.filter(
+                      (s) => (s.className || '').trim().toLowerCase() === cls.toLowerCase()
+                    ).length;
+                    return (
+                      <button
+                        key={cls}
+                        type="button"
+                        onClick={() => {
+                          handleStudentClassFilterChange(cls);
+                          const inClass = students.filter(
+                            (s) => (s.className || '').trim().toLowerCase() === cls.toLowerCase()
+                          );
+                          const sorted = sortStudentsByRoll(inClass);
+                          if (sorted.length > 0) {
+                            handleSelectStudentForMarks(sorted[0].id);
+                          }
+                        }}
+                        className={`px-2 py-1 rounded text-[11px] font-bold border cursor-pointer transition-all ${
+                          studentClassFilter.toLowerCase() === cls.toLowerCase()
+                            ? 'bg-[#0f2b48] text-white border-[#0f2b48]'
+                            : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                        }`}
+                      >
+                        {cls} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 2. Student Picker within Selected Class */}
+                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                  <span className="text-xs font-bold text-slate-600 uppercase shrink-0">छात्र (Student):</span>
+                  <select
+                    value={selectedStudentIdForMarks}
+                    onChange={(e) => handleSelectStudentForMarks(e.target.value)}
+                    className="p-2 border-2 border-[#0f2b48] rounded text-xs font-bold text-[#0f2b48] bg-[#f8faff] w-full sm:w-auto max-w-[280px] sm:max-w-none truncate"
+                  >
+                    {studentsForMarks.length === 0 ? (
+                      <option value="">इस कक्षा में कोई छात्र नहीं है</option>
+                    ) : (
+                      studentsForMarks.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          Roll {s.rollNo}: {s.name} ({s.className}-{s.section})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
@@ -4557,7 +4817,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             </div>
 
-            {/* Google Sheets Students Mobile & Aadhar FAQ & Guide */}
+            {/* Google Sheets Students Mobile, Address, Aadhar & APAAR ID FAQ & Guide */}
             <div className="bg-sky-50 border-2 border-sky-300 rounded-lg p-5 shadow-xs">
               <div className="flex items-start gap-3">
                 <div className="p-2 bg-[#0f2b48] text-white rounded-lg shrink-0 mt-0.5">
@@ -4566,22 +4826,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="space-y-3 w-full">
                   <div>
                     <h3 className="text-sm font-bold text-[#0f2b48] uppercase tracking-wide">
-                      मार्गदर्शन: Google Sheet में आधार कार्ड व मोबाइल नंबर (Mobile & Aadhar) कैसे जोड़ें?
+                      मार्गदर्शन: Google Sheet में पता, आधार कार्ड, APAAR ID व मोबाइल नंबर कैसे जोड़ें?
                     </h3>
                     <p className="text-xs text-sky-950 mt-1 leading-relaxed">
-                      पोर्टल अब <strong>Mobile Number</strong> और <strong>Aadhar Card Number</strong> दोनों को सपोर्ट करता है। आपकी Google Sheet की <code>Students</code> शीट में अंत में दो नए कॉलम (Headers) होने चाहिए: <code>Mobile</code> और <code>Aadhar_No</code>।
+                      पोर्टल अब <strong>Mobile Number</strong>, <strong>Address (पता)</strong>, <strong>Aadhar Card Number</strong> और <strong>APAAR_ID (अपार आईडी)</strong> सभी को पूर्ण रूप से सपोर्ट करता है। आपकी Google Sheet की <code>Students</code> शीट में ये सभी 17 कॉलम (Headers) होने चाहिए।
                     </p>
                   </div>
 
                   <div className="bg-white p-3.5 rounded border border-sky-200 text-xs space-y-2">
                     <div className="font-bold text-[#0f2b48]">
-                      Students शीट में कॉलम क्रम (15 Columns):
+                      Students शीट में कॉलम क्रम (17 Columns):
                     </div>
                     <div className="font-mono text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-200 break-all">
-                      Student_ID, Student_Name, Father_Name, Mother_Name, Date_of_Birth, Gender, Class, Section, Roll_No, Admission_No, Photo_URL, Session, Teacher_Remark, <strong className="text-emerald-700 bg-emerald-100 px-1 rounded">Mobile</strong>, <strong className="text-emerald-700 bg-emerald-100 px-1 rounded">Aadhar_No</strong>
+                      Student_ID, Student_Name, Father_Name, Mother_Name, Date_of_Birth, Gender, Class, Section, Roll_No, Admission_No, Photo_URL, Session, Teacher_Remark, <strong className="text-emerald-700 bg-emerald-100 px-1 rounded">Mobile</strong>, <strong className="text-blue-700 bg-blue-100 px-1 rounded">Address</strong>, <strong className="text-emerald-700 bg-emerald-100 px-1 rounded">Aadhar_No</strong>, <strong className="text-purple-700 bg-purple-100 px-1 rounded">APAAR_ID</strong>
                     </div>
                     <p className="text-[11px] text-slate-600">
-                      💡 <strong>सुझाव:</strong> यदि आपकी शीट में पहले से छात्र हैं, तो पहली पंक्ति (Row 1) के अंत में कॉलम <strong>Mobile</strong> और <strong>Aadhar_No</strong> लिख दें। नीचे छात्रों के 10-अंकीय मोबाइल नंबर व 12-अंकीय आधार नंबर दर्ज करें।
+                      💡 <strong>सुझाव:</strong> आप नीचे दिए गए नीले बटन <strong>"1-Click Copy: Students Sheet Header"</strong> पर क्लिक करें और सीधे अपनी Google Sheet या Excel की पहली पंक्ति (Row 1) पर Ctrl+V से पेस्ट कर दें।
                     </p>
                   </div>
 
@@ -4593,17 +4853,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         setStudentsCopiedNotice(true);
                         setTimeout(() => setStudentsCopiedNotice(false), 3500);
                       }}
-                      className="px-3 py-1.5 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
+                      className="px-3 py-1.5 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded flex items-center gap-1.5 cursor-pointer shadow-xs transition-all hover:scale-[1.02]"
                     >
                       {studentsCopiedNotice ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-emerald-300" />
-                          <span>हेडर कॉपी हो गया! (Google Sheet में Ctrl+V पेस्ट करें)</span>
+                          <span>17 कॉलम हेडर कॉपी हो गए! (शीट में Ctrl+V पेस्ट करें)</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>1-Click Copy: Students Sheet Header (With Mobile & Aadhar)</span>
+                          <Copy className="w-3.5 h-3.5 text-amber-300" />
+                          <span>1-Click Copy: Students Sheet Header (With Address & APAAR_ID)</span>
                         </>
                       )}
                     </button>
@@ -4809,7 +5069,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         onImport={handleImportStudents}
         onImportStudents={handleImportStudents}
         existingStudents={students}
-        currentSession={settingsForm.academicSession || '2025–2026'}
+        currentSession={settingsForm.academicSession || schoolSettings.session || '2026–2027'}
       />
 
       {/* BULK MARKS ENTRY / EXCEL MODAL */}

@@ -32,7 +32,7 @@ interface BulkImportModalProps {
 export const BulkImportModal: React.FC<BulkImportModalProps> = ({
   isOpen,
   onClose,
-  currentSession = '2025–2026',
+  currentSession = '2026–2027',
   existingStudents = [],
   onImportStudents,
   onImport,
@@ -98,9 +98,9 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
     const csvContent =
       studentHeaders.join(',') +
       '\n' +
-      `"1","Aarav Kumar","SKN-101","2011-05-15","Rajesh Kumar","Sunita Devi","8th","A","MALE","${currentSession}","9838700001","Rampur, Varanasi","123456789012","उत्कृष्ट प्रदर्शन (Excellent)","boy1"\n` +
-      `"2","Priya Sharma","SKN-102","2011-08-22","Mukesh Sharma","Kavita Devi","8th","A","FEMALE","${currentSession}","9838700002","Shivpur, Varanasi","123456789013","मेहनती व अनुशासित छात्रा","girl1"\n` +
-      `"3","Rohan Verma","SKN-103","2012-02-10","Sunil Verma","Pooja Verma","7th","A","MALE","${currentSession}","9838700003","Baurbyas, S.K.N.","123456789014","बहुत अच्छा विद्यार्थी","boy2"\n`;
+      `"1","Aarav Kumar","SKN-101","15/05/2011","Rajesh Kumar","Sunita Devi","8th","A","MALE","${currentSession}","9838700001","Gram - Rampur, Sant Kabir Nagar (U.P.)","123456789012","9845 2310 9012","उत्कृष्ट प्रदर्शन (Excellent)","boy1"\n` +
+      `"2","Priya Sharma","SKN-102","22/08/2011","Mukesh Sharma","Kavita Devi","8th","A","FEMALE","${currentSession}","9838700002","Gram - Shivpur, Sant Kabir Nagar (U.P.)","123456789013","8765 4321 0987","मेहनती व अनुशासित छात्रा","girl1"\n` +
+      `"3","Rohan Verma","SKN-103","10/02/2012","Sunil Verma","Pooja Verma","7th","A","MALE","${currentSession}","9838700003","Gram - Baurbyas, Sant Kabir Nagar (U.P.)","123456789014","7654 3210 9876","बहुत अच्छा विद्यार्थी","boy2"\n`;
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -179,7 +179,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
     const idxMobile = findCol(['mobile', 'phone', 'contact', 'phoneno']);
     const idxAddress = findCol(['address', 'pata', 'addr', 'village', 'gram', 'city']);
     const idxAadhar = findCol(['aadhar', 'aadhaar', 'uid', 'aadharno']);
-    const idxApar = findCol(['apar', 'aparid', 'apaar', 'apaarid', 'one_nation', 'student_id']);
+    const idxApar = findCol(['aparid', 'apaarid', 'apar', 'apaar', 'onenation', 'onenationid']);
     const idxRemark = findCol(['remark', 'teacherremark', 'tippani']);
     const idxPhoto = findCol(['photo', 'image', 'photourl']);
 
@@ -237,7 +237,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         aadharNo: getVal(idxAadhar, ''),
         aparId: getVal(idxApar, ''),
         photoUrl: getVal(idxPhoto, ''),
-        session: getVal(idxSession, currentSession),
+        session: getVal(idxSession, currentSession) || currentSession || '2026–2027',
         teacherRemark: getVal(idxRemark, 'Good student with positive attitude'),
         marks: {},
       });
@@ -330,7 +330,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
                   Excel या Google Sheets से पूरी कक्षा का डेटा एक क्लिक में इम्पोर्ट करें
                 </p>
                 <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
-                  सभी आवश्यक फील्ड्स (Student Name, Roll No, Admission No, DOB, Parents, Mobile, Aadhaar) समर्थित हैं।
+                  सभी आवश्यक फील्ड्स (Student Name, Roll No, Admission No, DOB, Parents, Class, Mobile, <strong>Address</strong>, Aadhar, <strong>APAAR_ID</strong>) समर्थित हैं।
                 </p>
               </div>
             </div>

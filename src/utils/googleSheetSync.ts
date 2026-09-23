@@ -259,7 +259,7 @@ function setupOrUpdateAllSheets() {
   var sHeaders = [
     "Student_ID", "Student_Name", "Father_Name", "Mother_Name", "Date_of_Birth", "Gender",
     "Class", "Section", "Roll_No", "Admission_No", "Photo_URL", "Session", "Teacher_Remark",
-    "Mobile", "Aadhar_No"
+    "Mobile", "Address", "Aadhar_No", "APAAR_ID"
   ];
   var sSheet = ss.getSheetByName("Students");
   if (!sSheet) {
@@ -274,8 +274,14 @@ function setupOrUpdateAllSheets() {
     if (!hMap["mobile"] && !hMap["phone"]) {
       sSheet.getRange(1, sSheet.getLastColumn() + 1).setValue("Mobile");
     }
+    if (!hMap["address"] && !hMap["pata"]) {
+      sSheet.getRange(1, sSheet.getLastColumn() + 1).setValue("Address");
+    }
     if (!hMap["aadharno"] && !hMap["aadhar"] && !hMap["adhar"]) {
       sSheet.getRange(1, sSheet.getLastColumn() + 1).setValue("Aadhar_No");
+    }
+    if (!hMap["aparid"] && !hMap["apaarid"] && !hMap["apar"] && !hMap["apaar"]) {
+      sSheet.getRange(1, sSheet.getLastColumn() + 1).setValue("APAAR_ID");
     }
   }
   formatHeader(sSheet, sSheet.getLastColumn());
@@ -716,7 +722,9 @@ function getAllStudentsWithMarks() {
   var colSession = findColIndex(["session", "academicsession", "year", "satr"], 11);
   var colRemark = findColIndex(["teacherremark", "remark", "remarks", "comment"], 12);
   var colMobile = findColIndex(["mobile", "mobileno", "mobilenumber", "phone", "phoneno", "phonenumber", "contact", "contactno", "cell", "mob", "whatsapp"], 13);
-  var colAadhar = findColIndex(["aadharno", "aadhar", "aadharnumber", "aadhaarno", "aadhaarnumber", "aadhaar", "adharno", "adharnumber", "adhar", "uidai", "uid", "aadharcard", "adharcard", "adharcardno"], 14);
+  var colAddress = findColIndex(["address", "pata", "studentaddress", "addr", "village", "gram", "city"], 14);
+  var colAadhar = findColIndex(["aadharno", "aadhar", "aadharnumber", "aadhaarno", "aadhaarnumber", "aadhaar", "adharno", "adharnumber", "adhar", "uidai", "uid", "aadharcard", "adharcard", "adharcardno"], 15);
+  var colApar = findColIndex(["aparid", "apaarid", "apar", "apaar", "onenationid"], 16);
 
   function getCellVal(rowVals, rowDisplays, idx, def) {
     if (idx < 0 || !rowVals || idx >= rowVals.length) return def || "";
@@ -757,10 +765,12 @@ function getAllStudentsWithMarks() {
         rollNo: roll || String(i),
         admissionNo: adm || ("ADM-" + id),
         photoUrl: getCellVal(row, rowDisplays, colPhoto, ""),
-        session: getCellVal(row, rowDisplays, colSession, "2025–2026"),
+        session: getCellVal(row, rowDisplays, colSession, "2026–2027"),
         teacherRemark: getCellVal(row, rowDisplays, colRemark, ""),
         mobile: cleanPhoneOrAadhar(colMobile >= 0 ? row[colMobile] : "", colMobile >= 0 && rowDisplays ? rowDisplays[colMobile] : ""),
+        address: getCellVal(row, rowDisplays, colAddress, ""),
         aadharNo: cleanPhoneOrAadhar(colAadhar >= 0 ? row[colAadhar] : "", colAadhar >= 0 && rowDisplays ? rowDisplays[colAadhar] : ""),
+        aparId: cleanPhoneOrAadhar(colApar >= 0 ? row[colApar] : "", colApar >= 0 && rowDisplays ? rowDisplays[colApar] : ""),
         marks: marksMap[id] || {}
       });
     }
@@ -827,7 +837,9 @@ function saveAllDataToSheets(payload) {
     for (var i = 0; i < payload.students.length; i++) {
       var s = payload.students[i];
       var mob = s.mobile ? String(s.mobile).trim() : "";
+      var addr = s.address ? String(s.address).trim() : ((s as any).pata ? String((s as any).pata).trim() : "");
       var aad = s.aadharNo ? String(s.aadharNo).trim() : "";
+      var apr = s.aparId ? String(s.aparId).trim() : ((s as any).apaarId ? String((s as any).apaarId).trim() : "");
       sRows.push([
         s.id,
         s.name,
@@ -843,7 +855,9 @@ function saveAllDataToSheets(payload) {
         s.session || "",
         s.teacherRemark || "",
         mob ? ("'" + mob) : "",
-        aad ? ("'" + aad) : ""
+        addr || "",
+        aad ? ("'" + aad) : "",
+        apr ? ("'" + apr) : ""
       ]);
     }
     if (sRows.length > 0) {
@@ -977,12 +991,12 @@ UKG,Smt. Priya Singh,Class Teacher,9876543212,
 7th,Shri Dharmendra Singh,Class Teacher,9876543219,
 8th,Shri Anand Sharma,Class Teacher,9876543220,`;
 
-export const STUDENTS_SHEET_HEADER = `Student_ID	Student_Name	Father_Name	Mother_Name	Date_of_Birth	Gender	Class	Section	Roll_No	Admission_No	Photo_URL	Session	Teacher_Remark	Mobile	Aadhar_No`;
+export const STUDENTS_SHEET_HEADER = `Student_ID	Student_Name	Father_Name	Mother_Name	Date_of_Birth	Gender	Class	Section	Roll_No	Admission_No	Photo_URL	Session	Teacher_Remark	Mobile	Address	Aadhar_No	APAAR_ID`;
 
-export const STUDENTS_SHEET_SAMPLE_CSV = `Student_ID,Student_Name,Father_Name,Mother_Name,Date_of_Birth,Gender,Class,Section,Roll_No,Admission_No,Photo_URL,Session,Teacher_Remark,Mobile,Aadhar_No
-std-17,PRIYA SHARMA,RAMESH SHARMA,SUNITA SHARMA,15/07/2012,FEMALE,8th,A,17,ADM-2024-0017,,2025–2026,Excellent academic performance!,9838123456,7845 2310 9012
-std-18,AMAN VERMA,RAJESH VERMA,POOJA VERMA,04/11/2011,MALE,8th,A,18,ADM-2024-0018,,2025–2026,Good effort in practical subjects.,9838123457,6789 1234 5678
-std-21,SNEHA GUPTA,VINOD GUPTA,REKHA GUPTA,22/02/2012,FEMALE,8th,A,21,ADM-2024-0021,,2025–2026,Outstanding performance across all terms!,9838123458,9012 3456 7890`;
+export const STUDENTS_SHEET_SAMPLE_CSV = `Student_ID,Student_Name,Father_Name,Mother_Name,Date_of_Birth,Gender,Class,Section,Roll_No,Admission_No,Photo_URL,Session,Teacher_Remark,Mobile,Address,Aadhar_No,APAAR_ID
+std-17,PRIYA SHARMA,RAMESH SHARMA,SUNITA SHARMA,15/07/2012,FEMALE,8th,A,17,ADM-2024-0017,,2026–2027,Excellent academic performance!,9838123456,Gram - Baurbyas Sant Kabir Nagar (U.P.),7845 2310 9012,9845 2310 9012
+std-18,AMAN VERMA,RAJESH VERMA,POOJA VERMA,04/11/2011,MALE,8th,A,18,ADM-2024-0018,,2026–2027,Good effort in practical subjects.,9838123457,Gram - Rampur Sant Kabir Nagar (U.P.),6789 1234 5678,8765 4321 0987
+std-21,SNEHA GUPTA,VINOD GUPTA,REKHA GUPTA,22/02/2012,FEMALE,8th,A,21,ADM-2024-0021,,2026–2027,Outstanding performance across all terms!,9838123458,Gram - Maghar Sant Kabir Nagar (U.P.),9012 3456 7890,7654 3210 9876`;
 
 /**
  * Trigger remote 1-Click Auto Setup & Upgrade on the Google Apps Script Web App

@@ -32,7 +32,13 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
   onSaveBulkMarks,
   onSaveMarks,
 }) => {
-  const [selectedClass, setSelectedClass] = useState<string>('ALL');
+  const [selectedClass, setSelectedClass] = useState<string>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('hd_admin_selected_class');
+      if (saved) return saved;
+    }
+    return 'ALL';
+  });
   const [activeInputTab, setActiveInputTab] = useState<'paste' | 'upload'>('paste');
   const [pasteContent, setPasteContent] = useState('');
   const [parseError, setParseError] = useState<string | null>(null);
@@ -422,7 +428,13 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                 <span className="font-bold text-blue-950">कक्षा चुनें (Class):</span>
                 <select
                   value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedClass(val);
+                    if (typeof localStorage !== 'undefined') {
+                      localStorage.setItem('hd_admin_selected_class', val);
+                    }
+                  }}
                   className="bg-white border border-blue-300 rounded-lg px-3 py-1.5 text-xs font-bold text-blue-900 shadow-xs focus:ring-2 focus:ring-[#0f2b48]"
                 >
                   <option value="ALL">सभी कक्षाएं (All Classes)</option>
