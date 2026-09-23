@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FileSpreadsheet,
   Upload,
@@ -12,8 +12,10 @@ import {
   Table,
   Sparkles,
   HelpCircle,
+  Filter,
 } from 'lucide-react';
 import { Student, SubjectConfig } from '../types';
+import { canonicalClassName, isSameClass, sortStudentsByRoll } from '../utils/calculations';
 
 interface BulkMarksModalProps {
   isOpen: boolean;
@@ -32,12 +34,23 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
   onSaveBulkMarks,
   onSaveMarks,
 }) => {
+  const detectedClasses = useMemo(() => {
+    const list = Array.from(
+      new Set(students.map((s) => canonicalClassName(s.className)).filter(Boolean))
+    ) as string[];
+    return list.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+  }, [students]);
+
   const [selectedClass, setSelectedClass] = useState<string>(() => {
     if (typeof localStorage !== 'undefined') {
       const saved = localStorage.getItem('hd_admin_selected_class');
-      if (saved) return saved;
+      if (saved && saved !== 'ALL') return saved;
     }
-    return 'ALL';
+    // Default to the first detected class with students instead of ALL
+    const firstCls = Array.from(
+      new Set(students.map((s) => canonicalClassName(s.className)).filter(Boolean))
+    )[0];
+    return firstCls || '8th';
   });
   const [activeInputTab, setActiveInputTab] = useState<'paste' | 'upload'>('paste');
   const [pasteContent, setPasteContent] = useState('');
@@ -49,16 +62,13 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
 
   const saveFn = onSaveBulkMarks || onSaveMarks;
 
-  if (!isOpen) return null;
-
-  const detectedClasses = Array.from(
-    new Set(students.map((s) => s.className.trim()))
-  ).filter(Boolean);
-
-  const filteredStudents =
-    selectedClass === 'ALL'
-      ? students
-      : students.filter((s) => s.className.trim() === selectedClass);
+  const filteredStudents = useMemo(() => {
+    const list =
+      selectedClass === 'ALL'
+        ? students
+        : students.filter((s) => isSameClass(s.className, selectedClass));
+    return sortStudentsByRoll(list);
+  }, [students, selectedClass]);
 
   // Active subjects
   const activeSubjects = subjects.filter((s) => s.active);
@@ -309,7 +319,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
         } else if (rawRoll) {
           targetStudent = Array.from(studentMap.values()).find((s) => {
             const rollMatch = s.rollNo.trim() === rawRoll.trim();
-            const classMatch = rawClass ? s.className.trim().toLowerCase() === rawClass.trim().toLowerCase() : true;
+            const classMatch = rawClass ? isSameClass(s.className, rawClass) : true;
             return rollMatch && classMatch;
           });
         }
@@ -317,7 +327,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
         if (!targetStudent && rawName) {
           targetStudent = Array.from(studentMap.values()).find((s) => {
             const nameMatch = s.name.trim().toLowerCase() === rawName;
-            const classMatch = rawClass ? s.className.trim().toLowerCase() === rawClass.trim().toLowerCase() : true;
+            const classMatch = rawClass ? isSameClass(s.className, rawClass) : true;
             return nameMatch && classMatch;
           });
         }
@@ -424,7 +434,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
           {/* Class Filter & Prominent Action Controls */}
           <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-blue-950">कक्षा चुनें (Class):</span>
                 <select
                   value={selectedClass}
@@ -440,10 +450,48 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                   <option value="ALL">सभी कक्षाएं (All Classes)</option>
                   {detectedClasses.map((cls) => (
                     <option key={cls} value={cls}>
-                      Class {cls} ({students.filter((s) => s.className.trim() === cls).length} छात्र)
+                      Class {cls} ({students.filter((s) => isSameClass(s.className, cls)).length} छात्र)
                     </option>
                   ))}
                 </select>
+
+                {/* 1-click pills */}
+                <div className="flex items-center gap-1 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedClass('ALL');
+                      if (typeof localStorage !== 'undefined') localStorage.setItem('hd_admin_selected_class', 'ALL');
+                    }}
+                    className={`px-2 py-1 rounded text-[11px] font-bold border cursor-pointer transition-all ${
+                      selectedClass === 'ALL'
+                        ? 'bg-[#0f2b48] text-white border-[#0f2b48]'
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
+                    }`}
+                  >
+                    All ({students.length})
+                  </button>
+                  {detectedClasses.map((cls) => {
+                    const count = students.filter((s) => isSameClass(s.className, cls)).length;
+                    return (
+                      <button
+                        key={cls}
+                        type="button"
+                        onClick={() => {
+                          setSelectedClass(cls);
+                          if (typeof localStorage !== 'undefined') localStorage.setItem('hd_admin_selected_class', cls);
+                        }}
+                        className={`px-2 py-1 rounded text-[11px] font-bold border cursor-pointer transition-all ${
+                          isSameClass(selectedClass, cls)
+                            ? 'bg-[#0f2b48] text-white border-[#0f2b48]'
+                            : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
+                        }`}
+                      >
+                        Class {cls} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="text-[11px] text-blue-800 font-medium flex items-center gap-1">

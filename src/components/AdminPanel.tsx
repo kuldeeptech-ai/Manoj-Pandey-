@@ -43,7 +43,13 @@ import {
   fetchAllFromFirebase,
 } from '../utils/firebase';
 import { ref, get, set, update, remove } from 'firebase/database';
-import { formatDisplayDate, sortStudentsByRoll, compareRollNumbers } from '../utils/calculations';
+import {
+  formatDisplayDate,
+  sortStudentsByRoll,
+  compareRollNumbers,
+  canonicalClassName,
+  isSameClass,
+} from '../utils/calculations';
 import { ClassTeachersManager } from './ClassTeachersManager';
 import { BulkImportModal } from './BulkImportModal';
 import { BulkMarksModal } from './BulkMarksModal';
@@ -92,6 +98,9 @@ import {
   Filter,
   ListOrdered,
   Archive,
+  ChevronLeft,
+  ChevronRight,
+  BarChart3,
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -168,9 +177,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [studentClassFilter, setStudentClassFilter] = useState<string>(() => {
     if (typeof localStorage !== 'undefined') {
       const saved = localStorage.getItem('hd_admin_selected_class');
-      if (saved) return saved;
+      if (saved && saved !== 'ALL') return saved;
     }
-    return 'ALL';
+    return '8th';
   });
   const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
   const [isTrashModalOpen, setIsTrashModalOpen] = useState<boolean>(false);
@@ -215,8 +224,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Derived unique classes for student filter
   const studentClasses = useMemo(() => {
-    const fromStudents = students.map((s) => (s.className || '').trim()).filter(Boolean);
-    const fromSettings = schoolSettings.activeClasses || [];
+    const fromStudents = students.map((s) => canonicalClassName(s.className)).filter(Boolean);
+    const fromSettings = (schoolSettings.activeClasses || []).map((c) => canonicalClassName(c)).filter(Boolean);
     const combined = Array.from(new Set([...fromStudents, ...fromSettings]));
     return combined.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
   }, [students, schoolSettings.activeClasses]);
@@ -225,7 +234,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const filteredStudents = useMemo(() => {
     let list = students;
     if (studentClassFilter && studentClassFilter !== 'ALL') {
-      list = list.filter((s) => (s.className || '').trim().toLowerCase() === studentClassFilter.toLowerCase());
+      list = list.filter((s) => isSameClass(s.className, studentClassFilter));
     }
     if (studentSearchQuery.trim()) {
       const q = studentSearchQuery.trim().toLowerCase();
@@ -248,10 +257,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const studentsForMarks = useMemo(() => {
     let list = students;
     if (studentClassFilter && studentClassFilter !== 'ALL') {
-      list = list.filter((s) => (s.className || '').trim().toLowerCase() === studentClassFilter.toLowerCase());
+      list = list.filter((s) => isSameClass(s.className, studentClassFilter));
     }
     return sortStudentsByRoll(list);
   }, [students, studentClassFilter]);
+
+  // View mode for Marks tab: 'entry' (single student form) or 'roster' (full class marksheet table)
+  const [marksViewMode, setMarksViewMode] = useState<'entry' | 'roster'>('entry');
+
+  // Next & Prev student navigation for Marks tab
+  const currentStudentMarksIndex = useMemo(() => {
+    return studentsForMarks.findIndex((s) => s.id === selectedStudentIdForMarks);
+  }, [studentsForMarks, selectedStudentIdForMarks]);
+
+  const handleNextStudentForMarks = () => {
+    if (currentStudentMarksIndex >= 0 && currentStudentMarksIndex < studentsForMarks.length - 1) {
+      handleSelectStudentForMarks(studentsForMarks[currentStudentMarksIndex + 1].id);
+    }
+  };
+
+  const handlePrevStudentForMarks = () => {
+    if (currentStudentMarksIndex > 0) {
+      handleSelectStudentForMarks(studentsForMarks[currentStudentMarksIndex - 1].id);
+    }
+  };
 
   // Keep selectedStudentIdForMarks in sync when class filter changes
   useEffect(() => {
@@ -457,11 +486,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       });
   };
 
+  const handleSaveMarksAndNext = () => {
+    handleSaveMarks();
+    if (currentStudentMarksIndex >= 0 && currentStudentMarksIndex < studentsForMarks.length - 1) {
+      const nextStudent = studentsForMarks[currentStudentMarksIndex + 1];
+      setTimeout(() => {
+        handleSelectStudentForMarks(nextStudent.id);
+      }, 150);
+    }
+  };
+
   // Student CRUD
   const handleStartAddStudent = () => {
     setIsNewStudent(true);
     const defaultClass = (studentClassFilter && studentClassFilter !== 'ALL') ? studentClassFilter : '8th';
-    const classStudents = students.filter((s) => (s.className || '').trim().toLowerCase() === defaultClass.toLowerCase());
+    const classStudents = students.filter((s) => isSameClass(s.className, defaultClass));
     const nextRoll = classStudents.length + 1;
     const defaultSession = schoolSettings.session || '2026–2027';
 
@@ -2428,13 +2467,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {/* TAB 3: MARKS MANAGEMENT */}
         {activeTab === 'marks' && (
           <div className="space-y-6">
-            {/* Student Picker Banner */}
-            <div className="bg-white p-3 sm:p-4 rounded-lg border border-slate-200 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full xl:w-auto flex-wrap">
+            {/* Top Class Selection & Mode Switcher Bar */}
+            <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 w-full xl:w-auto flex-wrap">
                 {/* 1. Class Filter Dropdown (Remembers selection & filters students) */}
-                <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 border border-slate-300 rounded shadow-2xs">
+                <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 border border-slate-300 rounded-lg shadow-2xs">
                   <Filter className="w-3.5 h-3.5 text-[#0f2b48]" />
-                  <span className="text-xs font-bold text-slate-700 shrink-0">कक्षा (Class):</span>
+                  <span className="text-xs font-bold text-slate-700 shrink-0">कक्षा चुनें (Class):</span>
                   <select
                     value={studentClassFilter}
                     onChange={(e) => {
@@ -2443,9 +2482,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       const inClass =
                         newCls === 'ALL'
                           ? students
-                          : students.filter(
-                              (s) => (s.className || '').trim().toLowerCase() === newCls.toLowerCase()
-                            );
+                          : students.filter((s) => isSameClass(s.className, newCls));
                       const sorted = sortStudentsByRoll(inClass);
                       if (sorted.length > 0) {
                         handleSelectStudentForMarks(sorted[0].id);
@@ -2455,9 +2492,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   >
                     <option value="ALL">सभी कक्षाएं (All Classes)</option>
                     {studentClasses.map((cls) => {
-                      const count = students.filter(
-                        (s) => (s.className || '').trim().toLowerCase() === cls.toLowerCase()
-                      ).length;
+                      const count = students.filter((s) => isSameClass(s.className, cls)).length;
                       return (
                         <option key={cls} value={cls}>
                           कक्षा {cls} ({count} छात्र)
@@ -2467,316 +2502,620 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </select>
                 </div>
 
-                {/* Quick 1-click class pills for Marks */}
-                <div className="hidden sm:flex items-center gap-1">
+                {/* 1-Click Quick Class Pills */}
+                <div className="flex items-center gap-1 flex-wrap">
                   <button
                     type="button"
                     onClick={() => {
                       handleStudentClassFilterChange('ALL');
                       if (students.length > 0) handleSelectStudentForMarks(sortStudentsByRoll(students)[0].id);
                     }}
-                    className={`px-2 py-1 rounded text-[11px] font-bold border cursor-pointer transition-all ${
+                    className={`px-2.5 py-1 rounded text-xs font-bold border cursor-pointer transition-all ${
                       studentClassFilter === 'ALL'
-                        ? 'bg-[#0f2b48] text-white border-[#0f2b48]'
-                        : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                        ? 'bg-[#0f2b48] text-white border-[#0f2b48] shadow-xs'
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
                     }`}
                   >
-                    All
+                    सभी ({students.length})
                   </button>
                   {studentClasses.map((cls) => {
-                    const count = students.filter(
-                      (s) => (s.className || '').trim().toLowerCase() === cls.toLowerCase()
-                    ).length;
+                    const count = students.filter((s) => isSameClass(s.className, cls)).length;
+                    const isActive = isSameClass(studentClassFilter, cls);
                     return (
                       <button
                         key={cls}
                         type="button"
                         onClick={() => {
                           handleStudentClassFilterChange(cls);
-                          const inClass = students.filter(
-                            (s) => (s.className || '').trim().toLowerCase() === cls.toLowerCase()
-                          );
+                          const inClass = students.filter((s) => isSameClass(s.className, cls));
                           const sorted = sortStudentsByRoll(inClass);
                           if (sorted.length > 0) {
                             handleSelectStudentForMarks(sorted[0].id);
                           }
                         }}
-                        className={`px-2 py-1 rounded text-[11px] font-bold border cursor-pointer transition-all ${
-                          studentClassFilter.toLowerCase() === cls.toLowerCase()
-                            ? 'bg-[#0f2b48] text-white border-[#0f2b48]'
-                            : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
+                        className={`px-2.5 py-1 rounded text-xs font-bold border cursor-pointer transition-all ${
+                          isActive
+                            ? 'bg-[#0f2b48] text-white border-[#0f2b48] shadow-xs'
+                            : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
                         }`}
                       >
-                        {cls} ({count})
+                        कक्षा {cls} ({count})
                       </button>
                     );
                   })}
                 </div>
-
-                {/* 2. Student Picker within Selected Class */}
-                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-                  <span className="text-xs font-bold text-slate-600 uppercase shrink-0">छात्र (Student):</span>
-                  <select
-                    value={selectedStudentIdForMarks}
-                    onChange={(e) => handleSelectStudentForMarks(e.target.value)}
-                    className="p-2 border-2 border-[#0f2b48] rounded text-xs font-bold text-[#0f2b48] bg-[#f8faff] w-full sm:w-auto max-w-[280px] sm:max-w-none truncate"
-                  >
-                    {studentsForMarks.length === 0 ? (
-                      <option value="">इस कक्षा में कोई छात्र नहीं है</option>
-                    ) : (
-                      studentsForMarks.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          Roll {s.rollNo}: {s.name} ({s.className}-{s.section})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
               </div>
 
+              {/* View Switcher & Action Buttons */}
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                {/* View Mode Toggle: Single Student Form vs Class Roster Table */}
+                <div className="bg-slate-100 p-0.5 rounded-lg border border-slate-300 flex items-center text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setMarksViewMode('entry')}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
+                      marksViewMode === 'entry'
+                        ? 'bg-white text-[#0f2b48] shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>छात्र अंक प्रविष्टि</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMarksViewMode('roster')}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all cursor-pointer ${
+                      marksViewMode === 'roster'
+                        ? 'bg-white text-[#0f2b48] shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>कक्षा अंक तालिका ({studentsForMarks.length})</span>
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setShowBulkMarksModal(true)}
-                  className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer transition-all"
+                  className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer transition-all"
                   title="Excel से सभी बच्चों के अंक एक साथ अपलोड करें"
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>बल्क अंक अपलोड (Bulk Marks CSV/Excel)</span>
+                  <span>बल्क अंक (Excel)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => onViewStudentResult(selectedStudentIdForMarks)}
-                  className="px-3.5 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-3 py-1.5 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span>Preview</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={handleSaveMarks}
-                  className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded flex items-center gap-1.5 shadow-xs cursor-pointer"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Save Student Marks</span>
-                </button>
               </div>
             </div>
 
-            {/* Validation Notice if any */}
-            {Object.keys(marksValidationErrors).length > 0 && (
-              <div className="p-3 bg-red-50 border-l-4 border-red-600 rounded text-red-800 text-xs font-bold flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-                <span>Validation Error: {Object.values(marksValidationErrors)[0]}</span>
-              </div>
-            )}
+            {/* VIEW MODE 1: CLASS MARKS ROSTER TABLE (कक्षा अंक तालिका) */}
+            {marksViewMode === 'roster' && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden space-y-0">
+                {/* Table Header & Metrics */}
+                <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                  <div>
+                    <h3 className="font-bold text-[#0f2b48] text-sm flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-blue-600" />
+                      <span>
+                        {studentClassFilter === 'ALL'
+                          ? 'सभी कक्षाओं के छात्रों की अंक तालिका'
+                          : `कक्षा ${studentClassFilter} के छात्रों की अंक तालिका (Class Marks Sheet)`}
+                      </span>
+                    </h3>
+                    <p className="text-slate-500 text-[11px] mt-0.5">
+                      कक्षा अनुसार सभी छात्रों के अर्द्धवार्षिक व वार्षिक परीक्षा प्राप्तांक एवं परिणाम
+                    </p>
+                  </div>
 
-            {marksSaveSuccess && (
-              <div className="p-3 bg-emerald-50 border-l-4 border-emerald-600 rounded text-emerald-800 text-xs font-bold flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Marks and Teacher Remark saved successfully!</span>
-              </div>
-            )}
+                  {/* Summary Badges */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-1 bg-blue-100 text-blue-900 font-bold rounded-md text-[11px]">
+                      कुल छात्र: {studentsForMarks.length}
+                    </span>
+                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-900 font-bold rounded-md text-[11px]">
+                      अंक दर्ज: {studentsForMarks.filter((s) => s.marks && Object.values(s.marks).some((m: any) => (m?.halfObtained || 0) > 0 || (m?.annualObtained || 0) > 0)).length}
+                    </span>
+                    <span className="px-2.5 py-1 bg-amber-100 text-amber-900 font-bold rounded-md text-[11px]">
+                      अंक बाकी: {studentsForMarks.filter((s) => !s.marks || !Object.values(s.marks).some((m: any) => (m?.halfObtained || 0) > 0 || (m?.annualObtained || 0) > 0)).length}
+                    </span>
+                  </div>
+                </div>
 
-            {/* Marks Grid */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
-              <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-xs">
-                <span className="font-bold text-[#0f2b48] uppercase">
-                  Subject Marks Entry — {currentStudent?.name} (Roll: {currentStudent?.rollNo})
-                </span>
-                <span className="text-slate-500 font-medium text-[11px]">
-                  Rule: Obtained Marks ≤ Maximum Marks
-                </span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs min-w-[640px]">
-                  <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
-                    <tr>
-                      <th className="py-2.5 px-4 w-12 text-center">S.No.</th>
-                      <th className="py-2.5 px-4">Subject Name</th>
-                      <th className="py-2.5 px-4 text-center bg-blue-50/50">Half-Yearly Max</th>
-                      <th className="py-2.5 px-4 text-center bg-blue-50">Half-Yearly Obtained</th>
-                      <th className="py-2.5 px-4 text-center bg-emerald-50/50">Annual Max</th>
-                      <th className="py-2.5 px-4 text-center bg-emerald-50">Annual Obtained</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {subjects.filter((s) => s.active).map((subj, idx) => {
-                      const studentMark = (currentMarks && currentMarks[subj.id]) || { halfObtained: 0, annualObtained: 0 };
-                      const halfErr = marksValidationErrors[`${subj.id}_half`];
-                      const annualErr = marksValidationErrors[`${subj.id}_annual`];
-
-                      return (
-                        <tr key={subj.id} className="hover:bg-slate-50">
-                          <td className="py-2 px-4 text-center font-bold text-slate-500">{idx + 1}</td>
-                          <td className="py-2 px-4 font-bold text-slate-900 uppercase">
-                            {subj.name}
-                          </td>
-                          <td className="py-2 px-4 text-center font-bold text-slate-600 bg-blue-50/20">
-                            {subj.halfMax}
-                          </td>
-                          <td className="py-2 px-4 text-center bg-blue-50/40">
-                            <input
-                              type="number"
-                              min="0"
-                              max={subj.halfMax}
-                              value={studentMark.halfObtained}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) => handleMarkChange(subj.id, 'half', e.target.value)}
-                              className={`w-20 text-center py-1 font-bold text-xs border rounded ${
-                                halfErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
-                              }`}
-                            />
-                            {halfErr && <span className="text-[9px] text-red-600 block mt-0.5">{halfErr}</span>}
-                          </td>
-                          <td className="py-2 px-4 text-center font-bold text-slate-600 bg-emerald-50/20">
-                            {subj.annualMax}
-                          </td>
-                          <td className="py-2 px-4 text-center bg-emerald-50/40">
-                            <input
-                              type="number"
-                              min="0"
-                              max={subj.annualMax}
-                              value={studentMark.annualObtained}
-                              onFocus={(e) => e.target.select()}
-                              onChange={(e) => handleMarkChange(subj.id, 'annual', e.target.value)}
-                              className={`w-20 text-center py-1 font-bold text-xs border rounded ${
-                                annualErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
-                              }`}
-                            />
-                            {annualErr && <span className="text-[9px] text-red-600 block mt-0.5">{annualErr}</span>}
+                {/* Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs min-w-[760px]">
+                    <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3 text-center w-12">Roll</th>
+                        <th className="py-2.5 px-3">विद्यार्थी का नाम (Student Name)</th>
+                        <th className="py-2.5 px-3">पिता का नाम (Father's Name)</th>
+                        <th className="py-2.5 px-3 text-center">Class</th>
+                        <th className="py-2.5 px-3 text-center bg-blue-50/60">अर्द्धवार्षिक (Half)</th>
+                        <th className="py-2.5 px-3 text-center bg-emerald-50/60">वार्षिक (Annual)</th>
+                        <th className="py-2.5 px-3 text-center bg-amber-50/60">कुल अंक (Total)</th>
+                        <th className="py-2.5 px-3 text-center">प्रतिशत (%)</th>
+                        <th className="py-2.5 px-3 text-center">ग्रेड</th>
+                        <th className="py-2.5 px-3 text-center">कार्रवाई (Action)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {studentsForMarks.length === 0 ? (
+                        <tr>
+                          <td colSpan={10} className="py-8 text-center text-slate-400">
+                            इस कक्षा में कोई छात्र नहीं मिला।
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      ) : (
+                        studentsForMarks.map((st) => {
+                          const res = calculateStudentResult(st, subjects, schoolSettings, gradeRules);
+                          const hasMarks = st.marks && Object.values(st.marks).some((m: any) => (m?.halfObtained || 0) > 0 || (m?.annualObtained || 0) > 0);
+                          const isCurrent = st.id === selectedStudentIdForMarks;
 
-              {/* Dynamic Live Totals & Percentage Summary */}
-              {liveResult && (
-                <div className="p-4 bg-slate-50 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                  <div className="bg-white p-3 rounded border border-blue-200 shadow-2xs">
-                    <span className="font-bold text-blue-900 block uppercase">Half-Yearly (Term I)</span>
-                    <p className="mt-1 text-slate-700">
-                      Total: <strong className="text-[#0f2b48]">{liveResult.halfYearly.obtained}</strong> / {liveResult.halfYearly.maximum}
-                    </p>
-                    <p className="text-slate-700">
-                      Percentage: <strong>{liveResult.halfYearly.percentage.toFixed(2)}%</strong>
-                    </p>
-                    <p className="text-slate-700">
-                      Grade: <strong className="text-[#b8860b]">{liveResult.halfYearly.grade}</strong> ({liveResult.halfYearly.status})
-                    </p>
+                          return (
+                            <tr
+                              key={st.id}
+                              className={`hover:bg-slate-50 transition-colors ${
+                                isCurrent ? 'bg-blue-50/40 font-semibold' : ''
+                              }`}
+                            >
+                              <td className="py-2 px-3 text-center font-bold text-slate-800">
+                                <span className="inline-block w-7 h-7 leading-7 bg-slate-100 rounded-full font-mono text-xs">
+                                  {st.rollNo}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 rounded-full bg-slate-200 overflow-hidden shrink-0">
+                                    <img
+                                      src={st.photoUrl || DEFAULT_STUDENT_PHOTO_FALLBACK}
+                                      alt={st.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = DEFAULT_STUDENT_PHOTO_FALLBACK;
+                                      }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-slate-900">{st.name}</div>
+                                    <div className="text-[10px] text-slate-400 font-mono">Adm: {st.admissionNo}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-slate-600">{st.fatherName || '—'}</td>
+                              <td className="py-2 px-3 text-center font-bold text-slate-700">
+                                {st.className}-{st.section}
+                              </td>
+                              <td className="py-2 px-3 text-center font-mono font-bold bg-blue-50/30 text-blue-900">
+                                {hasMarks ? `${res.halfYearly.obtained}/${res.halfYearly.maximum}` : '—'}
+                              </td>
+                              <td className="py-2 px-3 text-center font-mono font-bold bg-emerald-50/30 text-emerald-900">
+                                {hasMarks ? `${res.annual.obtained}/${res.annual.maximum}` : '—'}
+                              </td>
+                              <td className="py-2 px-3 text-center font-mono font-bold bg-amber-50/30 text-amber-950">
+                                {hasMarks ? `${res.combined.obtained}/${res.combined.maximum}` : '—'}
+                              </td>
+                              <td className="py-2 px-3 text-center font-bold">
+                                {hasMarks ? (
+                                  <span
+                                    className={`px-2 py-0.5 rounded text-[11px] ${
+                                      res.combined.percentage >= 60
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : res.combined.percentage >= 40
+                                        ? 'bg-amber-100 text-amber-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }`}
+                                  >
+                                    {res.combined.percentage.toFixed(1)}%
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 text-[10px]">बाकी</span>
+                                )}
+                              </td>
+                              <td className="py-2 px-3 text-center font-bold">
+                                {hasMarks ? (
+                                  <span className="px-2 py-0.5 bg-slate-100 text-slate-800 rounded font-mono text-xs">
+                                    {res.combined.grade}
+                                  </span>
+                                ) : (
+                                  '—'
+                                )}
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      handleSelectStudentForMarks(st.id);
+                                      setMarksViewMode('entry');
+                                    }}
+                                    className="px-2.5 py-1 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-[11px] font-bold rounded flex items-center gap-1 cursor-pointer transition-all"
+                                    title="इस छात्र के अंक भरें"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                    <span>अंक भरें</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => onViewStudentResult(st.id)}
+                                    className="p-1 hover:bg-slate-200 text-slate-600 rounded cursor-pointer"
+                                    title="मार्कशीट प्रिव्यू"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW MODE 2: SINGLE STUDENT ENTRY (एकल छात्र अंक प्रविष्टि) */}
+            {marksViewMode === 'entry' && (
+              <div className="space-y-4">
+                {/* Student Selector Banner with Prev/Next Navigation */}
+                <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap flex-1">
+                    {/* Prev Student Button */}
+                    <button
+                      type="button"
+                      onClick={handlePrevStudentForMarks}
+                      disabled={currentStudentMarksIndex <= 0}
+                      className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-all"
+                      title="पिछला छात्र"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span className="hidden sm:inline">पिछला छात्र</span>
+                    </button>
+
+                    {/* Student Dropdown within this Class */}
+                    <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                      <span className="text-xs font-bold text-slate-600 uppercase shrink-0">छात्र:</span>
+                      <select
+                        value={selectedStudentIdForMarks}
+                        onChange={(e) => handleSelectStudentForMarks(e.target.value)}
+                        className="p-2 border-2 border-[#0f2b48] rounded-lg text-xs font-bold text-[#0f2b48] bg-[#f8faff] w-full truncate cursor-pointer"
+                      >
+                        {studentsForMarks.length === 0 ? (
+                          <option value="">इस कक्षा में कोई छात्र नहीं है</option>
+                        ) : (
+                          studentsForMarks.map((s) => {
+                            const hasMarks = s.marks && Object.values(s.marks).some((m: any) => (m?.halfObtained || 0) > 0 || (m?.annualObtained || 0) > 0);
+                            return (
+                              <option key={s.id} value={s.id}>
+                                Roll {s.rollNo}: {s.name} ({s.className}-{s.section}) {hasMarks ? '✓' : '⚠️'}
+                              </option>
+                            );
+                          })
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Next Student Button */}
+                    <button
+                      type="button"
+                      onClick={handleNextStudentForMarks}
+                      disabled={currentStudentMarksIndex >= studentsForMarks.length - 1}
+                      className="px-2.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-xs font-bold text-slate-700 flex items-center gap-1 cursor-pointer transition-all"
+                      title="अगला छात्र"
+                    >
+                      <span className="hidden sm:inline">अगला छात्र</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+
+                    {/* Counter Badge */}
+                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold shrink-0">
+                      {currentStudentMarksIndex >= 0 ? currentStudentMarksIndex + 1 : 0} / {studentsForMarks.length} छात्र
+                    </span>
                   </div>
 
-                  <div className="bg-white p-3 rounded border border-emerald-200 shadow-2xs">
-                    <span className="font-bold text-emerald-900 block uppercase">Annual (Term II)</span>
-                    <p className="mt-1 text-slate-700">
-                      Total: <strong className="text-[#0f2b48]">{liveResult.annual.obtained}</strong> / {liveResult.annual.maximum}
-                    </p>
-                    <p className="text-slate-700">
-                      Percentage: <strong>{liveResult.annual.percentage.toFixed(2)}%</strong>
-                    </p>
-                    <p className="text-slate-700">
-                      Grade: <strong className="text-[#b8860b]">{liveResult.annual.grade}</strong> ({liveResult.annual.status})
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-3 rounded border border-[#0f2b48]/30 bg-[#0f2b48]/5 shadow-2xs">
-                    <span className="font-bold text-[#0f2b48] block uppercase">Final Combined Aggregate</span>
-                    <p className="mt-1 text-slate-700">
-                      Grand Total: <strong className="text-[#0f2b48]">{liveResult.combined.obtained}</strong> / {liveResult.combined.maximum}
-                    </p>
-                    <p className="text-slate-700">
-                      Combined %: <strong className="text-amber-700">{liveResult.combined.percentage.toFixed(2)}%</strong>
-                    </p>
-                    <p className="text-slate-700">
-                      Progress: <strong>{liveResult.progress > 0 ? `+${liveResult.progress.toFixed(2)}%` : `${liveResult.progress.toFixed(2)}%`}</strong>
-                    </p>
+                  <div className="flex items-center gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={handleSaveMarks}
+                      className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      <span>Save Marks</span>
+                    </button>
+                    {currentStudentMarksIndex < studentsForMarks.length - 1 && (
+                      <button
+                        type="button"
+                        onClick={handleSaveMarksAndNext}
+                        className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer"
+                        title="सेव करके अगले छात्र पर जाएं"
+                      >
+                        <span>Save & Next</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-              )}
 
-              {/* Teacher Remark Section */}
-              <div className="p-4 border-t border-slate-200 bg-white">
-                <label className="block text-xs font-bold text-[#0f2b48] uppercase mb-1">
-                  Teacher's Remark for this Student:
-                </label>
-                <textarea
-                  rows={2}
-                  value={currentRemark}
-                  onChange={(e) => setCurrentRemark(e.target.value)}
-                  placeholder="e.g. Excellent academic performance! Very attentive and sincere."
-                  className="w-full p-2.5 border border-slate-300 rounded text-xs font-bold text-slate-800"
-                />
-                <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
-                  <span className="text-slate-400 font-semibold">Quick Remarks:</span>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentRemark('Excellent academic performance! Attentive, disciplined and diligent. Keep it up!')}
-                    className="bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-slate-200"
-                  >
-                    Outstanding / A+
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentRemark('Good effort in practical work. Needs improvement in Mathematics and English grammar. Focus on regular practice.')}
-                    className="bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-slate-200"
-                  >
-                    Needs Improvement
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentRemark('Satisfactory academic progress. Regular homework submission and active classroom participation appreciated.')}
-                    className="bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-slate-200"
-                  >
-                    Satisfactory
-                  </button>
+                {/* Horizontal Class Student Roster Strip */}
+                {studentsForMarks.length > 0 && (
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 font-bold px-1">
+                      <span>
+                        कक्षा {studentClassFilter === 'ALL' ? 'सभी' : studentClassFilter} के छात्र — किसी भी छात्र पर क्लिक कर सीधे उसके अंक भरें:
+                      </span>
+                      <span>{studentsForMarks.length} छात्र</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+                      {studentsForMarks.map((s) => {
+                        const isSelected = s.id === selectedStudentIdForMarks;
+                        const hasMarks = s.marks && Object.values(s.marks).some((m: any) => (m?.halfObtained || 0) > 0 || (m?.annualObtained || 0) > 0);
+
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => handleSelectStudentForMarks(s.id)}
+                            className={`shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#0f2b48] text-white border-[#0f2b48] shadow-md ring-2 ring-blue-300'
+                                : hasMarks
+                                ? 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100'
+                                : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                            }`}
+                          >
+                            <span className="font-mono text-[11px] opacity-80">#{s.rollNo}</span>
+                            <span className="truncate max-w-[120px]">{s.name}</span>
+                            {hasMarks ? (
+                              <Check className={`w-3 h-3 ${isSelected ? 'text-emerald-300' : 'text-emerald-600'}`} />
+                            ) : (
+                              <span className={`text-[10px] ${isSelected ? 'text-amber-300' : 'text-amber-600'}`}>⚠️</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Validation Notice if any */}
+                {Object.keys(marksValidationErrors).length > 0 && (
+                  <div className="p-3 bg-red-50 border-l-4 border-red-600 rounded text-red-800 text-xs font-bold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>Validation Error: {Object.values(marksValidationErrors)[0]}</span>
+                  </div>
+                )}
+
+                {marksSaveSuccess && (
+                  <div className="p-3 bg-emerald-50 border-l-4 border-emerald-600 rounded text-emerald-800 text-xs font-bold flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Marks and Teacher Remark saved successfully!</span>
+                  </div>
+                )}
+
+                {/* Marks Grid */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
+                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-xs">
+                    <span className="font-bold text-[#0f2b48] uppercase">
+                      Subject Marks Entry — {currentStudent?.name} (Roll: {currentStudent?.rollNo})
+                    </span>
+                    <span className="text-slate-500 font-medium text-[11px]">
+                      Rule: Obtained Marks ≤ Maximum Marks
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[640px]">
+                      <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
+                        <tr>
+                          <th className="py-2.5 px-4 w-12 text-center">S.No.</th>
+                          <th className="py-2.5 px-4">Subject Name</th>
+                          <th className="py-2.5 px-4 text-center bg-blue-50/50">Half-Yearly Max</th>
+                          <th className="py-2.5 px-4 text-center bg-blue-50">Half-Yearly Obtained</th>
+                          <th className="py-2.5 px-4 text-center bg-emerald-50/50">Annual Max</th>
+                          <th className="py-2.5 px-4 text-center bg-emerald-50">Annual Obtained</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {subjects.filter((s) => s.active).map((subj, idx) => {
+                          const studentMark = (currentMarks && currentMarks[subj.id]) || { halfObtained: 0, annualObtained: 0 };
+                          const halfErr = marksValidationErrors[`${subj.id}_half`];
+                          const annualErr = marksValidationErrors[`${subj.id}_annual`];
+
+                          return (
+                            <tr key={subj.id} className="hover:bg-slate-50">
+                              <td className="py-2 px-4 text-center font-bold text-slate-500">{idx + 1}</td>
+                              <td className="py-2 px-4 font-bold text-slate-900 uppercase">
+                                {subj.name}
+                              </td>
+                              <td className="py-2 px-4 text-center font-bold text-slate-600 bg-blue-50/20">
+                                {subj.halfMax}
+                              </td>
+                              <td className="py-2 px-4 text-center bg-blue-50/40">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={subj.halfMax}
+                                  value={studentMark.halfObtained}
+                                  onFocus={(e) => e.target.select()}
+                                  onChange={(e) => handleMarkChange(subj.id, 'half', e.target.value)}
+                                  className={`w-20 text-center py-1 font-bold text-xs border rounded ${
+                                    halfErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
+                                  }`}
+                                />
+                                {halfErr && <span className="text-[9px] text-red-600 block mt-0.5">{halfErr}</span>}
+                              </td>
+                              <td className="py-2 px-4 text-center font-bold text-slate-600 bg-emerald-50/20">
+                                {subj.annualMax}
+                              </td>
+                              <td className="py-2 px-4 text-center bg-emerald-50/40">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={subj.annualMax}
+                                  value={studentMark.annualObtained}
+                                  onFocus={(e) => e.target.select()}
+                                  onChange={(e) => handleMarkChange(subj.id, 'annual', e.target.value)}
+                                  className={`w-20 text-center py-1 font-bold text-xs border rounded ${
+                                    annualErr ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-slate-300'
+                                  }`}
+                                />
+                                {annualErr && <span className="text-[9px] text-red-600 block mt-0.5">{annualErr}</span>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Dynamic Live Totals & Percentage Summary */}
+                  {liveResult && (
+                    <div className="p-4 bg-slate-50 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      <div className="bg-white p-3 rounded border border-blue-200 shadow-2xs">
+                        <span className="font-bold text-blue-900 block uppercase">Half-Yearly (Term I)</span>
+                        <p className="mt-1 text-slate-700">
+                          Total: <strong className="text-[#0f2b48]">{liveResult.halfYearly.obtained}</strong> / {liveResult.halfYearly.maximum}
+                        </p>
+                        <p className="text-slate-700">
+                          Percentage: <strong>{liveResult.halfYearly.percentage.toFixed(2)}%</strong>
+                        </p>
+                        <p className="text-slate-700">
+                          Grade: <strong className="text-[#b8860b]">{liveResult.halfYearly.grade}</strong> ({liveResult.halfYearly.status})
+                        </p>
+                      </div>
+
+                      <div className="bg-white p-3 rounded border border-emerald-200 shadow-2xs">
+                        <span className="font-bold text-emerald-900 block uppercase">Annual (Term II)</span>
+                        <p className="mt-1 text-slate-700">
+                          Total: <strong className="text-[#0f2b48]">{liveResult.annual.obtained}</strong> / {liveResult.annual.maximum}
+                        </p>
+                        <p className="text-slate-700">
+                          Percentage: <strong>{liveResult.annual.percentage.toFixed(2)}%</strong>
+                        </p>
+                        <p className="text-slate-700">
+                          Grade: <strong className="text-[#b8860b]">{liveResult.annual.grade}</strong> ({liveResult.annual.status})
+                        </p>
+                      </div>
+
+                      <div className="bg-white p-3 rounded border border-[#0f2b48]/30 bg-[#0f2b48]/5 shadow-2xs">
+                        <span className="font-bold text-[#0f2b48] block uppercase">Final Combined Aggregate</span>
+                        <p className="mt-1 text-slate-700">
+                          Grand Total: <strong className="text-[#0f2b48]">{liveResult.combined.obtained}</strong> / {liveResult.combined.maximum}
+                        </p>
+                        <p className="text-slate-700">
+                          Combined %: <strong className="text-amber-700">{liveResult.combined.percentage.toFixed(2)}%</strong>
+                        </p>
+                        <p className="text-slate-700">
+                          Progress: <strong>{liveResult.progress > 0 ? `+${liveResult.progress.toFixed(2)}%` : `${liveResult.progress.toFixed(2)}%`}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Teacher Remark Section */}
+                  <div className="p-4 border-t border-slate-200 bg-white">
+                    <label className="block text-xs font-bold text-[#0f2b48] uppercase mb-1">
+                      Teacher's Remark for this Student:
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={currentRemark}
+                      onChange={(e) => setCurrentRemark(e.target.value)}
+                      placeholder="e.g. Excellent academic performance! Very attentive and sincere."
+                      className="w-full p-2.5 border border-slate-300 rounded text-xs font-bold text-slate-800"
+                    />
+                    <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
+                      <span className="text-slate-400 font-semibold">Quick Remarks:</span>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentRemark('Excellent academic performance! Attentive, disciplined and diligent. Keep it up!')}
+                        className="bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-slate-200"
+                      >
+                        Outstanding / A+
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentRemark('Good effort in practical work. Needs improvement in Mathematics and English grammar. Focus on regular practice.')}
+                        className="bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-slate-200"
+                      >
+                        Needs Improvement
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentRemark('Satisfactory academic progress. Regular homework submission and active classroom participation appreciated.')}
+                        className="bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded border border-slate-200"
+                      >
+                        Satisfactory
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bottom Action */}
+                  <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="w-full sm:w-auto">
+                      {isCloudSyncing && (
+                        <div className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded border border-blue-200 flex items-center gap-1.5">
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                          <span>Google Sheet में सिंक हो रहा है...</span>
+                        </div>
+                      )}
+                      {marksCloudStatus === 'synced' && (
+                        <div className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded border border-emerald-300 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <span>Google Sheet में सुरक्षित हो गया! सभी छात्र अपने फोन पर यह देख सकते हैं।</span>
+                        </div>
+                      )}
+                      {marksCloudStatus === 'local_only' && (
+                        <div className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded border border-amber-300 flex items-center gap-1.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          <span>अंक केवल इस फोन में सेव हुए हैं! सभी छात्रों के फोन में लाइव करने के लिए 'Google Sheet Sync' टैब में URL डालें।</span>
+                        </div>
+                      )}
+                      {marksCloudStatus === 'offline' && (
+                        <div className="text-xs font-bold text-rose-800 bg-rose-50 px-3 py-1.5 rounded border border-rose-300 flex items-center gap-1.5">
+                          <AlertCircle className="w-4 h-4 text-rose-600" />
+                          <span>अंक स्थानीय रूप से सुरक्षित हैं, पर Google Sheet से संपर्क नहीं हुआ।</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <button
+                        type="button"
+                        onClick={handleSaveMarks}
+                        disabled={isCloudSyncing}
+                        className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow flex items-center justify-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>{isCloudSyncing ? 'Saving & Syncing...' : 'Save All Changes (अंक सुरक्षित करें)'}</span>
+                      </button>
+
+                      {currentStudentMarksIndex < studentsForMarks.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={handleSaveMarksAndNext}
+                          disabled={isCloudSyncing}
+                          className="px-5 py-2.5 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded-lg shadow flex items-center justify-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
+                          title="इस छात्र के अंक सेव कर अगले छात्र पर जाएं"
+                        >
+                          <span>सुरक्षित करें और अगला छात्र</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Bottom Action */}
-              <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="w-full sm:w-auto">
-                  {isCloudSyncing && (
-                    <div className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded border border-blue-200 flex items-center gap-1.5">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
-                      <span>Google Sheet में सिंक हो रहा है...</span>
-                    </div>
-                  )}
-                  {marksCloudStatus === 'synced' && (
-                    <div className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded border border-emerald-300 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Google Sheet में सुरक्षित हो गया! सभी छात्र अपने फोन पर यह देख सकते हैं।</span>
-                    </div>
-                  )}
-                  {marksCloudStatus === 'local_only' && (
-                    <div className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded border border-amber-300 flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                      <span>अंक केवल इस फोन में सेव हुए हैं! सभी छात्रों के फोन में लाइव करने के लिए 'Google Sheet Sync' टैब में URL डालें।</span>
-                    </div>
-                  )}
-                  {marksCloudStatus === 'offline' && (
-                    <div className="text-xs font-bold text-rose-800 bg-rose-50 px-3 py-1.5 rounded border border-rose-300 flex items-center gap-1.5">
-                      <AlertCircle className="w-4 h-4 text-rose-600" />
-                      <span>अंक स्थानीय रूप से सुरक्षित हैं, पर Google Sheet से संपर्क नहीं हुआ।</span>
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={handleSaveMarks}
-                  disabled={isCloudSyncing}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded shadow flex items-center justify-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{isCloudSyncing ? 'Saving & Syncing...' : 'Save All Changes (अंक सुरक्षित करें)'}</span>
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         )}
 

@@ -474,3 +474,40 @@ export function sortStudentsByRoll(studentsList: Student[]): Student[] {
   });
 }
 
+/**
+ * Normalizes class strings so '8', '8th', 'class 8', 'Class 8th' map to canonical form like '8th'
+ */
+export function canonicalClassName(cls?: string): string {
+  if (!cls) return '';
+  const trimmed = cls.trim();
+  const lower = trimmed.toLowerCase().replace(/^class\s*/i, '');
+  if (lower === '8' || lower === '8th') return '8th';
+  if (lower === '7' || lower === '7th') return '7th';
+  if (lower === '6' || lower === '6th') return '6th';
+  if (lower === '5' || lower === '5th') return '5th';
+  if (lower === '4' || lower === '4th') return '4th';
+  if (lower === '3' || lower === '3rd') return '3rd';
+  if (lower === '2' || lower === '2nd') return '2nd';
+  if (lower === '1' || lower === '1st') return '1st';
+  if (lower === 'kg' || lower === 'u.k.g' || lower === 'ukg') return 'UKG';
+  if (lower === 'l.k.g' || lower === 'lkg') return 'LKG';
+  if (lower === 'nursery' || lower === 'nur') return 'Nursery';
+  return trimmed;
+}
+
+/**
+ * Checks whether two class representations refer to the exact same class.
+ * Handles '8' vs '8th', 'Class 8' vs '8th', case-insensitive.
+ */
+export function isSameClass(c1?: string, c2?: string): boolean {
+  if (!c1 || !c2) return false;
+  if (c1 === c2) return true;
+  const can1 = canonicalClassName(c1).toLowerCase();
+  const can2 = canonicalClassName(c2).toLowerCase();
+  if (can1 === can2) return true;
+  const num1 = can1.replace(/[^0-9]/g, '');
+  const num2 = can2.replace(/[^0-9]/g, '');
+  if (num1 && num2 && num1 === num2) return true;
+  return false;
+}
+
