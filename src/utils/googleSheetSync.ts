@@ -991,12 +991,12 @@ UKG,Smt. Priya Singh,Class Teacher,9876543212,
 7th,Shri Dharmendra Singh,Class Teacher,9876543219,
 8th,Shri Anand Sharma,Class Teacher,9876543220,`;
 
-export const STUDENTS_SHEET_HEADER = `Student_ID	Student_Name	Father_Name	Mother_Name	Date_of_Birth	Gender	Class	Section	Roll_No	Admission_No	Photo_URL	Session	Teacher_Remark	Mobile	Address	Aadhar_No	APAAR_ID`;
+export const STUDENTS_SHEET_HEADER = `Student_ID	Student_Name	Father_Name	Mother_Name	Date_of_Birth	Gender	Class	Section	Roll_No	Admission_No	Photo_URL	Session	Teacher_Remark	Mobile	Address	Aadhar_No`;
 
-export const STUDENTS_SHEET_SAMPLE_CSV = `Student_ID,Student_Name,Father_Name,Mother_Name,Date_of_Birth,Gender,Class,Section,Roll_No,Admission_No,Photo_URL,Session,Teacher_Remark,Mobile,Address,Aadhar_No,APAAR_ID
-std-17,PRIYA SHARMA,RAMESH SHARMA,SUNITA SHARMA,15/07/2012,FEMALE,8th,A,17,ADM-2024-0017,,2026–2027,Excellent academic performance!,9838123456,Gram - Baurbyas Sant Kabir Nagar (U.P.),7845 2310 9012,9845 2310 9012
-std-18,AMAN VERMA,RAJESH VERMA,POOJA VERMA,04/11/2011,MALE,8th,A,18,ADM-2024-0018,,2026–2027,Good effort in practical subjects.,9838123457,Gram - Rampur Sant Kabir Nagar (U.P.),6789 1234 5678,8765 4321 0987
-std-21,SNEHA GUPTA,VINOD GUPTA,REKHA GUPTA,22/02/2012,FEMALE,8th,A,21,ADM-2024-0021,,2026–2027,Outstanding performance across all terms!,9838123458,Gram - Maghar Sant Kabir Nagar (U.P.),9012 3456 7890,7654 3210 9876`;
+export const STUDENTS_SHEET_SAMPLE_CSV = `Student_ID,Student_Name,Father_Name,Mother_Name,Date_of_Birth,Gender,Class,Section,Roll_No,Admission_No,Photo_URL,Session,Teacher_Remark,Mobile,Address,Aadhar_No
+std-17,PRIYA SHARMA,RAMESH SHARMA,SUNITA SHARMA,15/07/2012,FEMALE,8th,A,17,ADM-2024-0017,,2026–2027,Excellent academic performance!,9838123456,Gram - Baurbyas Sant Kabir Nagar (U.P.),7845 2310 9012
+std-18,AMAN VERMA,RAJESH VERMA,POOJA VERMA,04/11/2011,MALE,8th,A,18,ADM-2024-0018,,2026–2027,Good effort in practical subjects.,9838123457,Gram - Rampur Sant Kabir Nagar (U.P.),6789 1234 5678
+std-21,SNEHA GUPTA,VINOD GUPTA,REKHA GUPTA,22/02/2012,FEMALE,8th,A,21,ADM-2024-0021,,2026–2027,Outstanding performance across all terms!,9838123458,Gram - Maghar Sant Kabir Nagar (U.P.),9012 3456 7890`;
 
 /**
  * Trigger remote 1-Click Auto Setup & Upgrade on the Google Apps Script Web App

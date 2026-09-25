@@ -273,7 +273,6 @@ export const DEFAULT_STUDENTS: Student[] = [
     mobile: '9838123456',
     address: 'Gram - Baurbyas, Sant Kabir Nagar (U.P.) – 272154',
     aadharNo: '7845 2310 9012',
-    aparId: '9845 2310 9012',
     teacherRemark: 'Excellent academic performance! Very attentive, sincere and disciplined in all classroom activities. Keep it up!',
     marks: {
       'sub-hindi': { halfObtained: 84, annualObtained: 88 },
@@ -303,7 +302,6 @@ export const DEFAULT_STUDENTS: Student[] = [
     mobile: '9838123457',
     address: 'Gram - Rampur, Post - Khalilabad, Sant Kabir Nagar (U.P.)',
     aadharNo: '6789 1234 5678',
-    aparId: '8765 4321 0987',
     teacherRemark: 'Good effort in practical subjects. Needs improvement in Mathematics and English grammar. Focus on regular practice and revision.',
     marks: {
       'sub-hindi': { halfObtained: 68, annualObtained: 74 },

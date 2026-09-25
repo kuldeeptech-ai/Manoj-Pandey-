@@ -22,9 +22,12 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({
   const calculateAutoZoom = () => {
     if (typeof window === 'undefined') return 1;
     const screenWidth = window.innerWidth;
-    if (screenWidth >= 880) return 1;
-    const availableWidth = screenWidth - 20;
-    const fitZoom = Number((availableWidth / 794).toFixed(2));
+    const screenHeight = window.innerHeight;
+    const availableWidth = screenWidth - (screenWidth < 640 ? 16 : 40);
+    const availableHeight = screenHeight - (screenWidth < 640 ? 120 : 90);
+    const zoomW = availableWidth / 794;
+    const zoomH = availableHeight / 1060;
+    const fitZoom = Number(Math.min(zoomW, zoomH, 1).toFixed(2));
     return Math.min(1, Math.max(0.35, fitZoom));
   };
 
@@ -351,7 +354,7 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({
         <div
           style={{
             width: `${Math.round(794 * zoomLevel)}px`,
-            height: `${Math.round(1123 * zoomLevel)}px`,
+            height: `${Math.round(1060 * zoomLevel)}px`,
             position: 'relative',
             flexShrink: 0,
             margin: '0 auto',
@@ -361,7 +364,7 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({
             className="marksheet-print-container shadow-2xl origin-top-left"
             style={{
               width: '794px',
-              height: '1123px',
+              height: '1060px',
               transform: `scale(${zoomLevel})`,
               transformOrigin: 'top left',
             }}

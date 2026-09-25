@@ -195,7 +195,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  // 1-Click Copy all 17 Excel Column Headers including APAAR ID and Address
+  // 1-Click Copy all 16 Excel Column Headers including Address
   const handleCopyStudentHeaders = async () => {
     try {
       if (navigator?.clipboard?.writeText) {
@@ -208,7 +208,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
-      setHeaderCopyNotice('✅ APAAR_ID व Address सहित सभी 17 कॉलम हेडर कॉपी हो गए! Excel में Row 1 पर पेस्ट करें।');
+      setHeaderCopyNotice('✅ Address सहित सभी 16 कॉलम हेडर कॉपी हो गए! Excel में Row 1 पर पेस्ट करें।');
       setTimeout(() => setHeaderCopyNotice(null), 5000);
     } catch {
       setHeaderCopyNotice('कॉलम हेडर: ' + STUDENTS_SHEET_HEADER);
@@ -245,7 +245,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           (s.admissionNo || '').toLowerCase().includes(q) ||
           (s.fatherName || '').toLowerCase().includes(q) ||
           (s.mobile || '').includes(q) ||
-          (s.aparId || '').includes(q) ||
           (s.aadharNo || '').includes(q) ||
           (s.address || '').toLowerCase().includes(q)
       );
@@ -519,7 +518,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       mobile: '',
       address: '',
       aadharNo: '',
-      aparId: '',
       photoUrl: DEFAULT_STUDENT_PHOTO_FALLBACK,
       teacherRemark: 'Regular and disciplined student. Shows consistent academic progress.',
       marks: {},
@@ -542,7 +540,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       mobile: editingStudent.mobile ? String(editingStudent.mobile).trim() : '',
       address: editingStudent.address ? String(editingStudent.address).trim() : '',
       aadharNo: editingStudent.aadharNo ? String(editingStudent.aadharNo).trim() : '',
-      aparId: editingStudent.aparId ? String(editingStudent.aparId).trim() : '',
     };
 
     if (isNewStudent) {
@@ -1581,10 +1578,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   type="button"
                   onClick={handleCopyStudentHeaders}
                   className="px-3 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all hover:scale-[1.02] active:scale-98"
-                  title="APAAR ID, Address, Mobile व Aadhar सहित सभी 17 Excel कॉलम हेडर एक क्लिक में कॉपी करें"
+                  title="Address, Mobile व Aadhar सहित सभी 16 Excel कॉलम हेडर एक क्लिक में कॉपी करें"
                 >
                   <Copy className="w-4 h-4 text-amber-300" />
-                  <span>हेडर कॉपी करें (APAAR & Address सहित)</span>
+                  <span>हेडर कॉपी करें (Address सहित)</span>
                 </button>
                 <button
                   type="button"
@@ -1874,13 +1871,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               <div className="font-mono text-[10px]">
                                 <span className="font-semibold text-slate-400">Aad:</span> {st.aadharNo || '—'}
                               </div>
-                              {Boolean(st.aparId && st.aparId.trim()) && (
-                                <div className="font-mono text-[10px] text-blue-700 font-semibold">
-                                  <span className="font-semibold text-slate-400">APAAR:</span> {st.aparId}
-                                </div>
-                              )}
                               {Boolean(st.address && st.address.trim()) && (
-                                <div className="text-[10px] text-slate-500 truncate max-w-[130px]" title={st.address}>
+                                <div className="text-[10px] text-slate-600 truncate max-w-[170px]" title={st.address}>
                                   <span className="font-semibold text-slate-400">पता:</span> {st.address}
                                 </div>
                               )}
@@ -2123,34 +2115,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           value={editingStudent.aadharNo || ''}
                           onChange={(e) => setEditingStudent({ ...editingStudent, aadharNo: e.target.value })}
                           placeholder="e.g. 7845 2310 9012"
-                          className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 focus:bg-white font-mono"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] uppercase font-bold text-slate-800 flex items-center gap-1">
-                            <span>APAAR ID (अपार आईडी)</span>
-                            <span className="text-[10px] text-blue-600 font-semibold normal-case">12-अंक One Nation</span>
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText('APAAR_ID');
-                              setHeaderCopyNotice('APAAR_ID हेडर कॉपी हो गया!');
-                              setTimeout(() => setHeaderCopyNotice(null), 3000);
-                            }}
-                            className="text-[10px] text-blue-700 hover:text-blue-900 font-bold underline cursor-pointer"
-                            title="Excel के लिए हेडर कॉपी करें"
-                          >
-                            हेडर कॉपी करें
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={editingStudent.aparId || ''}
-                          onChange={(e) => setEditingStudent({ ...editingStudent, aparId: e.target.value })}
-                          placeholder="उदा. 1234 5678 9012"
                           className="w-full p-2 border border-slate-300 rounded focus:border-[#0f2b48] bg-slate-50 focus:bg-white font-mono"
                         />
                       </div>
@@ -4385,6 +4349,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     />
                   </label>
 
+                  {/* Student Address Toggle */}
+                  <label className="flex items-start justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-all cursor-pointer">
+                    <div className="pr-3">
+                      <span className="text-xs font-bold text-slate-900 block">
+                        छात्र का पता (Student Address)
+                      </span>
+                      <span className="text-[11px] text-slate-500 block mt-0.5">
+                        अंकपत्र पर छात्र जानकारी में पता (Address) प्रदर्शित करें।
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isSettingEnabled(settingsForm.showStudentAddress, true)}
+                      onChange={(e) => handleToggleSetting('showStudentAddress', e.target.checked)}
+                      className="w-5 h-5 accent-[#0f2b48] rounded mt-0.5 cursor-pointer"
+                    />
+                  </label>
+
                   {/* Teacher Remarks Toggle */}
                   <label className="flex items-start justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-all cursor-pointer sm:col-span-2">
                     <div className="pr-3">
@@ -5165,19 +5147,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="space-y-3 w-full">
                   <div>
                     <h3 className="text-sm font-bold text-[#0f2b48] uppercase tracking-wide">
-                      मार्गदर्शन: Google Sheet में पता, आधार कार्ड, APAAR ID व मोबाइल नंबर कैसे जोड़ें?
+                      मार्गदर्शन: Google Sheet में पता, आधार कार्ड व मोबाइल नंबर कैसे जोड़ें?
                     </h3>
                     <p className="text-xs text-sky-950 mt-1 leading-relaxed">
-                      पोर्टल अब <strong>Mobile Number</strong>, <strong>Address (पता)</strong>, <strong>Aadhar Card Number</strong> और <strong>APAAR_ID (अपार आईडी)</strong> सभी को पूर्ण रूप से सपोर्ट करता है। आपकी Google Sheet की <code>Students</code> शीट में ये सभी 17 कॉलम (Headers) होने चाहिए।
+                      पोर्टल अब <strong>Mobile Number</strong>, <strong>Address (पता)</strong> और <strong>Aadhar Card Number</strong> सभी को पूर्ण रूप से सपोर्ट करता है। आपकी Google Sheet की <code>Students</code> शीट में ये सभी 16 कॉलम (Headers) होने चाहिए।
                     </p>
                   </div>
 
                   <div className="bg-white p-3.5 rounded border border-sky-200 text-xs space-y-2">
                     <div className="font-bold text-[#0f2b48]">
-                      Students शीट में कॉलम क्रम (17 Columns):
+                      Students शीट में कॉलम क्रम (16 Columns):
                     </div>
                     <div className="font-mono text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-200 break-all">
-                      Student_ID, Student_Name, Father_Name, Mother_Name, Date_of_Birth, Gender, Class, Section, Roll_No, Admission_No, Photo_URL, Session, Teacher_Remark, <strong className="text-emerald-700 bg-emerald-100 px-1 rounded">Mobile</strong>, <strong className="text-blue-700 bg-blue-100 px-1 rounded">Address</strong>, <strong className="text-emerald-700 bg-emerald-100 px-1 rounded">Aadhar_No</strong>, <strong className="text-purple-700 bg-purple-100 px-1 rounded">APAAR_ID</strong>
+                      Student_ID, Student_Name, Father_Name, Mother_Name, Date_of_Birth, Gender, Class, Section, Roll_No, Admission_No, Photo_URL, Session, Teacher_Remark, <strong className="text-emerald-700 bg-emerald-100 px-1 rounded">Mobile</strong>, <strong className="text-blue-700 bg-blue-100 px-1 rounded">Address</strong>, <strong className="text-emerald-700 bg-emerald-100 px-1 rounded">Aadhar_No</strong>
                     </div>
                     <p className="text-[11px] text-slate-600">
                       💡 <strong>सुझाव:</strong> आप नीचे दिए गए नीले बटन <strong>"1-Click Copy: Students Sheet Header"</strong> पर क्लिक करें और सीधे अपनी Google Sheet या Excel की पहली पंक्ति (Row 1) पर Ctrl+V से पेस्ट कर दें।
@@ -5197,12 +5179,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       {studentsCopiedNotice ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-emerald-300" />
-                          <span>17 कॉलम हेडर कॉपी हो गए! (शीट में Ctrl+V पेस्ट करें)</span>
+                          <span>16 कॉलम हेडर कॉपी हो गए! (शीट में Ctrl+V पेस्ट करें)</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5 text-amber-300" />
-                          <span>1-Click Copy: Students Sheet Header (With Address & APAAR_ID)</span>
+                          <span>1-Click Copy: Students Sheet Header (With Address)</span>
                         </>
                       )}
                     </button>

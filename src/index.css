@@ -36,19 +36,38 @@ body {
 }
 
 /* Master Marksheet A4 Typography & Design */
-.marksheet-document,
-.marksheet-document * {
-  font-family: "ResultFont", "Roboto Condensed", Arial, sans-serif !important;
-  font-weight: 700;
+.marksheet-document {
+  font-family: "ResultFont", "Roboto Condensed", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
   box-sizing: border-box;
 }
 
-/* Strict A4 Container */
+/* Sarkari / Official Marksheet Typography Classes */
+.font-sarkari-title,
+.marksheet-sarkari-title {
+  font-family: 'Cinzel', 'Tiro Devanagari Hindi', 'Noto Serif Devanagari', 'Merriweather', 'Times New Roman', Georgia, serif !important;
+}
+
+.font-sarkari-serif,
+.marksheet-sarkari-serif {
+  font-family: 'Merriweather', 'Tiro Devanagari Hindi', 'Noto Serif Devanagari', 'Times New Roman', Georgia, serif !important;
+}
+
+.font-sarkari-hindi {
+  font-family: 'Tiro Devanagari Hindi', 'Noto Serif Devanagari', 'Merriweather', 'Times New Roman', serif !important;
+}
+
+.marksheet-document table,
+.marksheet-document .student-info-grid {
+  font-family: "ResultFont", "Roboto Condensed", Arial, sans-serif;
+}
+
+/* Strict A4 Container - Optimized for perfect 1-page fit with zero spillover */
 .marksheet-a4-page {
-  width: 210mm;
-  min-height: 297mm;
-  max-height: 297mm;
-  height: 297mm;
+  width: 794px;
+  max-width: 794px;
+  height: 1060px;
+  min-height: 1060px;
+  max-height: 1062px;
   background: #ffffff;
   margin: 0 auto;
   position: relative;
@@ -69,7 +88,7 @@ body {
 .academic-table th,
 .academic-table td {
   border: 1px solid #0f2b48;
-  padding: 3px 6px;
+  padding: 2.5px 5px;
   vertical-align: middle;
 }
 
@@ -78,16 +97,16 @@ body {
   border: 1.5px solid #0f2b48;
 }
 
-/* Print CSS - Strict A4 Dimensions (210mm x 297mm) */
+/* Print CSS - Strict A4 Dimensions (210mm x 297mm) with safe printable margins */
 @page {
   size: 210mm 297mm;
-  margin: 0;
+  margin: 4mm 5mm 4mm 5mm;
 }
 
 @media print {
   @page {
     size: 210mm 297mm;
-    margin: 0;
+    margin: 4mm 5mm 4mm 5mm;
   }
 
   *, *::before, *::after {
@@ -97,10 +116,10 @@ body {
   }
 
   html, body {
-    width: 210mm !important;
-    height: 297mm !important;
-    max-height: 297mm !important;
-    margin: 0 !important;
+    width: 200mm !important;
+    height: 289mm !important;
+    max-height: 289mm !important;
+    margin: 0 auto !important;
     padding: 0 !important;
     background: #ffffff !important;
     overflow: hidden !important;
@@ -123,12 +142,12 @@ body {
   /* Reset ResultViewer zoom container */
   .marksheet-print-container {
     transform: none !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    max-width: 210mm !important;
-    max-height: 297mm !important;
+    width: 100% !important;
+    height: 285mm !important;
+    max-width: 200mm !important;
+    max-height: 285mm !important;
     box-shadow: none !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     padding: 0 !important;
   }
 
@@ -136,7 +155,7 @@ body {
     visibility: hidden !important;
   }
 
-  /* Anchor the marksheet to exact 210mm x 297mm A4 page */
+  /* Anchor the marksheet to exact single A4 page with safe margins */
   #printable-marksheet,
   #printable-marksheet * {
     visibility: visible !important;
@@ -147,16 +166,16 @@ body {
 
   #printable-marksheet,
   .marksheet-a4-page {
-    position: absolute !important;
+    position: relative !important;
     top: 0 !important;
     left: 0 !important;
-    width: 210mm !important;
-    max-width: 210mm !important;
-    min-width: 210mm !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
-    max-height: 297mm !important;
-    margin: 0 !important;
+    width: 100% !important;
+    max-width: 200mm !important;
+    min-width: 195mm !important;
+    height: 285mm !important;
+    min-height: 280mm !important;
+    max-height: 285mm !important;
+    margin: 0 auto !important;
     box-sizing: border-box !important;
     box-shadow: none !important;
     border: none !important;
@@ -173,12 +192,23 @@ body {
     justify-content: space-between !important;
   }
 
-  #printable-marksheet *,
-  .marksheet-a4-page * {
-    font-family: "ResultFont", "Roboto Condensed", Arial, sans-serif !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
+  #printable-marksheet,
+  .marksheet-a4-page {
+    font-family: "ResultFont", "Roboto Condensed", Arial, sans-serif;
+  }
+
+  .font-sarkari-title,
+  .marksheet-sarkari-title {
+    font-family: 'Cinzel', 'Noto Serif Devanagari', 'Merriweather', 'Times New Roman', Georgia, serif !important;
+  }
+
+  .font-sarkari-serif,
+  .marksheet-sarkari-serif {
+    font-family: 'Merriweather', 'Noto Serif Devanagari', 'Times New Roman', Georgia, serif !important;
+  }
+
+  .font-sarkari-hindi {
+    font-family: 'Noto Serif Devanagari', 'Merriweather', 'Times New Roman', serif !important;
   }
 
   /* Force background colors on academic table headers & borders in print */

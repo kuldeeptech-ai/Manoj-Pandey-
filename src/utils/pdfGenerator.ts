@@ -107,16 +107,16 @@ export async function renderMarksheetToCanvas(
   const originalWrapperHeight = parentWrapper ? parentWrapper.style.height : null;
 
   try {
-    // 1. Temporarily unscale the visible container to natural 1:1 preview scale (794px x 1123px)
+    // 1. Temporarily unscale the visible container to natural 1:1 preview scale (794px x 1060px)
     if (printContainer) {
       printContainer.style.transform = 'none';
       printContainer.style.width = '794px';
-      printContainer.style.height = '1123px';
+      printContainer.style.height = '1060px';
       printContainer.style.boxShadow = 'none';
     }
     if (parentWrapper) {
       parentWrapper.style.width = '794px';
-      parentWrapper.style.height = '1123px';
+      parentWrapper.style.height = '1060px';
     }
 
     // Wait for DOM reflow to finish cleanly
@@ -130,9 +130,9 @@ export async function renderMarksheetToCanvas(
     try {
       const canvas = await toCanvas(sourceElement, {
         width: 794,
-        height: 1123,
+        height: 1060,
         canvasWidth: 1588,
-        canvasHeight: 2246,
+        canvasHeight: 2120,
         pixelRatio: 2.0,
         backgroundColor: '#ffffff',
         fontEmbedCSS: EMBEDDED_FONTS_CSS,
@@ -151,7 +151,7 @@ export async function renderMarksheetToCanvas(
     try {
       const dataUrl = await toPng(sourceElement, {
         width: 794,
-        height: 1123,
+        height: 1060,
         pixelRatio: 2.0,
         backgroundColor: '#ffffff',
         fontEmbedCSS: EMBEDDED_FONTS_CSS,
@@ -170,12 +170,12 @@ export async function renderMarksheetToCanvas(
 
         const canvas = document.createElement('canvas');
         canvas.width = 1588;
-        canvas.height = 2246;
+        canvas.height = 2120;
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, 1588, 2246);
-          ctx.drawImage(img, 0, 0, 1588, 2246);
+          ctx.fillRect(0, 0, 1588, 2120);
+          ctx.drawImage(img, 0, 0, 1588, 2120);
           return canvas;
         }
       }
@@ -232,10 +232,10 @@ export async function downloadMarksheetPdf(
       creator: 'H.D. Pandey Public Junior High School',
     });
 
-    // Lossless PNG image data rendered at 1588 x 2246 px (exact 2x A4)
+    // Lossless PNG image data rendered at 1588 x 2120 px (exact 2x calibrated A4)
     const imgData = canvas.toDataURL('image/png');
-    // Standard A4 dimensions: exactly 210mm x 297mm
-    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+    // Standard A4 dimensions (210mm x 297mm) with safe 5mm horizontal & 9mm vertical certificate border margin
+    pdf.addImage(imgData, 'PNG', 5, 9, 200, 267, undefined, 'FAST');
 
     // Trigger download
     try {
@@ -376,12 +376,12 @@ export async function printMarksheet(
   <style>
     @page {
       size: 210mm 297mm;
-      margin: 0mm;
+      margin: 4mm 5mm;
     }
     @media print {
       @page {
         size: 210mm 297mm;
-        margin: 0mm;
+        margin: 4mm 5mm;
       }
       *, *::before, *::after {
         -webkit-print-color-adjust: exact !important;
@@ -390,45 +390,45 @@ export async function printMarksheet(
         box-sizing: border-box !important;
       }
       html, body {
-        width: 210mm !important;
-        height: 297mm !important;
-        max-height: 297mm !important;
-        margin: 0 !important;
+        width: 200mm !important;
+        height: 289mm !important;
+        max-height: 289mm !important;
+        margin: 0 auto !important;
         padding: 0 !important;
         overflow: hidden !important;
         background: #ffffff !important;
       }
       img.print-marksheet-canvas-img {
-        width: 210mm !important;
-        height: 297mm !important;
-        max-width: 210mm !important;
-        max-height: 297mm !important;
+        width: 100% !important;
+        height: 282mm !important;
+        max-width: 200mm !important;
+        max-height: 282mm !important;
         display: block !important;
         margin: 0 auto !important;
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
         break-after: avoid !important;
         break-inside: avoid !important;
-        object-fit: fill !important;
+        object-fit: contain !important;
         image-rendering: -webkit-optimize-contrast !important;
       }
     }
     html, body {
-      width: 210mm;
-      height: 297mm;
-      margin: 0;
+      width: 200mm;
+      height: 289mm;
+      margin: 0 auto;
       padding: 0;
       background: #ffffff;
       overflow: hidden;
     }
     img.print-marksheet-canvas-img {
-      width: 210mm;
-      height: 297mm;
-      max-width: 210mm;
-      max-height: 297mm;
+      width: 200mm;
+      height: 282mm;
+      max-width: 200mm;
+      max-height: 282mm;
       display: block;
       margin: 0 auto;
-      object-fit: fill;
+      object-fit: contain;
     }
   </style>
 </head>
