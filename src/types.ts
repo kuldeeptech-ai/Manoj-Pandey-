@@ -6,6 +6,7 @@ export interface SubjectConfig {
   annualMax: number;
   passingMarks: number;
   active: boolean;
+  applicableClasses?: string[]; // Classes this subject applies to, e.g. ['5th', '6th', '7th', '8th']. If omitted or contains 'ALL', applies to all classes.
 }
 
 export interface StudentMarkItem {

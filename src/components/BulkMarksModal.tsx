@@ -15,7 +15,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { Student, SubjectConfig } from '../types';
-import { canonicalClassName, isSameClass, sortStudentsByRoll } from '../utils/calculations';
+import { canonicalClassName, isSameClass, sortStudentsByRoll, getSubjectsForClass } from '../utils/calculations';
 
 interface BulkMarksModalProps {
   isOpen: boolean;
@@ -70,8 +70,10 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
     return sortStudentsByRoll(list);
   }, [students, selectedClass]);
 
-  // Active subjects
-  const activeSubjects = subjects.filter((s) => s.active);
+  // Active subjects filtered by selected class
+  const activeSubjects = useMemo(() => {
+    return getSubjectsForClass(subjects, selectedClass === 'ALL' ? undefined : selectedClass);
+  }, [subjects, selectedClass]);
 
   // Helper to construct header column names
   const getHeaderColumns = () => {

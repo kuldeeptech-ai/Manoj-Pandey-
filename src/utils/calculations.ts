@@ -274,6 +274,37 @@ export function findClassTeacher(
   return { designation: 'CLASS TEACHER' };
 }
 
+/**
+ * Checks whether a subject is applicable to a specific class.
+ * If applicableClasses is empty, undefined, or includes 'ALL', it applies to all classes.
+ */
+export function isSubjectApplicableToClass(subject: SubjectConfig, className?: string): boolean {
+  if (!subject) return false;
+  if (!subject.active) return false;
+  if (!subject.applicableClasses || !Array.isArray(subject.applicableClasses) || subject.applicableClasses.length === 0) {
+    return true;
+  }
+  if (subject.applicableClasses.some((c) => String(c).trim().toUpperCase() === 'ALL')) {
+    return true;
+  }
+  if (!className) return true;
+  const canonical = canonicalClassName(className);
+  return subject.applicableClasses.some(
+    (c) => isSameClass(c, className) || isSameClass(c, canonical)
+  );
+}
+
+/**
+ * Returns all active subjects applicable to a given class, sorted by displayOrder.
+ * If no className is provided, returns all active subjects.
+ */
+export function getSubjectsForClass(subjects: SubjectConfig[], className?: string): SubjectConfig[] {
+  if (!Array.isArray(subjects)) return [];
+  return subjects
+    .filter((s) => s.active && (!className || isSubjectApplicableToClass(s, className)))
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+}
+
 export function calculateStudentResult(
   student: Student,
   subjects: SubjectConfig[],
@@ -285,9 +316,8 @@ export function calculateStudentResult(
     name: student.classTeacherName,
     signatureUrl: student.classTeacherSignatureUrl,
   });
-  const activeSubjects = subjects
-    .filter((s) => s.active)
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+  // Class-wise subjects filtering: Only include subjects applicable to this student's class
+  const activeSubjects = getSubjectsForClass(subjects, student.className);
 
   const processedRows: ProcessedSubjectRow[] = [];
   const validationIssues: string[] = [];

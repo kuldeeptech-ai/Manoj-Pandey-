@@ -75,6 +75,11 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
   const isLarge = textScale === 'large' || textScale === 'extra_large';
   const isXtraLarge = textScale === 'extra_large';
 
+  // Uniform typography for Student Particulars so all text is large and consistent in size
+  const particularsTextSize = isVeryDense
+    ? (isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]')
+    : (isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]');
+
   // Dynamic row height and padding to ensure crisp legible print without ever spilling over A4 page
   const pagePadding = isVeryDense
     ? '2mm 4mm 1.5mm 4mm'
@@ -401,34 +406,34 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                     {/* Left Column (5 balanced rows) */}
                     <div className="w-1/2 flex flex-col gap-y-0.5">
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                        <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Student Name:</span>
-                        <span className={`flex-1 font-black uppercase truncate ${isXtraLarge ? 'text-[16px]' : isLarge ? 'text-[14.5px]' : 'text-[13px]'}`} style={{ color: '#0a1d30' }}>{student.name || '—'}</span>
+                        <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Student Name:</span>
+                        <span className={`flex-1 font-black uppercase truncate ${particularsTextSize}`} style={{ color: '#0a1d30' }}>{student.name || '—'}</span>
                       </div>
 
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                        <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Father's Name:</span>
-                        <span className={`flex-1 font-extrabold uppercase truncate ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#0f172a' }}>{student.fatherName || '—'}</span>
+                        <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Father's Name:</span>
+                        <span className={`flex-1 font-extrabold uppercase truncate ${particularsTextSize}`} style={{ color: '#0f172a' }}>{student.fatherName || '—'}</span>
                       </div>
 
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                        <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Mother's Name:</span>
-                        <span className={`flex-1 font-extrabold uppercase truncate ${isXtraLarge ? 'text-[13.5px]' : isLarge ? 'text-[12.5px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.motherName || '—'}</span>
+                        <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Mother's Name:</span>
+                        <span className={`flex-1 font-extrabold uppercase truncate ${particularsTextSize}`} style={{ color: '#0f172a' }}>{student.motherName || '—'}</span>
                       </div>
 
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                        <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Admission No:</span>
-                        <span className={`flex-1 font-extrabold font-mono ${isXtraLarge ? 'text-[13.5px]' : isLarge ? 'text-[12.5px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.admissionNo || '—'}</span>
+                        <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Admission No:</span>
+                        <span className={`flex-1 font-extrabold font-mono ${particularsTextSize}`} style={{ color: '#0f172a' }}>{student.admissionNo || '—'}</span>
                       </div>
 
                       {isSettingEnabled(school.showStudentAadhar, true) ? (
                         <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                          <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Aadhaar No:</span>
-                          <span className={`flex-1 font-bold font-mono tracking-tight ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.aadharNo || '—'}</span>
+                          <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Aadhaar No:</span>
+                          <span className={`flex-1 font-bold font-mono tracking-tight ${particularsTextSize}`} style={{ color: '#0f172a' }}>{student.aadharNo || '—'}</span>
                         </div>
                       ) : (
                         <div className="flex items-baseline pb-0.5 opacity-0 pointer-events-none">
-                          <span className="w-[98px] shrink-0 font-bold">&nbsp;</span>
-                          <span className="flex-1 font-bold">&nbsp;</span>
+                          <span className={`w-[102px] shrink-0 font-bold ${particularsTextSize}`}>&nbsp;</span>
+                          <span className={`flex-1 font-bold ${particularsTextSize}`}>&nbsp;</span>
                         </div>
                       )}
                     </div>
@@ -436,34 +441,34 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                     {/* Right Column (5 balanced rows matching Left Column exactly) */}
                     <div className="w-1/2 flex flex-col gap-y-0.5">
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                        <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Roll Number:</span>
-                        <span className={`flex-1 font-black ${isXtraLarge ? 'text-[16px]' : isLarge ? 'text-[14.5px]' : 'text-[13px]'}`} style={{ color: '#0f2b48' }}>{student.rollNo || '—'}</span>
+                        <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Roll Number:</span>
+                        <span className={`flex-1 font-black ${particularsTextSize}`} style={{ color: '#0f2b48' }}>{student.rollNo || '—'}</span>
                       </div>
 
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                        <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Class & Sec:</span>
-                        <span className={`flex-1 font-black ${isXtraLarge ? 'text-[14.5px]' : isLarge ? 'text-[13.5px]' : 'text-[12.5px]'}`} style={{ color: '#0f172a' }}>{student.className} - {student.section}</span>
+                        <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Class & Sec:</span>
+                        <span className={`flex-1 font-extrabold ${particularsTextSize}`} style={{ color: '#0f172a' }}>{student.className} - {student.section}</span>
                       </div>
 
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                        <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Date of Birth:</span>
-                        <span className={`flex-1 font-bold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{formatDisplayDate(student.dob) || '—'}</span>
+                        <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Date of Birth:</span>
+                        <span className={`flex-1 font-extrabold ${particularsTextSize}`} style={{ color: '#0f172a' }}>{formatDisplayDate(student.dob) || '—'}</span>
                       </div>
 
                       <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                        <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Gender:</span>
-                        <span className={`flex-1 font-bold uppercase ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.gender || '—'}</span>
+                        <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Gender:</span>
+                        <span className={`flex-1 font-extrabold uppercase ${particularsTextSize}`} style={{ color: '#0f172a' }}>{student.gender || '—'}</span>
                       </div>
 
                       {isSettingEnabled(school.showStudentMobile, true) ? (
                         <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
-                          <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Contact No:</span>
-                          <span className={`flex-1 font-bold font-mono tracking-tight ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.mobile || '—'}</span>
+                          <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Contact No:</span>
+                          <span className={`flex-1 font-extrabold font-mono tracking-tight ${particularsTextSize}`} style={{ color: '#0f172a' }}>{student.mobile || '—'}</span>
                         </div>
                       ) : (
                         <div className="flex items-baseline pb-0.5 opacity-0 pointer-events-none">
-                          <span className="w-[92px] shrink-0 font-bold">&nbsp;</span>
-                          <span className="flex-1 font-bold">&nbsp;</span>
+                          <span className={`w-[102px] shrink-0 font-bold ${particularsTextSize}`}>&nbsp;</span>
+                          <span className={`flex-1 font-bold ${particularsTextSize}`}>&nbsp;</span>
                         </div>
                       )}
                     </div>
@@ -472,15 +477,15 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                   {/* Full-width Address Row */}
                   {isSettingEnabled(school.showStudentAddress, true) ? (
                     <div className="flex items-baseline pt-0.5 pb-0.5" style={{ borderTop: '1px solid #cbd5e1' }}>
-                      <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Address:</span>
-                      <span className={`flex-1 font-bold truncate leading-tight ${isXtraLarge ? 'text-[12.5px]' : isLarge ? 'text-[11.5px]' : 'text-[11px]'}`} style={{ color: '#0f172a' }} title={student.address || (student as any).pata || '—'}>
+                      <span className={`w-[102px] shrink-0 font-bold uppercase whitespace-nowrap ${particularsTextSize}`} style={{ color: '#1e293b' }}>Address:</span>
+                      <span className={`flex-1 font-extrabold truncate leading-tight ${particularsTextSize}`} style={{ color: '#0f172a' }} title={student.address || (student as any).pata || '—'}>
                         {student.address || (student as any).pata || '—'}
                       </span>
                     </div>
                   ) : (
                     <div className="flex items-baseline pt-0.5 pb-0.5 opacity-0 pointer-events-none">
-                      <span className="w-[98px] shrink-0 font-bold">&nbsp;</span>
-                      <span className="flex-1 font-bold">&nbsp;</span>
+                      <span className={`w-[102px] shrink-0 font-bold ${particularsTextSize}`}>&nbsp;</span>
+                      <span className={`flex-1 font-bold ${particularsTextSize}`}>&nbsp;</span>
                     </div>
                   )}
                 </div>

@@ -163,29 +163,12 @@
     {
       "active": true,
       "annualMax": 100,
-      "displayOrder": 10,
+      "displayOrder": 1,
       "halfMax": 100,
-      "id": "sub-1789291043759",
-      "name": "Hindi ii",
-      "passingMarks": 33
-    },
-    {
-      "active": true,
-      "annualMax": 100,
-      "displayOrder": 11,
-      "halfMax": 100,
-      "id": "sub-1789291370377",
-      "name": "dgg",
-      "passingMarks": 33
-    },
-    {
-      "active": true,
-      "annualMax": 100,
-      "displayOrder": 7,
-      "halfMax": 100,
-      "id": "sub-computer",
-      "name": "Computer",
-      "passingMarks": 33
+      "id": "sub-hindi",
+      "name": "Hindi",
+      "passingMarks": 33,
+      "applicableClasses": ["5th", "6th", "7th", "8th"]
     },
     {
       "active": true,
@@ -194,25 +177,8 @@
       "halfMax": 100,
       "id": "sub-english",
       "name": "English",
-      "passingMarks": 33
-    },
-    {
-      "active": true,
-      "annualMax": 100,
-      "displayOrder": 8,
-      "halfMax": 100,
-      "id": "sub-gk",
-      "name": "General Knowledge",
-      "passingMarks": 33
-    },
-    {
-      "active": true,
-      "annualMax": 100,
-      "displayOrder": 1,
-      "halfMax": 100,
-      "id": "sub-hindi",
-      "name": "Hindi",
-      "passingMarks": 33
+      "passingMarks": 33,
+      "applicableClasses": ["5th", "6th", "7th", "8th"]
     },
     {
       "active": true,
@@ -221,25 +187,8 @@
       "halfMax": 100,
       "id": "sub-maths",
       "name": "Mathematics",
-      "passingMarks": 33
-    },
-    {
-      "active": true,
-      "annualMax": 100,
-      "displayOrder": 9,
-      "halfMax": 100,
-      "id": "sub-moral",
-      "name": "Moral Science / Knowledge",
-      "passingMarks": 33
-    },
-    {
-      "active": true,
-      "annualMax": 100,
-      "displayOrder": 6,
-      "halfMax": 100,
-      "id": "sub-sanskrit",
-      "name": "Sanskrit",
-      "passingMarks": 33
+      "passingMarks": 33,
+      "applicableClasses": ["5th", "6th", "7th", "8th"]
     },
     {
       "active": true,
@@ -248,7 +197,8 @@
       "halfMax": 100,
       "id": "sub-science",
       "name": "Science",
-      "passingMarks": 33
+      "passingMarks": 33,
+      "applicableClasses": ["5th", "6th", "7th", "8th"]
     },
     {
       "active": true,
@@ -257,7 +207,68 @@
       "halfMax": 100,
       "id": "sub-social",
       "name": "Social Science",
-      "passingMarks": 33
+      "passingMarks": 33,
+      "applicableClasses": ["5th", "6th", "7th", "8th"]
+    },
+    {
+      "active": true,
+      "annualMax": 100,
+      "displayOrder": 6,
+      "halfMax": 100,
+      "id": "sub-sanskrit",
+      "name": "Sanskrit",
+      "passingMarks": 33,
+      "applicableClasses": ["5th", "6th", "7th", "8th"]
+    },
+    {
+      "active": true,
+      "annualMax": 100,
+      "displayOrder": 7,
+      "halfMax": 100,
+      "id": "sub-computer",
+      "name": "Computer",
+      "passingMarks": 33,
+      "applicableClasses": ["5th", "6th", "7th", "8th"]
+    },
+    {
+      "active": true,
+      "annualMax": 100,
+      "displayOrder": 8,
+      "halfMax": 100,
+      "id": "sub-gk",
+      "name": "General Knowledge",
+      "passingMarks": 33,
+      "applicableClasses": ["5th", "6th", "7th", "8th"]
+    },
+    {
+      "active": true,
+      "annualMax": 100,
+      "displayOrder": 9,
+      "halfMax": 100,
+      "id": "sub-moral",
+      "name": "Moral Science / Knowledge",
+      "passingMarks": 33,
+      "applicableClasses": ["5th", "6th", "7th", "8th"]
+    },
+    {
+      "active": true,
+      "annualMax": 100,
+      "displayOrder": 10,
+      "halfMax": 100,
+      "id": "sub-1789291043759",
+      "name": "Hindi ii",
+      "passingMarks": 33,
+      "applicableClasses": ["6th", "7th", "8th"]
+    },
+    {
+      "active": true,
+      "annualMax": 100,
+      "displayOrder": 11,
+      "halfMax": 100,
+      "id": "sub-1789291370377",
+      "name": "dgg",
+      "passingMarks": 33,
+      "applicableClasses": ["8th"]
     }
   ],
   "students": [
