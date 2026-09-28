@@ -3792,6 +3792,70 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         ✓ छात्र/अभिभावक सर्च पोर्टल के शीर्ष हेडर पर अलग से लागू होगा।
                       </p>
                     </div>
+
+                    {/* Control 3: Marksheet Overall Text Print Clarity & Size */}
+                    <div className="sm:col-span-2 pt-2 border-t border-slate-200">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div>
+                          <label className="text-xs font-bold text-slate-900 uppercase flex items-center gap-1.5">
+                            <span className="text-[#0f2b48]">अंकपत्र प्रिंट टेक्स्ट आकार (Print Text Readability & Size)</span>
+                          </label>
+                          <p className="text-[11px] text-slate-600 mt-0.5">
+                            प्रिंट निकालते समय छात्र विवरण, प्राप्तांक और सारांश के सभी अक्षर बड़े व स्पष्ट (Bold & Clean) दिखें।
+                          </p>
+                        </div>
+                        <span className="text-xs font-black px-2.5 py-1 bg-amber-100 text-amber-900 rounded font-mono uppercase border border-amber-300">
+                          {settingsForm.marksheetTextScale === 'extra_large' ? 'अति स्पष्ट (Extra Large)' : settingsForm.marksheetTextScale === 'normal' ? 'सामान्य (Normal)' : 'बड़ा व साफ (Large - अनुशंसित)'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, marksheetTextScale: 'normal' })}
+                          className={`p-2 rounded-lg border text-left cursor-pointer transition-all ${
+                            settingsForm.marksheetTextScale === 'normal'
+                              ? 'bg-[#0f2b48] text-white border-[#0f2b48] shadow-sm'
+                              : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
+                          }`}
+                        >
+                          <div className="text-xs font-bold">1. सामान्य (Normal)</div>
+                          <div className={`text-[10px] mt-0.5 ${settingsForm.marksheetTextScale === 'normal' ? 'text-slate-200' : 'text-slate-500'}`}>मानक फ़ॉन्ट आकार</div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, marksheetTextScale: 'large' })}
+                          className={`p-2 rounded-lg border text-left cursor-pointer transition-all ${
+                            (!settingsForm.marksheetTextScale || settingsForm.marksheetTextScale === 'large')
+                              ? 'bg-[#0f2b48] text-white border-[#0f2b48] shadow-sm ring-2 ring-amber-400'
+                              : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
+                          }`}
+                        >
+                          <div className="text-xs font-bold flex items-center justify-between">
+                            <span>2. बड़ा व साफ (Large)</span>
+                            <span className="text-[9px] px-1.5 py-0.2 bg-amber-400 text-slate-900 font-black rounded">बेस्ट प्रिंट</span>
+                          </div>
+                          <div className={`text-[10px] mt-0.5 ${(!settingsForm.marksheetTextScale || settingsForm.marksheetTextScale === 'large') ? 'text-amber-200' : 'text-slate-500'}`}>प्रिंट में सबसे साफ पठनीय</div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, marksheetTextScale: 'extra_large' })}
+                          className={`p-2 rounded-lg border text-left cursor-pointer transition-all ${
+                            settingsForm.marksheetTextScale === 'extra_large'
+                              ? 'bg-[#0f2b48] text-white border-[#0f2b48] shadow-sm'
+                              : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
+                          }`}
+                        >
+                          <div className="text-xs font-bold">3. अति बड़ा (Extra Large)</div>
+                          <div className={`text-[10px] mt-0.5 ${settingsForm.marksheetTextScale === 'extra_large' ? 'text-slate-200' : 'text-slate-500'}`}>अधिकतम बोल्ड व स्पष्ट</div>
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-emerald-700 font-semibold mt-2 flex items-center gap-1">
+                        <span>✓ यह सेटिंग A4 सिंगल-पेज के सटीक लेआउट को बनाए रखते हुए सभी टेक्स्ट को प्रिंट में बिल्कुल स्पष्ट दर्शाती है।</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
 

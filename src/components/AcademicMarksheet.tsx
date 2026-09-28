@@ -71,8 +71,23 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
   // Dynamic density calculation to guarantee 100% perfect fit on exact A4 paper
   const isDense = subjects.length >= 8;
   const isVeryDense = subjects.length >= 11;
-  const pagePadding = isVeryDense ? '2mm 4mm 1.5mm 4mm' : isDense ? '2.5mm 4.5mm 2mm 4.5mm' : '3mm 5mm 2.5mm 5mm';
-  const rowHeight = isVeryDense ? '16px' : isDense ? '17px' : '18.5px';
+  const textScale = school.marksheetTextScale || 'large'; // 'normal' | 'large' | 'extra_large'
+  const isLarge = textScale === 'large' || textScale === 'extra_large';
+  const isXtraLarge = textScale === 'extra_large';
+
+  // Dynamic row height and padding to ensure crisp legible print without ever spilling over A4 page
+  const pagePadding = isVeryDense
+    ? '2mm 4mm 1.5mm 4mm'
+    : isDense
+    ? '2.5mm 4.5mm 2mm 4.5mm'
+    : '3mm 5mm 2.5mm 5mm';
+
+  const rowHeight = isVeryDense
+    ? (isXtraLarge ? '21px' : '20px')
+    : isDense
+    ? (isXtraLarge ? '24px' : isLarge ? '23px' : '21px')
+    : (isXtraLarge ? '28px' : isLarge ? '26px' : '23px');
+
   const configuredLogoSize = typeof school.logoSize === 'number' && school.logoSize >= 40 && school.logoSize <= 160 ? school.logoSize : 66;
   const headerLogoSizePx = isVeryDense
     ? Math.max(46, Math.round(configuredLogoSize * 0.74))
@@ -80,8 +95,8 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
     ? Math.max(52, Math.round(configuredLogoSize * 0.82))
     : Math.min(configuredLogoSize, 66);
   const headerLogoSize = `${headerLogoSizePx}px`;
-  const photoW = isVeryDense ? '62px' : '68px';
-  const photoH = isVeryDense ? '76px' : '82px';
+  const photoW = isVeryDense ? '64px' : '72px';
+  const photoH = isVeryDense ? '82px' : '92px';
 
   // Helper to strictly sanitize any Hindi/Devanagari characters to pure English
   const stripHindi = (val: string | undefined | null, fallback: string = ''): string => {
@@ -304,28 +319,28 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                 borderBottom: '2px solid #0f2b48',
               }}
             >
-              <div className="text-[8.5px] font-extrabold uppercase flex items-center gap-1" style={{ color: '#0f2b48' }}>
-                <span className="px-1.5 py-0.5 rounded-xs bg-[#e8f0fe] text-[#0f2b48] border border-[#1b4975]">
+              <div className={`${isXtraLarge ? 'text-[11px]' : isLarge ? 'text-[10px]' : 'text-[9px]'} font-extrabold uppercase flex items-center gap-1`} style={{ color: '#0f2b48' }}>
+                <span className="px-2 py-0.5 rounded-xs bg-[#e8f0fe] text-[#0f2b48] border border-[#1b4975] font-black">
                   {isHalfOnly ? 'TERM I' : isAnnualOnly ? 'TERM II' : 'FINAL EXAM'}
                 </span>
               </div>
               <div className="text-center">
                 <h2
-                  className={`font-sarkari-title ${isVeryDense ? 'text-[11px]' : 'text-[12px]'} font-extrabold tracking-wider uppercase leading-tight`}
+                  className={`font-sarkari-title ${isVeryDense ? 'text-[12px]' : isXtraLarge ? 'text-[15px]' : isLarge ? 'text-[14px]' : 'text-[13px]'} font-black tracking-wider uppercase leading-tight`}
                   style={{ color: '#0a1d30' }}
                 >
                   {isHalfOnly ? 'HALF-YEARLY EXAMINATION REPORT & MARKSHEET' : isAnnualOnly ? 'ANNUAL EXAMINATION REPORT & MARKSHEET' : 'ANNUAL PROGRESS REPORT & MARKSHEET'}
                 </h2>
                 <div
-                  className="font-sarkari-serif text-[8.5px] font-bold tracking-wider mt-0.5 uppercase"
-                  style={{ color: '#334155' }}
+                  className={`font-sarkari-serif ${isXtraLarge ? 'text-[11px]' : isLarge ? 'text-[10px]' : 'text-[9px]'} font-extrabold tracking-wider mt-0.5 uppercase`}
+                  style={{ color: '#1e293b' }}
                 >
                   <span>CUMULATIVE ACADEMIC PERFORMANCE REPORT</span>
                   <span className="mx-1.5 text-amber-700">•</span>
-                  SESSION: <span className="font-extrabold text-[#0f2b48] underline">{student.session || school.session}</span>
+                  SESSION: <span className="font-black text-[#0f2b48] underline">{student.session || school.session}</span>
                   {isHalfOnly && (
                     <span
-                      className="ml-2 px-1.5 py-0.2 text-[8px] rounded font-bold"
+                      className="ml-2 px-1.5 py-0.2 text-[9px] rounded font-extrabold"
                       style={{ backgroundColor: '#0f2b48', color: '#ffd54f' }}
                     >
                       HALF-YEARLY
@@ -333,7 +348,7 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                   )}
                   {isAnnualOnly && (
                     <span
-                      className="ml-2 px-1.5 py-0.2 text-[8px] rounded font-bold"
+                      className="ml-2 px-1.5 py-0.2 text-[9px] rounded font-extrabold"
                       style={{ backgroundColor: '#1b4975', color: '#ffd54f' }}
                     >
                       ANNUAL
@@ -341,8 +356,8 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                   )}
                 </div>
               </div>
-              <div className="text-[8.5px] font-bold uppercase" style={{ color: '#0f2b48' }}>
-                <span className="px-2 py-0.5 rounded-xs bg-amber-100 text-amber-950 border border-amber-400 font-extrabold">
+              <div className={`${isXtraLarge ? 'text-[12.5px]' : isLarge ? 'text-[11.5px]' : 'text-[10.5px]'} font-extrabold uppercase`} style={{ color: '#0f2b48' }}>
+                <span className="px-2.5 py-0.5 rounded-xs bg-amber-100 text-amber-950 border border-amber-400 font-black">
                   CLASS: {student.className} ({student.section || 'A'})
                 </span>
               </div>
@@ -369,12 +384,12 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                 className="px-2 py-0.5 flex justify-between items-center"
                 style={{ backgroundColor: '#0f2b48', color: '#ffffff' }}
               >
-                <span className="font-sarkari-title text-[9.5px] font-bold uppercase tracking-wider">
+                <span className={`font-sarkari-title ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'} font-bold uppercase tracking-wider`}>
                   STUDENT PARTICULARS
                 </span>
                 <div className="flex items-center gap-3">
-                  <span className="text-[8.5px] font-bold tracking-tight" style={{ color: '#ffd54f' }}>
-                    ADM NO: <span className="font-mono text-white text-[9px]">{student.admissionNo || '—'}</span>
+                  <span className={`${isXtraLarge ? 'text-[11.5px]' : isLarge ? 'text-[10.5px]' : 'text-[9.5px]'} font-bold tracking-tight`} style={{ color: '#ffd54f' }}>
+                    ADM NO: <span className={`font-mono text-white ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'} font-extrabold`}>{student.admissionNo || '—'}</span>
                   </span>
                 </div>
               </div>
@@ -384,70 +399,70 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                 <div className="flex-1 flex flex-col justify-between">
                   <div className="flex gap-2.5">
                     {/* Left Column (5 balanced rows) */}
-                    <div className={`w-1/2 flex flex-col ${isVeryDense ? 'gap-y-0.5 text-[8.5px]' : 'gap-y-0.5 text-[9px]'}`}>
-                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[84px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Student Name:</span>
-                        <span className="flex-1 font-bold uppercase truncate" style={{ color: '#0f2b48' }}>{student.name || '—'}</span>
+                    <div className="w-1/2 flex flex-col gap-y-0.5">
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                        <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Student Name:</span>
+                        <span className={`flex-1 font-black uppercase truncate ${isXtraLarge ? 'text-[16px]' : isLarge ? 'text-[14.5px]' : 'text-[13px]'}`} style={{ color: '#0a1d30' }}>{student.name || '—'}</span>
                       </div>
 
-                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[84px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Father's Name:</span>
-                        <span className="flex-1 font-bold uppercase truncate" style={{ color: '#0f172a' }}>{student.fatherName || '—'}</span>
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                        <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Father's Name:</span>
+                        <span className={`flex-1 font-extrabold uppercase truncate ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#0f172a' }}>{student.fatherName || '—'}</span>
                       </div>
 
-                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[84px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Mother's Name:</span>
-                        <span className="flex-1 font-bold uppercase truncate" style={{ color: '#0f172a' }}>{student.motherName || '—'}</span>
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                        <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Mother's Name:</span>
+                        <span className={`flex-1 font-extrabold uppercase truncate ${isXtraLarge ? 'text-[13.5px]' : isLarge ? 'text-[12.5px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.motherName || '—'}</span>
                       </div>
 
-                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[84px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Admission No:</span>
-                        <span className="flex-1 font-bold font-mono" style={{ color: '#0f172a' }}>{student.admissionNo || '—'}</span>
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                        <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Admission No:</span>
+                        <span className={`flex-1 font-extrabold font-mono ${isXtraLarge ? 'text-[13.5px]' : isLarge ? 'text-[12.5px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.admissionNo || '—'}</span>
                       </div>
 
                       {isSettingEnabled(school.showStudentAadhar, true) ? (
-                        <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <span className="w-[84px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Aadhaar No:</span>
-                          <span className="flex-1 font-bold font-mono tracking-tight" style={{ color: '#0f172a' }}>{student.aadharNo || '—'}</span>
+                        <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                          <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Aadhaar No:</span>
+                          <span className={`flex-1 font-bold font-mono tracking-tight ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.aadharNo || '—'}</span>
                         </div>
                       ) : (
                         <div className="flex items-baseline pb-0.5 opacity-0 pointer-events-none">
-                          <span className="w-[84px] shrink-0 font-bold">&nbsp;</span>
+                          <span className="w-[98px] shrink-0 font-bold">&nbsp;</span>
                           <span className="flex-1 font-bold">&nbsp;</span>
                         </div>
                       )}
                     </div>
 
                     {/* Right Column (5 balanced rows matching Left Column exactly) */}
-                    <div className={`w-1/2 flex flex-col ${isVeryDense ? 'gap-y-0.5 text-[8.5px]' : 'gap-y-0.5 text-[9px]'}`}>
-                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[82px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Roll Number:</span>
-                        <span className="flex-1 font-bold text-[10px]" style={{ color: '#0f2b48' }}>{student.rollNo || '—'}</span>
+                    <div className="w-1/2 flex flex-col gap-y-0.5">
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                        <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Roll Number:</span>
+                        <span className={`flex-1 font-black ${isXtraLarge ? 'text-[16px]' : isLarge ? 'text-[14.5px]' : 'text-[13px]'}`} style={{ color: '#0f2b48' }}>{student.rollNo || '—'}</span>
                       </div>
 
-                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[82px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Class & Sec:</span>
-                        <span className="flex-1 font-bold" style={{ color: '#0f172a' }}>{student.className} - {student.section}</span>
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                        <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Class & Sec:</span>
+                        <span className={`flex-1 font-black ${isXtraLarge ? 'text-[14.5px]' : isLarge ? 'text-[13.5px]' : 'text-[12.5px]'}`} style={{ color: '#0f172a' }}>{student.className} - {student.section}</span>
                       </div>
 
-                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[82px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Date of Birth:</span>
-                        <span className="flex-1 font-bold" style={{ color: '#0f172a' }}>{formatDisplayDate(student.dob) || '—'}</span>
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                        <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Date of Birth:</span>
+                        <span className={`flex-1 font-bold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{formatDisplayDate(student.dob) || '—'}</span>
                       </div>
 
-                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <span className="w-[82px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Gender:</span>
-                        <span className="flex-1 font-bold uppercase" style={{ color: '#0f172a' }}>{student.gender || '—'}</span>
+                      <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                        <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Gender:</span>
+                        <span className={`flex-1 font-bold uppercase ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.gender || '—'}</span>
                       </div>
 
                       {isSettingEnabled(school.showStudentMobile, true) ? (
-                        <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <span className="w-[82px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Contact No:</span>
-                          <span className="flex-1 font-bold font-mono tracking-tight" style={{ color: '#0f172a' }}>{student.mobile || '—'}</span>
+                        <div className="flex items-baseline pb-0.5" style={{ borderBottom: '1px solid #cbd5e1' }}>
+                          <span className={`w-[92px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Contact No:</span>
+                          <span className={`flex-1 font-bold font-mono tracking-tight ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11.5px]'}`} style={{ color: '#0f172a' }}>{student.mobile || '—'}</span>
                         </div>
                       ) : (
                         <div className="flex items-baseline pb-0.5 opacity-0 pointer-events-none">
-                          <span className="w-[82px] shrink-0 font-bold">&nbsp;</span>
+                          <span className="w-[92px] shrink-0 font-bold">&nbsp;</span>
                           <span className="flex-1 font-bold">&nbsp;</span>
                         </div>
                       )}
@@ -456,15 +471,15 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
 
                   {/* Full-width Address Row */}
                   {isSettingEnabled(school.showStudentAddress, true) ? (
-                    <div className="flex items-baseline pt-0.5 pb-0.5" style={{ borderTop: '1px solid #e2e8f0' }}>
-                      <span className="w-[84px] shrink-0 font-semibold uppercase whitespace-nowrap text-[8.5px]" style={{ color: '#475569' }}>Address:</span>
-                      <span className="flex-1 font-bold truncate leading-tight text-[9.5px]" style={{ color: '#0f172a' }} title={student.address || (student as any).pata || '—'}>
+                    <div className="flex items-baseline pt-0.5 pb-0.5" style={{ borderTop: '1px solid #cbd5e1' }}>
+                      <span className={`w-[98px] shrink-0 font-bold uppercase whitespace-nowrap ${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#1e293b' }}>Address:</span>
+                      <span className={`flex-1 font-bold truncate leading-tight ${isXtraLarge ? 'text-[12.5px]' : isLarge ? 'text-[11.5px]' : 'text-[11px]'}`} style={{ color: '#0f172a' }} title={student.address || (student as any).pata || '—'}>
                         {student.address || (student as any).pata || '—'}
                       </span>
                     </div>
                   ) : (
                     <div className="flex items-baseline pt-0.5 pb-0.5 opacity-0 pointer-events-none">
-                      <span className="w-[84px] shrink-0 font-bold">&nbsp;</span>
+                      <span className="w-[98px] shrink-0 font-bold">&nbsp;</span>
                       <span className="flex-1 font-bold">&nbsp;</span>
                     </div>
                   )}
@@ -508,21 +523,21 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
               </div>
             </div>
 
-            {/* ACADEMIC PERFORMANCE TABLE */}
+              {/* ACADEMIC PERFORMANCE TABLE */}
             <div className="mt-1">
               <div
                 className="px-2 py-0.5 flex justify-between items-center"
                 style={{
                   backgroundColor: '#0f2b48',
                   color: '#ffffff',
-                  border: '1px solid #0f2b48',
+                  border: '1.5px solid #0f2b48',
                   borderBottom: 'none',
                 }}
               >
-                <span className="font-sarkari-title text-[9.5px] font-bold uppercase tracking-wider">
+                <span className={`font-sarkari-title ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'} font-bold uppercase tracking-wider`}>
                   {isHalfOnly ? 'HALF-YEARLY EXAMINATION MARKS' : isAnnualOnly ? 'ANNUAL EXAMINATION MARKS' : 'ACADEMIC MARKS DETAILS'}
                 </span>
-                <span className="text-[8.5px] font-semibold text-slate-200">
+                <span className={`${isXtraLarge ? 'text-[11px]' : isLarge ? 'text-[10px]' : 'text-[9px]'} font-bold text-slate-200`}>
                   {isHalfOnly ? 'TERM I EVALUATION (MAX MARKS • PASS CRITERIA: 33%)' : isAnnualOnly ? 'TERM II EVALUATION (MAX MARKS • PASS CRITERIA: 33%)' : 'MAX MARKS (M.M.) • PASS CRITERIA: 33%'}
                 </span>
               </div>
@@ -539,34 +554,34 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                   }}
                 >
                   <thead>
-                    <tr className="text-[9.5px]">
-                      <th className="w-[8%] py-0.5 font-bold text-center" style={{ backgroundColor: '#0f2b48', color: '#ffffff', border: '1px solid #0f2b48' }}>S.NO.</th>
-                      <th className="w-[46%] py-0.5 font-bold text-left px-2" style={{ backgroundColor: '#0f2b48', color: '#ffffff', border: '1px solid #0f2b48' }}>SUBJECT NAME</th>
-                      <th className="w-[23%] py-0.5 font-bold" style={{ backgroundColor: '#1a4773', color: '#ffffff', border: '1px solid #0f2b48' }}>
+                    <tr className={`${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`}>
+                      <th className="w-[8%] py-1 font-extrabold text-center" style={{ backgroundColor: '#0f2b48', color: '#ffffff', border: '1px solid #0f2b48' }}>S.NO.</th>
+                      <th className="w-[46%] py-1 font-extrabold text-left px-2" style={{ backgroundColor: '#0f2b48', color: '#ffffff', border: '1px solid #0f2b48' }}>SUBJECT NAME</th>
+                      <th className="w-[23%] py-1 font-extrabold" style={{ backgroundColor: '#1a4773', color: '#ffffff', border: '1px solid #0f2b48' }}>
                         MAX MARKS (M.M.)
                       </th>
-                      <th className="w-[23%] py-0.5 font-bold" style={{ backgroundColor: '#23588e', color: '#ffffff', border: '1px solid #0f2b48' }}>
+                      <th className="w-[23%] py-1 font-extrabold" style={{ backgroundColor: '#23588e', color: '#ffffff', border: '1px solid #0f2b48' }}>
                         OBTAINED MARKS
                       </th>
                     </tr>
                   </thead>
-                  <tbody className={`${isVeryDense ? 'text-[9.5px]' : isDense ? 'text-[10px]' : 'text-[11px]'}`}>
+                  <tbody>
                     {subjects.map((row) => (
                       <tr
                         key={row.subjectId}
                         style={{ height: rowHeight, backgroundColor: '#ffffff' }}
                       >
-                        <td className="font-bold py-0.2" style={{ color: '#334155', border: '1px solid #0f2b48' }}>{row.sNo}</td>
-                        <td className="font-bold text-left px-2 uppercase" style={{ color: '#0f172a', border: '1px solid #0f2b48' }}>
+                        <td className={`font-black py-0.5 ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#0f172a', border: '1px solid #0f2b48' }}>{row.sNo}</td>
+                        <td className={`font-black text-left px-2 uppercase ${isVeryDense ? (isXtraLarge ? 'text-[12.5px]' : 'text-[12px]') : isDense ? (isXtraLarge ? 'text-[13.5px]' : 'text-[13px]') : (isXtraLarge ? 'text-[15.5px]' : isLarge ? 'text-[14.5px]' : 'text-[13.5px]')}`} style={{ color: '#0a1d30', border: '1px solid #0f2b48' }}>
                           {row.subjectName}
                           {row.validationError && (
-                            <span className="text-[7.5px] block leading-none font-normal" style={{ color: '#dc2626' }}>
+                            <span className="text-[8px] block leading-none font-bold" style={{ color: '#dc2626' }}>
                               {row.validationError}
                             </span>
                           )}
                         </td>
-                        <td className="font-bold py-0.2" style={{ backgroundColor: '#f0f7ff', color: '#334155', border: '1px solid #0f2b48' }}>{row.halfMax}</td>
-                        <td className="font-bold py-0.2 text-[11.5px]" style={{ backgroundColor: '#dbeafe', color: '#0f2b48', border: '1px solid #0f2b48' }}>{row.halfObtained}</td>
+                        <td className={`font-extrabold py-0.5 ${isVeryDense ? (isXtraLarge ? 'text-[13px]' : 'text-[12.5px]') : isDense ? (isXtraLarge ? 'text-[14px]' : 'text-[13px]') : (isXtraLarge ? 'text-[15px]' : isLarge ? 'text-[14px]' : 'text-[13px]')}`} style={{ backgroundColor: '#f0f7ff', color: '#1e293b', border: '1px solid #0f2b48' }}>{row.halfMax}</td>
+                        <td className={`font-black py-0.5 ${isVeryDense ? (isXtraLarge ? 'text-[14.5px]' : 'text-[13.5px]') : isDense ? (isXtraLarge ? 'text-[15.5px]' : 'text-[14.5px]') : (isXtraLarge ? 'text-[17px]' : isLarge ? 'text-[16px]' : 'text-[14.5px]')}`} style={{ backgroundColor: '#dbeafe', color: '#0f2b48', border: '1px solid #0f2b48' }}>{row.halfObtained}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -583,34 +598,34 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                   }}
                 >
                   <thead>
-                    <tr className="text-[9.5px]">
-                      <th className="w-[8%] py-0.5 font-bold text-center" style={{ backgroundColor: '#0f2b48', color: '#ffffff', border: '1px solid #0f2b48' }}>S.NO.</th>
-                      <th className="w-[46%] py-0.5 font-bold text-left px-2" style={{ backgroundColor: '#0f2b48', color: '#ffffff', border: '1px solid #0f2b48' }}>SUBJECT NAME</th>
-                      <th className="w-[23%] py-0.5 font-bold" style={{ backgroundColor: '#1a4773', color: '#ffffff', border: '1px solid #0f2b48' }}>
+                    <tr className={`${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`}>
+                      <th className="w-[8%] py-1 font-extrabold text-center" style={{ backgroundColor: '#0f2b48', color: '#ffffff', border: '1px solid #0f2b48' }}>S.NO.</th>
+                      <th className="w-[46%] py-1 font-extrabold text-left px-2" style={{ backgroundColor: '#0f2b48', color: '#ffffff', border: '1px solid #0f2b48' }}>SUBJECT NAME</th>
+                      <th className="w-[23%] py-1 font-extrabold" style={{ backgroundColor: '#1a4773', color: '#ffffff', border: '1px solid #0f2b48' }}>
                         MAX MARKS (M.M.)
                       </th>
-                      <th className="w-[23%] py-0.5 font-bold" style={{ backgroundColor: '#1b4975', color: '#ffffff', border: '1px solid #0f2b48' }}>
+                      <th className="w-[23%] py-1 font-extrabold" style={{ backgroundColor: '#1b4975', color: '#ffffff', border: '1px solid #0f2b48' }}>
                         OBTAINED MARKS
                       </th>
                     </tr>
                   </thead>
-                  <tbody className={`${isVeryDense ? 'text-[9.5px]' : isDense ? 'text-[10px]' : 'text-[11px]'}`}>
+                  <tbody>
                     {subjects.map((row) => (
                       <tr
                         key={row.subjectId}
                         style={{ height: rowHeight, backgroundColor: '#ffffff' }}
                       >
-                        <td className="font-bold py-0.2" style={{ color: '#334155', border: '1px solid #0f2b48' }}>{row.sNo}</td>
-                        <td className="font-bold text-left px-2 uppercase" style={{ color: '#0f172a', border: '1px solid #0f2b48' }}>
+                        <td className={`font-black py-0.5 ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#0f172a', border: '1px solid #0f2b48' }}>{row.sNo}</td>
+                        <td className={`font-black text-left px-2 uppercase ${isVeryDense ? (isXtraLarge ? 'text-[12.5px]' : 'text-[12px]') : isDense ? (isXtraLarge ? 'text-[13.5px]' : 'text-[13px]') : (isXtraLarge ? 'text-[15.5px]' : isLarge ? 'text-[14.5px]' : 'text-[13.5px]')}`} style={{ color: '#0a1d30', border: '1px solid #0f2b48' }}>
                           {row.subjectName}
                           {row.validationError && (
-                            <span className="text-[7.5px] block leading-none font-normal" style={{ color: '#dc2626' }}>
+                            <span className="text-[8px] block leading-none font-bold" style={{ color: '#dc2626' }}>
                               {row.validationError}
                             </span>
                           )}
                         </td>
-                        <td className="font-bold py-0.2" style={{ backgroundColor: '#f0fdf4', color: '#334155', border: '1px solid #0f2b48' }}>{row.annualMax}</td>
-                        <td className="font-bold py-0.2 text-[11.5px]" style={{ backgroundColor: '#dcfce7', color: '#0f2b48', border: '1px solid #0f2b48' }}>{row.annualObtained}</td>
+                        <td className={`font-extrabold py-0.5 ${isVeryDense ? (isXtraLarge ? 'text-[13px]' : 'text-[12.5px]') : isDense ? (isXtraLarge ? 'text-[14px]' : 'text-[13px]') : (isXtraLarge ? 'text-[15px]' : isLarge ? 'text-[14px]' : 'text-[13px]')}`} style={{ backgroundColor: '#f0fdf4', color: '#1e293b', border: '1px solid #0f2b48' }}>{row.annualMax}</td>
+                        <td className={`font-black py-0.5 ${isVeryDense ? (isXtraLarge ? 'text-[14.5px]' : 'text-[13.5px]') : isDense ? (isXtraLarge ? 'text-[15.5px]' : 'text-[14.5px]') : (isXtraLarge ? 'text-[17px]' : isLarge ? 'text-[16px]' : 'text-[14.5px]')}`} style={{ backgroundColor: '#dcfce7', color: '#0f2b48', border: '1px solid #0f2b48' }}>{row.annualObtained}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -627,46 +642,46 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                   }}
                 >
                   <thead>
-                    <tr className="text-[9.5px]" style={{ backgroundColor: '#f0f4f9', color: '#0f2b48' }}>
-                      <th rowSpan={2} className="w-[6%] py-0.5 font-bold text-center" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0f4f9', color: '#0f2b48' }}>
+                    <tr className={`${isXtraLarge ? 'text-[12.5px]' : isLarge ? 'text-[11.5px]' : 'text-[10.5px]'}`} style={{ backgroundColor: '#f0f4f9', color: '#0f2b48' }}>
+                      <th rowSpan={2} className="w-[6%] py-1 font-extrabold text-center" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0f4f9', color: '#0f2b48' }}>
                         S.NO.
                       </th>
-                      <th rowSpan={2} className="w-[36%] py-0.5 font-bold text-left px-2" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0f4f9', color: '#0f2b48' }}>
+                      <th rowSpan={2} className="w-[36%] py-1 font-extrabold text-left px-2" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0f4f9', color: '#0f2b48' }}>
                         SUBJECT NAME
                       </th>
-                      <th colSpan={2} className="w-[29%] py-0.5 font-bold" style={{ border: '1px solid #0f2b48', backgroundColor: '#e8f0fe', color: '#0f2b48' }}>
+                      <th colSpan={2} className="w-[29%] py-1 font-black" style={{ border: '1px solid #0f2b48', backgroundColor: '#e8f0fe', color: '#0f2b48' }}>
                         HALF-YEARLY EXAMINATION (TERM I)
                       </th>
-                      <th colSpan={2} className="w-[29%] py-0.5 font-bold" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0fdf4', color: '#0f2b48' }}>
+                      <th colSpan={2} className="w-[29%] py-1 font-black" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0fdf4', color: '#0f2b48' }}>
                         ANNUAL EXAMINATION (TERM II)
                       </th>
                     </tr>
-                    <tr className="text-[9px]">
-                      <th className="w-[14.5%] py-0.5 font-bold" style={{ border: '1px solid #0f2b48', backgroundColor: '#e8f0fe', color: '#0f2b48' }}>MAX MARKS</th>
-                      <th className="w-[14.5%] py-0.5 font-bold" style={{ border: '1px solid #0f2b48', backgroundColor: '#e8f0fe', color: '#0f2b48' }}>OBT. MARKS</th>
-                      <th className="w-[14.5%] py-0.5 font-bold" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0fdf4', color: '#0f2b48' }}>MAX MARKS</th>
-                      <th className="w-[14.5%] py-0.5 font-bold" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0fdf4', color: '#0f2b48' }}>OBT. MARKS</th>
+                    <tr className={`${isXtraLarge ? 'text-[11.5px]' : isLarge ? 'text-[11px]' : 'text-[10px]'}`}>
+                      <th className="w-[14.5%] py-0.5 font-extrabold" style={{ border: '1px solid #0f2b48', backgroundColor: '#e8f0fe', color: '#0f2b48' }}>MAX MARKS</th>
+                      <th className="w-[14.5%] py-0.5 font-extrabold" style={{ border: '1px solid #0f2b48', backgroundColor: '#e8f0fe', color: '#0f2b48' }}>OBT. MARKS</th>
+                      <th className="w-[14.5%] py-0.5 font-extrabold" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0fdf4', color: '#0f2b48' }}>MAX MARKS</th>
+                      <th className="w-[14.5%] py-0.5 font-extrabold" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0fdf4', color: '#0f2b48' }}>OBT. MARKS</th>
                     </tr>
                   </thead>
-                  <tbody className={`${isVeryDense ? 'text-[8.5px]' : isDense ? 'text-[9px]' : 'text-[9.5px]'}`}>
+                  <tbody>
                     {subjects.map((row) => (
                       <tr
                         key={row.subjectId}
                         style={{ height: rowHeight, backgroundColor: '#ffffff' }}
                       >
-                        <td className="font-bold py-0.2" style={{ border: '1px solid #0f2b48', color: '#334155' }}>{row.sNo}</td>
-                        <td className="font-bold text-left px-2 uppercase" style={{ border: '1px solid #0f2b48', color: '#0f172a' }}>
+                        <td className={`font-black py-0.5 ${isXtraLarge ? 'text-[13.5px]' : isLarge ? 'text-[12.5px]' : 'text-[11.5px]'}`} style={{ border: '1px solid #0f2b48', color: '#0f172a' }}>{row.sNo}</td>
+                        <td className={`font-black text-left px-2 uppercase ${isVeryDense ? (isXtraLarge ? 'text-[12px]' : 'text-[11.5px]') : isDense ? (isXtraLarge ? 'text-[13px]' : 'text-[12.5px]') : (isXtraLarge ? 'text-[14.5px]' : isLarge ? 'text-[13.5px]' : 'text-[12.5px]')}`} style={{ border: '1px solid #0f2b48', color: '#0a1d30' }}>
                           {row.subjectName}
                           {row.validationError && (
-                            <span className="text-[7.5px] block leading-none font-normal" style={{ color: '#dc2626' }}>
+                            <span className="text-[8px] block leading-none font-bold" style={{ color: '#dc2626' }}>
                               {row.validationError}
                             </span>
                           )}
                         </td>
-                        <td className="font-bold py-0.2" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0f7ff', color: '#334155' }}>{row.halfMax}</td>
-                        <td className="font-bold py-0.2 text-[10px]" style={{ border: '1px solid #0f2b48', backgroundColor: '#e0effe', color: '#0f2b48' }}>{row.halfObtained}</td>
-                        <td className="font-bold py-0.2" style={{ border: '1px solid #0f2b48', backgroundColor: '#f0fdf4', color: '#334155' }}>{row.annualMax}</td>
-                        <td className="font-bold py-0.2 text-[10px]" style={{ border: '1px solid #0f2b48', backgroundColor: '#dcfce7', color: '#0f2b48' }}>{row.annualObtained}</td>
+                        <td className={`font-extrabold py-0.5 ${isVeryDense ? (isXtraLarge ? 'text-[12px]' : 'text-[11.5px]') : isDense ? (isXtraLarge ? 'text-[13px]' : 'text-[12px]') : (isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]')}`} style={{ border: '1px solid #0f2b48', backgroundColor: '#f0f7ff', color: '#1e293b' }}>{row.halfMax}</td>
+                        <td className={`font-black py-0.5 ${isVeryDense ? (isXtraLarge ? 'text-[13.5px]' : 'text-[13px]') : isDense ? (isXtraLarge ? 'text-[14.5px]' : 'text-[13.5px]') : (isXtraLarge ? 'text-[16px]' : isLarge ? 'text-[15px]' : 'text-[13.5px]')}`} style={{ border: '1px solid #0f2b48', backgroundColor: '#e0effe', color: '#0f2b48' }}>{row.halfObtained}</td>
+                        <td className={`font-extrabold py-0.5 ${isVeryDense ? (isXtraLarge ? 'text-[12px]' : 'text-[11.5px]') : isDense ? (isXtraLarge ? 'text-[13px]' : 'text-[12px]') : (isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]')}`} style={{ border: '1px solid #0f2b48', backgroundColor: '#f0fdf4', color: '#1e293b' }}>{row.annualMax}</td>
+                        <td className={`font-black py-0.5 ${isVeryDense ? (isXtraLarge ? 'text-[13.5px]' : 'text-[13px]') : isDense ? (isXtraLarge ? 'text-[14.5px]' : 'text-[13.5px]') : (isXtraLarge ? 'text-[16px]' : isLarge ? 'text-[15px]' : 'text-[13.5px]')}`} style={{ border: '1px solid #0f2b48', backgroundColor: '#dcfce7', color: '#0f2b48' }}>{row.annualObtained}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -675,7 +690,7 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
 
               {/* DEDICATED SUMMARY SECTION */}
               <div
-                className="text-[9.5px] leading-normal font-bold"
+                className="text-[10px] leading-normal font-bold"
                 style={{
                   border: '1.5px solid #0f2b48',
                   borderTop: 'none',
@@ -691,32 +706,32 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                       className="w-[52%] px-2.5 font-bold uppercase flex items-center justify-between"
                       style={{ backgroundColor: '#0f2b48', color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.3)' }}
                     >
-                      <span className="text-[10px] font-sarkari-title">HALF-YEARLY SUMMARY (TERM I)</span>
-                      <span className="text-[8.5px]" style={{ color: '#ffd54f' }}>TERM I RESULT</span>
+                      <span className={`${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'} font-sarkari-title font-black`}>HALF-YEARLY SUMMARY (TERM I)</span>
+                      <span className={`${isXtraLarge ? 'text-[10.5px]' : isLarge ? 'text-[9.5px]' : 'text-[9px]'} font-bold`} style={{ color: '#ffd54f' }}>TERM I RESULT</span>
                     </div>
                     <div
                       className="flex-1 flex text-center items-center"
                       style={{ color: '#ffffff' }}
                     >
                       <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                        <span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>TOTAL M.M.</span>
-                        <span className="text-[11px]" style={{ color: '#ffffff' }}>{halfYearly.maximum}</span>
+                        <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>TOTAL M.M.</span>
+                        <span className={`font-extrabold ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#ffffff' }}>{halfYearly.maximum}</span>
                       </div>
                       <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                        <span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>TOTAL RESULT</span>
-                        <span className="font-bold text-[12px]" style={{ color: '#ffd54f' }}>{halfYearly.obtained}</span>
+                        <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>TOTAL RESULT</span>
+                        <span className={`font-black ${isXtraLarge ? 'text-[17px]' : isLarge ? 'text-[15.5px]' : 'text-[14px]'}`} style={{ color: '#ffd54f' }}>{halfYearly.obtained}</span>
                       </div>
                       {showPercentage && (
                         <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                          <span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>PERCENTAGE</span>
-                          <span className="text-[11px]" style={{ color: '#ffffff' }}>{halfYearly.percentage.toFixed(2)}%</span>
+                          <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>PERCENTAGE</span>
+                          <span className={`font-black ${isXtraLarge ? 'text-[15px]' : isLarge ? 'text-[14px]' : 'text-[13px]'}`} style={{ color: '#ffffff' }}>{halfYearly.percentage.toFixed(2)}%</span>
                         </div>
                       )}
                       <div className="w-1/4 shrink-0">
-                        <span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>
+                        <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>
                           {showGrade ? 'GRADE / STATUS' : 'STATUS'}
                         </span>
-                        <span className="font-bold text-[11px]" style={{ color: '#ffd54f' }}>
+                        <span className={`font-black ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#ffd54f' }}>
                           {showGrade ? `${halfYearly.grade} (${halfYearly.status})` : halfYearly.status}
                         </span>
                       </div>
@@ -732,32 +747,32 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                       className="w-[52%] px-2.5 font-bold uppercase flex items-center justify-between"
                       style={{ backgroundColor: '#0f2b48', color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.3)' }}
                     >
-                      <span className="text-[10px] font-sarkari-title">ANNUAL SUMMARY (TERM II)</span>
-                      <span className="text-[8.5px]" style={{ color: '#ffd54f' }}>TERM II RESULT</span>
+                      <span className={`${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'} font-sarkari-title font-black`}>ANNUAL SUMMARY (TERM II)</span>
+                      <span className={`${isXtraLarge ? 'text-[10.5px]' : isLarge ? 'text-[9.5px]' : 'text-[9px]'} font-bold`} style={{ color: '#ffd54f' }}>TERM II RESULT</span>
                     </div>
                     <div
                       className="flex-1 flex text-center items-center"
                       style={{ color: '#ffffff' }}
                     >
                       <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                        <span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>TOTAL M.M.</span>
-                        <span className="text-[11px]" style={{ color: '#ffffff' }}>{annual.maximum}</span>
+                        <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>TOTAL M.M.</span>
+                        <span className={`font-extrabold ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#ffffff' }}>{annual.maximum}</span>
                       </div>
                       <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                        <span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>TOTAL RESULT</span>
-                        <span className="font-bold text-[12px]" style={{ color: '#ffd54f' }}>{annual.obtained}</span>
+                        <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>TOTAL RESULT</span>
+                        <span className={`font-black ${isXtraLarge ? 'text-[17px]' : isLarge ? 'text-[15.5px]' : 'text-[14px]'}`} style={{ color: '#ffd54f' }}>{annual.obtained}</span>
                       </div>
                       {showPercentage && (
                         <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                          <span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>PERCENTAGE</span>
-                          <span className="text-[11px]" style={{ color: '#ffffff' }}>{annual.percentage.toFixed(2)}%</span>
+                          <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>PERCENTAGE</span>
+                          <span className={`font-black ${isXtraLarge ? 'text-[15px]' : isLarge ? 'text-[14px]' : 'text-[13px]'}`} style={{ color: '#ffffff' }}>{annual.percentage.toFixed(2)}%</span>
                         </div>
                       )}
                       <div className="w-1/4 shrink-0">
-                        <span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>
+                        <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>
                           {showGrade ? 'GRADE / STATUS' : 'STATUS'}
                         </span>
-                        <span className="font-bold text-[11px]" style={{ color: '#ffd54f' }}>
+                        <span className={`font-black ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#ffd54f' }}>
                           {showGrade ? `${annual.grade} (${annual.status})` : annual.status}
                         </span>
                       </div>
@@ -772,15 +787,15 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                         className="w-[42%] px-2 py-0.5 font-bold uppercase flex items-center justify-between"
                         style={{ backgroundColor: '#e8f0fe', color: '#0f2b48', borderRight: '1px solid #0f2b48' }}
                       >
-                        <span className="text-[9px]">HALF-YEARLY SUMMARY (TERM I)</span>
-                        <span className="text-[8.5px] font-normal" style={{ color: '#1e3a8a' }}>EVALUATION</span>
+                        <span className={`${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10px]'} font-extrabold`}>HALF-YEARLY SUMMARY (TERM I)</span>
+                        <span className="text-[9px] font-bold" style={{ color: '#1e3a8a' }}>EVALUATION</span>
                       </div>
                       <div className="flex-1 flex text-center items-center py-0.5">
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>M.M.</span><span style={{ color: '#0f172a' }}>{halfYearly.maximum}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>RESULT</span><span className="font-bold text-[10.5px]" style={{ color: '#0f2b48' }}>{halfYearly.obtained}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>PERCENTAGE</span><span style={{ color: '#0f2b48' }}>{showPercentage ? `${halfYearly.percentage.toFixed(2)}%` : '—'}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>GRADE</span><span className="font-bold" style={{ color: '#b8860b' }}>{showGrade ? halfYearly.grade : '—'}</span></div>
-                        <div className="w-1/5 shrink-0"><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>STATUS</span><span className="font-bold" style={{ color: halfYearly.status === 'PASS' ? '#047857' : '#be123c' }}>{halfYearly.status}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>M.M.</span><span className={`font-bold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f172a' }}>{halfYearly.maximum}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>RESULT</span><span className={`font-black ${isXtraLarge ? 'text-[14.5px]' : isLarge ? 'text-[13.5px]' : 'text-[12.5px]'}`} style={{ color: '#0f2b48' }}>{halfYearly.obtained}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>PERCENTAGE</span><span className={`font-extrabold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f2b48' }}>{showPercentage ? `${halfYearly.percentage.toFixed(2)}%` : '—'}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>GRADE</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#b8860b' }}>{showGrade ? halfYearly.grade : '—'}</span></div>
+                        <div className="w-1/5 shrink-0"><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>STATUS</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: halfYearly.status === 'PASS' ? '#047857' : '#be123c' }}>{halfYearly.status}</span></div>
                       </div>
                     </div>
 
@@ -790,15 +805,15 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                         className="w-[42%] px-2 py-0.5 font-bold uppercase flex items-center justify-between"
                         style={{ backgroundColor: '#e6f4ea', color: '#0f2b48', borderRight: '1px solid #0f2b48' }}
                       >
-                        <span className="text-[9px]">ANNUAL SUMMARY (TERM II)</span>
-                        <span className="text-[8.5px] font-normal" style={{ color: '#166534' }}>EVALUATION</span>
+                        <span className={`${isXtraLarge ? 'text-[12px]' : isLarge ? 'text-[11px]' : 'text-[10px]'} font-extrabold`}>ANNUAL SUMMARY (TERM II)</span>
+                        <span className="text-[9px] font-bold" style={{ color: '#166534' }}>EVALUATION</span>
                       </div>
                       <div className="flex-1 flex text-center items-center py-0.5">
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>M.M.</span><span style={{ color: '#0f172a' }}>{annual.maximum}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>RESULT</span><span className="font-bold text-[10.5px]" style={{ color: '#0f2b48' }}>{annual.obtained}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>PERCENTAGE</span><span style={{ color: '#0f2b48' }}>{showPercentage ? `${annual.percentage.toFixed(2)}%` : '—'}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>GRADE</span><span className="font-bold" style={{ color: '#b8860b' }}>{showGrade ? annual.grade : '—'}</span></div>
-                        <div className="w-1/5 shrink-0"><span className="font-bold text-[8.5px] block" style={{ color: '#475569' }}>STATUS</span><span className="font-bold" style={{ color: annual.status === 'PASS' ? '#047857' : '#be123c' }}>{annual.status}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>M.M.</span><span className={`font-bold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f172a' }}>{annual.maximum}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>RESULT</span><span className={`font-black ${isXtraLarge ? 'text-[14.5px]' : isLarge ? 'text-[13.5px]' : 'text-[12.5px]'}`} style={{ color: '#0f2b48' }}>{annual.obtained}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>PERCENTAGE</span><span className={`font-extrabold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f2b48' }}>{showPercentage ? `${annual.percentage.toFixed(2)}%` : '—'}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>GRADE</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#b8860b' }}>{showGrade ? annual.grade : '—'}</span></div>
+                        <div className="w-1/5 shrink-0"><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>STATUS</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: annual.status === 'PASS' ? '#047857' : '#be123c' }}>{annual.status}</span></div>
                       </div>
                     </div>
 
@@ -808,22 +823,22 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                         className="w-[42%] px-2 py-0.5 font-bold uppercase flex items-center justify-between"
                         style={{ backgroundColor: '#0f2b48', color: '#ffffff', borderRight: '1px solid #cbd5e1' }}
                       >
-                        <span className="text-[9px] font-sarkari-title">FINAL AGGREGATE SUMMARY</span>
-                        <span className="text-[8.5px]" style={{ color: '#ffd54f' }}>FINAL RESULT</span>
+                        <span className={`${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'} font-sarkari-title font-black`}>FINAL AGGREGATE SUMMARY</span>
+                        <span className={`${isXtraLarge ? 'text-[10px]' : isLarge ? 'text-[9.5px]' : 'text-[9px]'} font-bold`} style={{ color: '#ffd54f' }}>FINAL RESULT</span>
                       </div>
                       <div className="flex-1 flex text-center items-center py-0.5" style={{ color: '#ffffff' }}>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>TOTAL M.M.</span><span className="text-[10px]" style={{ color: '#ffffff' }}>{combined.maximum}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>TOTAL RESULT</span><span className="font-bold text-[11px]" style={{ color: '#ffd54f' }}>{combined.obtained}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>COMBINED %</span><span className="text-[10px]" style={{ color: '#ffffff' }}>{showPercentage ? `${combined.percentage.toFixed(2)}%` : '—'}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>FINAL GRADE</span><span className="font-bold text-[10.5px]" style={{ color: '#ffd54f' }}>{showGrade ? combined.grade : '—'}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>TOTAL M.M.</span><span className={`text-[13px] font-extrabold ${isXtraLarge ? 'text-[14px]' : 'text-[13px]'}`} style={{ color: '#ffffff' }}>{combined.maximum}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>TOTAL RESULT</span><span className={`font-black ${isXtraLarge ? 'text-[17px]' : isLarge ? 'text-[15.5px]' : 'text-[14px]'}`} style={{ color: '#ffd54f' }}>{combined.obtained}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>COMBINED %</span><span className={`text-[13px] font-black ${isXtraLarge ? 'text-[14.5px]' : 'text-[13px]'}`} style={{ color: '#ffffff' }}>{showPercentage ? `${combined.percentage.toFixed(2)}%` : '—'}</span></div>
+                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>FINAL GRADE</span><span className={`font-black ${isXtraLarge ? 'text-[14px]' : 'text-[13px]'}`} style={{ color: '#ffd54f' }}>{showGrade ? combined.grade : '—'}</span></div>
                         <div className="w-1/5 shrink-0">
-                          <span className="font-bold text-[8px] block" style={{ color: '#cbd5e1' }}>PROGRESS</span>
+                          <span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>PROGRESS</span>
                           {showProgress ? (
-                            <span className="text-[9px] font-bold" style={{ color: progress >= 0 ? '#6ee7b7' : '#fda4af' }}>
+                            <span className={`font-black ${isXtraLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: progress >= 0 ? '#6ee7b7' : '#fda4af' }}>
                               {progress > 0 ? `+${progress.toFixed(2)}%` : `${progress.toFixed(2)}%`}
                             </span>
                           ) : (
-                            <span className="text-[9px]" style={{ color: '#cbd5e1' }}>—</span>
+                            <span className="text-[10px]" style={{ color: '#cbd5e1' }}>—</span>
                           )}
                         </div>
                       </div>
@@ -837,13 +852,13 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
             {showRemarks && (
               <div
                 className={`${isVeryDense ? 'mt-0.5 p-1' : 'mt-1 p-1'}`}
-                style={{ border: '1px solid #0f2b48', backgroundColor: '#fcfdff' }}
+                style={{ border: '1.5px solid #0f2b48', backgroundColor: '#fcfdff' }}
               >
-                <div className="flex items-start gap-1 text-[9.5px]">
-                  <span className="font-bold font-sarkari-serif uppercase shrink-0 tracking-wide" style={{ color: '#0f2b48' }}>
+                <div className="flex items-start gap-1.5 text-[10.5px]">
+                  <span className={`font-bold font-sarkari-serif uppercase shrink-0 tracking-wide ${isXtraLarge ? 'text-[11.5px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#0f2b48' }}>
                     CLASS TEACHER'S REMARK:
                   </span>
-                  <span className="font-bold italic flex-1 break-words text-[9px]" style={{ color: '#1e293b' }}>
+                  <span className={`font-bold italic flex-1 break-words ${isXtraLarge ? 'text-[11.5px]' : isLarge ? 'text-[11px]' : 'text-[10.5px]'}`} style={{ color: '#0f172a' }}>
                     "{teacherRemark}"
                   </span>
                 </div>
@@ -870,16 +885,16 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                       />
                     )}
                   </div>
-                  <div className="w-full pt-0.5" style={{ borderTop: '1px solid #0f2b48' }}>
-                    <p className="font-sarkari-serif text-[9.5px] font-bold uppercase tracking-wider leading-tight" style={{ color: '#0f2b48' }}>
+                  <div className="w-full pt-0.5" style={{ borderTop: '1.5px solid #0f2b48' }}>
+                    <p className={`font-sarkari-serif ${isXtraLarge ? 'text-[11px]' : isLarge ? 'text-[10.5px]' : 'text-[10px]'} font-extrabold uppercase tracking-wider leading-tight`} style={{ color: '#0f2b48' }}>
                       {teacherTitle}
                     </p>
                     {teacherName && (
-                      <p className="text-[8px] font-bold leading-tight mt-0.5 tracking-tight truncate max-w-full" style={{ color: '#1e3a8a' }}>
+                      <p className="text-[9px] font-bold leading-tight mt-0.5 tracking-tight truncate max-w-full" style={{ color: '#1e3a8a' }}>
                         ({teacherName})
                       </p>
                     )}
-                    <p className="text-[7px] font-semibold leading-tight" style={{ color: '#64748b' }}>SIGNATURE & DATE</p>
+                    <p className="text-[7.5px] font-bold leading-tight" style={{ color: '#475569' }}>SIGNATURE & DATE</p>
                   </div>
                 </div>
 
@@ -902,10 +917,10 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                       className="w-13 h-13 rounded-full flex flex-col items-center justify-center p-0.5 text-center"
                       style={{ border: '1.5px dashed rgba(15,43,72,0.5)', backgroundColor: '#f8fafc' }}
                     >
-                      <span className="text-[6.5px] font-bold uppercase tracking-tight leading-tight" style={{ color: 'rgba(15,43,72,0.8)' }}>
+                      <span className="text-[7px] font-bold uppercase tracking-tight leading-tight" style={{ color: 'rgba(15,43,72,0.8)' }}>
                         ACADEMIC SEAL
                       </span>
-                      <span className="text-[5.5px] font-bold uppercase leading-none mt-0.5" style={{ color: '#64748b' }}>
+                      <span className="text-[6px] font-bold uppercase leading-none mt-0.5" style={{ color: '#475569' }}>
                         OFFICIAL STAMP
                       </span>
                     </div>
@@ -926,11 +941,11 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                       />
                     )}
                   </div>
-                  <div className="w-full pt-0.5" style={{ borderTop: '1px solid #0f2b48' }}>
-                    <p className="font-sarkari-serif text-[9.5px] font-bold uppercase tracking-wider leading-tight" style={{ color: '#0f2b48' }}>
+                  <div className="w-full pt-0.5" style={{ borderTop: '1.5px solid #0f2b48' }}>
+                    <p className={`font-sarkari-serif ${isXtraLarge ? 'text-[11px]' : isLarge ? 'text-[10.5px]' : 'text-[10px]'} font-extrabold uppercase tracking-wider leading-tight`} style={{ color: '#0f2b48' }}>
                       PRINCIPAL
                     </p>
-                    <p className="text-[7px] font-semibold leading-tight" style={{ color: '#64748b' }}>SIGNATURE & SEAL</p>
+                    <p className="text-[7.5px] font-bold leading-tight" style={{ color: '#475569' }}>SIGNATURE & SEAL</p>
                   </div>
                 </div>
               </div>
@@ -938,14 +953,14 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
 
             {/* BOTTOM FOOTER BAR */}
             <div
-              className="mt-0.5 pt-0.5 flex justify-between items-center text-[7.5px] font-bold px-1"
-              style={{ borderTop: '1px solid #0f2b48', color: '#334155', backgroundColor: '#ffffff' }}
+              className="mt-0.5 pt-0.5 flex justify-between items-center text-[8.5px] font-bold px-1"
+              style={{ borderTop: '1px solid #0f2b48', color: '#1e293b', backgroundColor: '#ffffff' }}
             >
               <div>
                 <span>DATE: </span>
                 <span style={{ color: '#0f172a' }}>{generatedAt}</span>
               </div>
-              <div className="tracking-wide font-bold uppercase" style={{ color: '#0f2b48' }}>
+              <div className="tracking-wide font-extrabold uppercase" style={{ color: '#0f2b48' }}>
                 {school.footerText && !/[\u0900-\u097F]/.test(school.footerText)
                   ? school.footerText
                   : '★ DISCIPLINE • DEDICATION • KNOWLEDGE • SUCCESS ★'}

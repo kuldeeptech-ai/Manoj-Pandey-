@@ -153,6 +153,9 @@ export function normalizeSchoolSettings(settings?: Partial<SchoolSettings>): Sch
     logoSize: s.logoSize ? Number(s.logoSize) : 85,
     marksheetSchoolNameSize: s.marksheetSchoolNameSize ? Number(s.marksheetSchoolNameSize) : 20,
     publicPortalSchoolNameSize: s.publicPortalSchoolNameSize ? Number(s.publicPortalSchoolNameSize) : 20,
+    marksheetTextScale: (s.marksheetTextScale === 'large' || s.marksheetTextScale === 'extra_large' || s.marksheetTextScale === 'normal')
+      ? s.marksheetTextScale
+      : 'large', // Default to 'large' so printout is immediately clearer and bolder
     schoolBadgeType: (s.schoolBadgeType as any) || 'OFFICIAL RESULT',
     resultTitle: s.resultTitle || 'ACADEMIC RESULT — HALF-YEARLY & ANNUAL',
     resultTitleHalfYearly: s.resultTitleHalfYearly || 'ACADEMIC RESULT — HALF-YEARLY EXAMINATION',

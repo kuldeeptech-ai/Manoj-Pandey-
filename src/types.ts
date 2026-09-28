@@ -63,6 +63,7 @@ export interface SchoolSettings {
   logoSize?: number; // Custom marksheet logo size in px (e.g. 50 - 130px, default 85px)
   marksheetSchoolNameSize?: number; // Custom font size for school name in marksheet header (in px, e.g. 16 - 32px, default 20px)
   publicPortalSchoolNameSize?: number; // Custom font size for school name on public search portal header (in px, e.g. 16 - 32px, default 20px)
+  marksheetTextScale?: 'normal' | 'large' | 'extra_large'; // Overall marksheet print readability font scale (Default / Bada / Saf Print)
   schoolBadgeType: 'OFFICIAL RESULT' | 'ACADEMIC RESULT';
   resultTitle: string;
   resultTitleHalfYearly?: string;
