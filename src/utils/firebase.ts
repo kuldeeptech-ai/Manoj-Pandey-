@@ -29,7 +29,7 @@ import { Student, SubjectConfig, SchoolSettings, GradeRule } from '../types';
 // SOLE AUTHORIZED ADMIN EMAIL
 // Only this email is allowed to access and manage the Admin Panel
 // ============================================================================
-export const AUTHORIZED_ADMIN_EMAIL = 'kuldeeprai75220@gmail.com';
+export const AUTHORIZED_ADMIN_EMAIL = 'hariompandey.work@gmail.com';
 
 export function isAuthorizedAdmin(email?: string | null): boolean {
   if (!email) return false;
