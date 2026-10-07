@@ -23,7 +23,7 @@ import {
   Unsubscribe,
   DataSnapshot,
 } from 'firebase/database';
-import { Student, SubjectConfig, SchoolSettings, GradeRule } from '../types';
+import { Student, SubjectConfig, SchoolSettings, GradeRule, ClearedMarksBackup } from '../types';
 
 // ============================================================================
 // SOLE AUTHORIZED ADMIN EMAIL
@@ -777,6 +777,82 @@ export function subscribeToDeletedStudents(callback: (deletedStudents: Student[]
     });
   } catch (err) {
     console.warn('[Firebase RTDB] Error subscribing to deleted students:', err);
+    return () => {};
+  }
+}
+
+// ============================================================================
+// CRUD OPERATION: CLEARED MARKS HISTORY / BACKUPS (RECYCLE BIN FOR MARKS)
+// ============================================================================
+
+export async function saveClearedMarksBackupToFirebase(backup: ClearedMarksBackup): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const backupRef = ref(database, `cleared_marks_history/${backup.id}`);
+    await set(backupRef, cleanForFirebase(backup));
+    console.log(`[Firebase RTDB] Cleared marks backup ${backup.id} saved to Firebase.`);
+    return true;
+  } catch (err) {
+    console.error('[Firebase RTDB] Error saving cleared marks backup:', err);
+    return false;
+  }
+}
+
+export async function deleteClearedMarksBackupFromFirebase(backupId: string): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const backupRef = ref(database, `cleared_marks_history/${backupId}`);
+    await remove(backupRef);
+    console.log(`[Firebase RTDB] Cleared marks backup ${backupId} deleted.`);
+    return true;
+  } catch (err) {
+    console.error(`[Firebase RTDB] Error deleting cleared marks backup ${backupId}:`, err);
+    return false;
+  }
+}
+
+export async function emptyClearedMarksHistoryInFirebase(): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const historyRef = ref(database, 'cleared_marks_history');
+    await remove(historyRef);
+    console.log(`[Firebase RTDB] Cleared marks history emptied.`);
+    return true;
+  } catch (err) {
+    console.error('[Firebase RTDB] Error emptying cleared marks history:', err);
+    return false;
+  }
+}
+
+export function subscribeToClearedMarksHistory(callback: (history: ClearedMarksBackup[]) => void): Unsubscribe {
+  const database = getFirebaseDb();
+  if (!database) return () => {};
+
+  try {
+    const historyRef = ref(database, 'cleared_marks_history');
+    return onValue(historyRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        let list: ClearedMarksBackup[] = [];
+        if (Array.isArray(val)) {
+          list = val.filter(Boolean);
+        } else if (typeof val === 'object' && val !== null) {
+          list = Object.values(val);
+        }
+        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        callback(list);
+      } else {
+        callback([]);
+      }
+    });
+  } catch (err) {
+    console.warn('[Firebase RTDB] Error subscribing to cleared marks history:', err);
     return () => {};
   }
 }

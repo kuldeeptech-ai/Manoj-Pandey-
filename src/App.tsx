@@ -5,6 +5,7 @@ import {
   SchoolSettings,
   GradeRule,
   StudentResultData,
+  ClearedMarksBackup,
 } from './types';
 import {
   DEFAULT_SCHOOL_SETTINGS,
@@ -40,6 +41,10 @@ import {
   restoreAllStudentsFromTrashInFirebase,
   permanentlyDeleteStudentFromTrashInFirebase,
   emptyTrashInFirebase,
+  saveClearedMarksBackupToFirebase,
+  deleteClearedMarksBackupFromFirebase,
+  emptyClearedMarksHistoryInFirebase,
+  subscribeToClearedMarksHistory,
 } from './utils/firebase';
 
 type ViewMode = 'public_search' | 'result_view' | 'admin';
@@ -90,6 +95,15 @@ export default function App() {
       const saved = localStorage.getItem('hd_pandey_deleted_students');
       const raw = saved ? JSON.parse(saved) : [];
       return (raw || []).map(normalizeStudentRecord);
+    } catch {
+      return [];
+    }
+  });
+
+  const [clearedMarksHistory, setClearedMarksHistory] = useState<ClearedMarksBackup[]>(() => {
+    try {
+      const saved = localStorage.getItem('hd_pandey_cleared_marks_history');
+      return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
@@ -315,6 +329,7 @@ export default function App() {
         });
       },
       onStudents: (newStudents) => {
+        if (Date.now() - lastLocalMutationTimeRef.current < 8000) return;
         const formatted = sortStudentsByRoll(newStudents.map(normalizeStudentRecord));
         setStudents((prev) => {
           if (JSON.stringify(prev) === JSON.stringify(formatted)) return prev;
@@ -323,6 +338,7 @@ export default function App() {
         });
       },
       onSubjects: (newSubjects) => {
+        if (Date.now() - lastLocalMutationTimeRef.current < 8000) return;
         setSubjects((prev) => {
           if (JSON.stringify(prev) === JSON.stringify(newSubjects)) return prev;
           localStorage.setItem('hd_pandey_subjects', JSON.stringify(newSubjects));
@@ -347,10 +363,19 @@ export default function App() {
       });
     });
 
+    const unsubClearedMarks = subscribeToClearedMarksHistory((newHistory) => {
+      setClearedMarksHistory((prev) => {
+        if (JSON.stringify(prev) === JSON.stringify(newHistory)) return prev;
+        localStorage.setItem('hd_pandey_cleared_marks_history', JSON.stringify(newHistory));
+        return newHistory;
+      });
+    });
+
     return () => {
       unsubToggles();
       unsubAll();
       unsubDeleted();
+      unsubClearedMarks();
     };
   }, []);
 
@@ -852,6 +877,90 @@ export default function App() {
     fetch('/api/admin/trash', { method: 'DELETE' }).catch(() => {});
   };
 
+  // Cleared Marks Backups (Recycle Bin for Marks)
+  const handleCreateClearedMarksBackup = (backup: ClearedMarksBackup) => {
+    lastLocalMutationTimeRef.current = Date.now();
+    setClearedMarksHistory((prev) => {
+      const updated = [backup, ...prev.filter((b) => b.id !== backup.id)];
+      localStorage.setItem('hd_pandey_cleared_marks_history', JSON.stringify(updated));
+      return updated;
+    });
+    saveClearedMarksBackupToFirebase(backup).catch(console.warn);
+    fetch('/api/admin/cleared-marks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(backup),
+    }).catch(() => {});
+  };
+
+  const handleRestoreClearedMarksBackup = (backupId: string) => {
+    lastLocalMutationTimeRef.current = Date.now();
+    const targetBackup = clearedMarksHistory.find((b) => b.id === backupId);
+    if (!targetBackup) return false;
+
+    // Restore marks from snapshot for each student
+    const snapshotMap = new Map(targetBackup.studentsSnapshot.map((s) => [s.studentId, s]));
+    const updatedStudents = students.map((std) => {
+      const snap: any = snapshotMap.get(std.id);
+      if (!snap) return std;
+
+      let mergedMarks = { ...(std.marks || {}) };
+
+      if (targetBackup.clearType === 'subject' && targetBackup.targetSubjectId) {
+        // Restore only this specific subject
+        if (snap.marks && snap.marks[targetBackup.targetSubjectId]) {
+          mergedMarks[targetBackup.targetSubjectId] = snap.marks[targetBackup.targetSubjectId];
+        }
+      } else if (targetBackup.clearType === 'half_only') {
+        // Restore only half-yearly marks
+        Object.entries(snap.marks || {}).forEach(([subId, m]: [string, any]) => {
+          mergedMarks[subId] = {
+            halfObtained: m.halfObtained,
+            annualObtained: mergedMarks[subId]?.annualObtained ?? 0,
+          };
+        });
+      } else if (targetBackup.clearType === 'annual_only') {
+        // Restore only annual marks
+        Object.entries(snap.marks || {}).forEach(([subId, m]: [string, any]) => {
+          mergedMarks[subId] = {
+            halfObtained: mergedMarks[subId]?.halfObtained ?? 0,
+            annualObtained: m.annualObtained,
+          };
+        });
+      } else {
+        // Restore entire marks map
+        mergedMarks = {
+          ...mergedMarks,
+          ...(snap.marks || {}),
+        };
+      }
+
+      return {
+        ...std,
+        marks: mergedMarks,
+        teacherRemark: snap.teacherRemark !== undefined ? snap.teacherRemark : std.teacherRemark,
+      };
+    });
+
+    handleSaveStudents(updatedStudents);
+    return true;
+  };
+
+  const handleDeleteClearedMarksBackup = (backupId: string) => {
+    const updated = clearedMarksHistory.filter((b) => b.id !== backupId);
+    setClearedMarksHistory(updated);
+    localStorage.setItem('hd_pandey_cleared_marks_history', JSON.stringify(updated));
+    deleteClearedMarksBackupFromFirebase(backupId).catch(console.warn);
+    fetch(`/api/admin/cleared-marks/${encodeURIComponent(backupId)}`, { method: 'DELETE' }).catch(() => {});
+  };
+
+  const handleEmptyClearedMarksHistory = () => {
+    setClearedMarksHistory([]);
+    localStorage.setItem('hd_pandey_cleared_marks_history', JSON.stringify([]));
+    emptyClearedMarksHistoryInFirebase().catch(console.warn);
+    fetch('/api/admin/cleared-marks', { method: 'DELETE' }).catch(() => {});
+  };
+
   const handleSaveSubjects = async (newSubjects: SubjectConfig[]) => {
     lastLocalMutationTimeRef.current = Date.now();
     setSubjects(newSubjects);
@@ -989,6 +1098,11 @@ export default function App() {
             onRestoreAllStudents={handleRestoreAllStudents}
             onPermanentlyDeleteStudent={handlePermanentlyDeleteStudent}
             onEmptyTrash={handleEmptyTrash}
+            clearedMarksHistory={clearedMarksHistory}
+            onCreateClearedMarksBackup={handleCreateClearedMarksBackup}
+            onRestoreClearedMarksBackup={handleRestoreClearedMarksBackup}
+            onDeleteClearedMarksBackup={handleDeleteClearedMarksBackup}
+            onEmptyClearedMarksHistory={handleEmptyClearedMarksHistory}
           />
         ) : (
           <div className="w-full min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">

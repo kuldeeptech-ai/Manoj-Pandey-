@@ -37,6 +37,7 @@ let store = {
   students: [...DEFAULT_STUDENTS],
   gradeRules: [...DEFAULT_GRADE_RULES],
   deletedStudents: [] as any[],
+  clearedMarksHistory: [] as any[],
   lastUpdated: new Date().toISOString(),
 };
 
@@ -50,6 +51,7 @@ try {
     if (parsed.students) store.students = parsed.students;
     if (parsed.gradeRules) store.gradeRules = parsed.gradeRules;
     if (parsed.deletedStudents) store.deletedStudents = parsed.deletedStudents;
+    if (parsed.clearedMarksHistory) store.clearedMarksHistory = parsed.clearedMarksHistory;
     if (parsed.lastUpdated) store.lastUpdated = parsed.lastUpdated;
   }
 } catch (e) {
@@ -412,9 +414,11 @@ async function startServer() {
 
   // Save full state (Students, Subjects, Settings, Grade Rules)
   app.post('/api/admin/data', (req, res) => {
-    const { students, subjects, schoolSettings, gradeRules } = req.body;
+    const { students, subjects, schoolSettings, gradeRules, deletedStudents, clearedMarksHistory } = req.body;
     if (Array.isArray(students)) store.students = students.map(normalizeStudent);
     if (Array.isArray(subjects)) store.subjects = subjects;
+    if (Array.isArray(deletedStudents)) store.deletedStudents = deletedStudents;
+    if (Array.isArray(clearedMarksHistory)) store.clearedMarksHistory = clearedMarksHistory;
     if (schoolSettings && typeof schoolSettings === 'object') {
       // Retain active credentials if incoming object omits or leaves them blank
       const preservedEmail = schoolSettings.adminEmail?.trim() || store.schoolSettings.adminEmail || 'kuldeeprai75220@gmail.com';
@@ -564,6 +568,40 @@ async function startServer() {
     store.lastUpdated = new Date().toISOString();
     saveStore();
     res.json({ success: true, deletedStudents: [] });
+  });
+
+  // Cleared Marks Backups (Recycle Bin for Marks)
+  app.get('/api/admin/cleared-marks', (req, res) => {
+    res.json({ success: true, clearedMarksHistory: store.clearedMarksHistory || [] });
+  });
+
+  app.post('/api/admin/cleared-marks', (req, res) => {
+    const backup = req.body;
+    if (!backup || !backup.id) {
+      return res.status(400).json({ error: 'Valid backup object required.' });
+    }
+    store.clearedMarksHistory = store.clearedMarksHistory || [];
+    // Prepend to history
+    store.clearedMarksHistory = [backup, ...store.clearedMarksHistory.filter((b: any) => b.id !== backup.id)];
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    res.json({ success: true, clearedMarksHistory: store.clearedMarksHistory });
+  });
+
+  app.delete('/api/admin/cleared-marks/:id', (req, res) => {
+    const { id } = req.params;
+    store.clearedMarksHistory = store.clearedMarksHistory || [];
+    store.clearedMarksHistory = store.clearedMarksHistory.filter((b: any) => b.id !== id);
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    res.json({ success: true, clearedMarksHistory: store.clearedMarksHistory });
+  });
+
+  app.delete('/api/admin/cleared-marks', (req, res) => {
+    store.clearedMarksHistory = [];
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    res.json({ success: true, clearedMarksHistory: [] });
   });
 
   app.post('/api/admin/marks', (req, res) => {

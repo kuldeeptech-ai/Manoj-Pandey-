@@ -185,3 +185,23 @@ export interface StudentResultData {
   validationIssues?: string[];
   examMode?: 'half_yearly_only' | 'combined';
 }
+
+export interface ClearedMarksBackup {
+  id: string;
+  timestamp: string;
+  description: string;
+  scope: 'selected' | 'class' | 'all' | 'single';
+  targetClassName?: string;
+  clearType: 'all' | 'subject' | 'half_only' | 'annual_only';
+  targetSubjectId?: string;
+  targetSubjectName?: string;
+  studentCount: number;
+  studentsSnapshot: {
+    studentId: string;
+    rollNo: string;
+    name: string;
+    className: string;
+    marks: Record<string, { halfObtained: number; annualObtained: number }>;
+    teacherRemark?: string;
+  }[];
+}

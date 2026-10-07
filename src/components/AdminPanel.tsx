@@ -5,6 +5,7 @@ import {
   SchoolSettings,
   GradeRule,
   StudentResultData,
+  ClearedMarksBackup,
 } from '../types';
 import {
   calculateStudentResult,
@@ -125,6 +126,11 @@ interface AdminPanelProps {
   onRestoreAllStudents?: () => void;
   onPermanentlyDeleteStudent?: (studentId: string) => void;
   onEmptyTrash?: () => void;
+  clearedMarksHistory?: ClearedMarksBackup[];
+  onCreateClearedMarksBackup?: (backup: ClearedMarksBackup) => void;
+  onRestoreClearedMarksBackup?: (backupId: string) => boolean;
+  onDeleteClearedMarksBackup?: (backupId: string) => void;
+  onEmptyClearedMarksHistory?: () => void;
 }
 
 type TabType = 'dashboard' | 'students' | 'marks' | 'subjects' | 'school' | 'grades' | 'sheets' | 'teachers';
@@ -149,6 +155,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onRestoreAllStudents,
   onPermanentlyDeleteStudent,
   onEmptyTrash,
+  clearedMarksHistory = [],
+  onCreateClearedMarksBackup,
+  onRestoreClearedMarksBackup,
+  onDeleteClearedMarksBackup,
+  onEmptyClearedMarksHistory,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(initialSelectedStudentId ? 'marks' : 'dashboard');
   const [selectedStudentIdForMarks, setSelectedStudentIdForMarks] = useState<string>(
@@ -187,7 +198,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [isTrashModalOpen, setIsTrashModalOpen] = useState<boolean>(false);
   const [trashSearchQuery, setTrashSearchQuery] = useState<string>('');
   const [undoToast, setUndoToast] = useState<{ message: string; studentIds: string[] } | null>(null);
+  const [clearedMarksToast, setClearedMarksToast] = useState<{ message: string; backupId: string } | null>(null);
   const [headerCopyNotice, setHeaderCopyNotice] = useState<string | null>(null);
+
+  // Cleared marks management & selection state
+  const [selectedStudentIdsForMarksClear, setSelectedStudentIdsForMarksClear] = useState<string[]>([]);
+  const [isClearMarksModalOpen, setIsClearMarksModalOpen] = useState<boolean>(false);
+  const [clearTargetScopeChoice, setClearTargetScopeChoice] = useState<'selected' | 'class' | 'single'>('class');
+  const [clearExamScope, setClearExamScope] = useState<'all' | 'half_only' | 'annual_only' | 'subject'>('all');
+  const [selectedSubjectIdToClear, setSelectedSubjectIdToClear] = useState<string>('');
+  const [recycleBinActiveTab, setRecycleBinActiveTab] = useState<'students' | 'marks'>('students');
+  const [viewingBackupDetailsId, setViewingBackupDetailsId] = useState<string | null>(null);
 
   // Persistent class filter handler
   const handleStudentClassFilterChange = (cls: string) => {
@@ -361,8 +382,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleSaveBulkMarks = (updatedStudents: Student[]) => {
     onSaveStudents(updatedStudents);
-    setBulkNotice('✓ सभी छात्रों के अर्द्धवार्षिक व वार्षिक अंक सफलतापूर्वक सुरक्षित हो गए!');
+
+    // Immediately update current student's marks and remarks in local state if affected
+    const currentInUpdated = updatedStudents.find((s) => s.id === selectedStudentIdForMarks);
+    if (currentInUpdated) {
+      setCurrentMarks(currentInUpdated.marks || {});
+      setCurrentRemark(currentInUpdated.teacherRemark || '');
+    }
+
+    setBulkNotice('✓ सभी छात्रों के अर्द्धवार्षिक व वार्षिक अंक तुरंत सुरक्षित हो गए!');
     setTimeout(() => setBulkNotice(null), 7000);
+
+    // Save directly to Express API so data-store.json is saved immediately
+    fetch('/api/admin/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        schoolSettings,
+        students: updatedStudents,
+        subjects,
+        gradeRules,
+      }),
+    }).catch(() => {});
 
     // Persist to Firebase Realtime Database
     syncAllDataToFirebase({
@@ -371,6 +412,157 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       subjects,
       gradeRules,
     }).catch((err) => console.warn('[Firebase Bulk Marks Sync] Error:', err));
+  };
+
+  // Synchronize current student's marks and remarks whenever students data is updated
+  useEffect(() => {
+    const std = students.find((s) => s.id === selectedStudentIdForMarks);
+    if (std) {
+      setCurrentMarks(std.marks || {});
+      setCurrentRemark(std.teacherRemark || '');
+    }
+  }, [students, selectedStudentIdForMarks]);
+
+  // CLEAR MARKS LOGIC WITH FULL RECYCLE BIN INTEGRATION
+  const handleExecuteClearMarks = (options: {
+    scope: 'selected' | 'class' | 'single';
+    targetStudentIds?: string[];
+    clearType: 'all' | 'subject' | 'half_only' | 'annual_only';
+    targetSubjectId?: string;
+  }) => {
+    const { scope, targetStudentIds, clearType, targetSubjectId } = options;
+
+    let targetStudents: Student[] = [];
+    if (scope === 'single') {
+      const s = students.find((st) => st.id === selectedStudentIdForMarks);
+      if (s) targetStudents = [s];
+    } else if (scope === 'selected' && targetStudentIds && targetStudentIds.length > 0) {
+      const idSet = new Set(targetStudentIds);
+      targetStudents = students.filter((s) => idSet.has(s.id));
+    } else {
+      // class scope
+      targetStudents = studentClassFilter === 'ALL'
+        ? students
+        : students.filter((s) => isSameClass(s.className, studentClassFilter));
+    }
+
+    if (targetStudents.length === 0) {
+      alert('साफ़ करने के लिए कोई छात्र नहीं मिला।');
+      return;
+    }
+
+    const subObj = targetSubjectId ? subjects.find((s) => s.id === targetSubjectId) : undefined;
+    const subName = subObj ? subObj.name : undefined;
+
+    let desc = '';
+    if (scope === 'single') {
+      const stName = targetStudents[0]?.name || 'छात्र';
+      if (clearType === 'subject' && subName) {
+        desc = `${stName} के '${subName}' विषय के अंक साफ़ किए गए`;
+      } else if (clearType === 'half_only') {
+        desc = `${stName} के केवल अर्द्धवार्षिक अंक साफ़ किए गए`;
+      } else if (clearType === 'annual_only') {
+        desc = `${stName} के केवल वार्षिक अंक साफ़ किए गए`;
+      } else {
+        desc = `${stName} के सभी अंक साफ़ किए गए`;
+      }
+    } else {
+      const clsLabel = studentClassFilter === 'ALL' ? 'सभी कक्षाओं' : `कक्षा ${studentClassFilter}`;
+      const countLabel = `${targetStudents.length} छात्रों`;
+      if (clearType === 'subject' && subName) {
+        desc = `${clsLabel} के ${countLabel} में '${subName}' विषय के अंक साफ़ किए गए`;
+      } else if (clearType === 'half_only') {
+        desc = `${clsLabel} के ${countLabel} के केवल अर्द्धवार्षिक अंक साफ़ किए गए`;
+      } else if (clearType === 'annual_only') {
+        desc = `${clsLabel} के ${countLabel} के केवल वार्षिक अंक साफ़ किए गए`;
+      } else {
+        desc = `${clsLabel} के ${countLabel} के सभी अंक साफ़ किए गए`;
+      }
+    }
+
+    // 1. Create ClearedMarksBackup snapshot
+    const backupId = `cleared-${Date.now()}`;
+    const backup: ClearedMarksBackup = {
+      id: backupId,
+      timestamp: new Date().toISOString(),
+      description: desc,
+      scope: scope === 'single' ? 'single' : (scope === 'selected' ? 'selected' : 'class'),
+      targetClassName: studentClassFilter !== 'ALL' ? studentClassFilter : undefined,
+      clearType,
+      targetSubjectId,
+      targetSubjectName: subName,
+      studentCount: targetStudents.length,
+      studentsSnapshot: targetStudents.map((st) => ({
+        studentId: st.id,
+        rollNo: st.rollNo,
+        name: st.name,
+        className: st.className,
+        marks: { ...(st.marks || {}) },
+        teacherRemark: st.teacherRemark,
+      })),
+    };
+
+    // 2. Perform clear mutation on target students
+    const targetIdSet = new Set(targetStudents.map((s) => s.id));
+    const updatedStudents = students.map((st) => {
+      if (!targetIdSet.has(st.id)) return st;
+
+      let updatedMarks = { ...(st.marks || {}) };
+
+      if (clearType === 'subject' && targetSubjectId) {
+        // delete specific subject marks
+        delete updatedMarks[targetSubjectId];
+      } else if (clearType === 'half_only') {
+        // set halfObtained to 0 for all subjects
+        const newMarks: Record<string, { halfObtained: number; annualObtained: number }> = {};
+        Object.entries(updatedMarks).forEach(([k, v]) => {
+          newMarks[k] = { halfObtained: 0, annualObtained: (v as any)?.annualObtained || 0 };
+        });
+        updatedMarks = newMarks;
+      } else if (clearType === 'annual_only') {
+        // set annualObtained to 0 for all subjects
+        const newMarks: Record<string, { halfObtained: number; annualObtained: number }> = {};
+        Object.entries(updatedMarks).forEach(([k, v]) => {
+          newMarks[k] = { halfObtained: (v as any)?.halfObtained || 0, annualObtained: 0 };
+        });
+        updatedMarks = newMarks;
+      } else {
+        // clear all marks
+        updatedMarks = {};
+      }
+
+      return {
+        ...st,
+        marks: updatedMarks,
+      };
+    });
+
+    // 3. Save backup into Recycle Bin
+    if (onCreateClearedMarksBackup) {
+      onCreateClearedMarksBackup(backup);
+    }
+
+    // 4. Update student records
+    onSaveStudents(updatedStudents);
+
+    // 5. Update local single-entry marks state if selected student was affected
+    if (targetIdSet.has(selectedStudentIdForMarks)) {
+      const cur = updatedStudents.find((s) => s.id === selectedStudentIdForMarks);
+      if (cur) setCurrentMarks(cur.marks || {});
+    }
+
+    // 6. Reset selection
+    setSelectedStudentIdsForMarksClear([]);
+    setIsClearMarksModalOpen(false);
+
+    // 7. Show Undo Toast with 8-second window
+    setClearedMarksToast({
+      message: `${desc} (रीसायकल बिन में सुरक्षित)`,
+      backupId,
+    });
+    setTimeout(() => {
+      setClearedMarksToast((prev) => (prev?.backupId === backupId ? null : prev));
+    }, 8000);
   };
 
   const handleSyncAllDevicesNow = async () => {
@@ -470,6 +662,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     onSaveStudents(updated);
     setMarksSaveSuccess(true);
     setTimeout(() => setMarksSaveSuccess(false), 3000);
+
+    // Save directly to Express API so server-side data-store.json is updated immediately
+    fetch('/api/admin/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        schoolSettings,
+        students: updated,
+        subjects,
+        gradeRules,
+      }),
+    }).catch(() => {});
 
     // Realtime Database CRUD: update marks and remarks at students/{id}
     setIsCloudSyncing(true);
@@ -2316,8 +2520,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        )}
 
-            {/* Trash / Recycle Bin Modal */}
+        {/* Trash / Recycle Bin Modal */}
             {isTrashModalOpen && (
               <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
                 <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-3xl w-full max-h-[90vh] flex flex-col my-auto overflow-hidden animate-fade-in">
@@ -2327,7 +2533,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <div>
                         <h3 className="font-bold text-sm sm:text-base">रीसायकल बिन (Recycle Bin / Trash)</h3>
                         <p className="text-[11px] text-slate-300">
-                          हटाए गए छात्र यहाँ सुरक्षित हैं। आप किसी भी छात्र को 1-क्लिक में कभी भी वापस ला सकते हैं।
+                          हटाए गए छात्र और साफ़ किए गए अंक यहाँ सुरक्षित रहते हैं। किसी भी समय 1-क्लिक में पुनर्स्थापित करें।
                         </p>
                       </div>
                     </div>
@@ -2340,130 +2546,316 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </button>
                   </div>
 
-                  {/* Toolbar inside Trash */}
-                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 bg-white px-2.5 py-1.5 border border-slate-300 rounded shadow-2xs w-full sm:w-72">
-                      <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <input
-                        type="text"
-                        value={trashSearchQuery}
-                        onChange={(e) => setTrashSearchQuery(e.target.value)}
-                        placeholder="हटाए गए छात्रों में खोजें..."
-                        className="w-full bg-transparent focus:outline-hidden text-xs text-slate-800 placeholder:text-slate-400"
-                      />
-                      {trashSearchQuery && (
-                        <button
-                          onClick={() => setTrashSearchQuery('')}
-                          className="text-slate-400 hover:text-slate-600 p-0.5"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
+                  {/* Recycle Bin Tabs: Deleted Students vs Cleared Marks Backups */}
+                  <div className="flex border-b border-slate-200 bg-slate-100/80 px-3 pt-2 gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setRecycleBinActiveTab('students')}
+                      className={`px-3 py-1.5 font-bold text-xs border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                        recycleBinActiveTab === 'students'
+                          ? 'border-[#0f2b48] text-[#0f2b48] bg-white rounded-t-md shadow-2xs'
+                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>1. हटाए गए छात्र ({deletedStudents.length})</span>
+                    </button>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {deletedStudents.length > 0 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (confirm('क्या आप रीसायकल बिन के सभी छात्रों को वापस मुख्य सूची में लाना चाहते हैं?')) {
-                                if (onRestoreAllStudents) onRestoreAllStudents();
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded shadow-xs flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            <span>सभी वापस लाएं (Restore All)</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  'चेतावनी: क्या आप रीसायकल बिन को पूरी तरह खाली करना चाहते हैं? इसके बाद छात्र हमेशा के लिए हट जाएंगे।'
-                                )
-                              ) {
-                                if (onEmptyTrash) onEmptyTrash();
-                              }
-                            }}
-                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>बिन खाली करें (Empty)</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setRecycleBinActiveTab('marks')}
+                      className={`px-3 py-1.5 font-bold text-xs border-b-2 transition-all cursor-pointer flex items-center gap-1.5 ${
+                        recycleBinActiveTab === 'marks'
+                          ? 'border-[#0f2b48] text-[#0f2b48] bg-white rounded-t-md shadow-2xs'
+                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
+                      <span>2. साफ़ किए गए अंक (Cleared Marks) ({clearedMarksHistory.length})</span>
+                    </button>
                   </div>
 
-                  {/* Trash List Table */}
-                  <div className="overflow-y-auto max-h-[55vh] p-2">
-                    {filteredTrashStudents.length === 0 ? (
-                      <div className="py-12 text-center text-slate-400">
-                        <Archive className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                        <p className="font-bold text-xs">रीसायकल बिन खाली है।</p>
-                        <p className="text-[11px] text-slate-400">यहाँ कोई हटाया गया छात्र नहीं है।</p>
+                  {/* TAB 1: DELETED STUDENTS */}
+                  {recycleBinActiveTab === 'students' && (
+                    <div className="flex flex-col flex-1 overflow-hidden">
+                      {/* Toolbar inside Trash */}
+                      <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                        <div className="flex items-center gap-2 bg-white px-2.5 py-1.5 border border-slate-300 rounded shadow-2xs w-full sm:w-72">
+                          <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <input
+                            type="text"
+                            value={trashSearchQuery}
+                            onChange={(e) => setTrashSearchQuery(e.target.value)}
+                            placeholder="हटाए गए छात्रों में खोजें..."
+                            className="w-full bg-transparent focus:outline-hidden text-xs text-slate-800 placeholder:text-slate-400"
+                          />
+                          {trashSearchQuery && (
+                            <button
+                              onClick={() => setTrashSearchQuery('')}
+                              className="text-slate-400 hover:text-slate-600 p-0.5"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {deletedStudents.length > 0 && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm('क्या आप रीसायकल बिन के सभी छात्रों को वापस मुख्य सूची में लाना चाहते हैं?')) {
+                                    if (onRestoreAllStudents) onRestoreAllStudents();
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded shadow-xs flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>सभी वापस लाएं (Restore All)</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      'चेतावनी: क्या आप रीसायकल बिन को पूरी तरह खाली करना चाहते हैं? इसके बाद छात्र हमेशा के लिए हट जाएंगे।'
+                                    )
+                                  ) {
+                                    if (onEmptyTrash) onEmptyTrash();
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>बिन खाली करें (Empty)</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-100 text-slate-700 font-bold uppercase sticky top-0 border-b border-slate-200">
-                          <tr>
-                            <th className="py-2.5 px-3">Roll</th>
-                            <th className="py-2.5 px-3">छात्र का नाम</th>
-                            <th className="py-2.5 px-3">कक्षा</th>
-                            <th className="py-2.5 px-3">पिता का नाम</th>
-                            <th className="py-2.5 px-3">हटाने का समय</th>
-                            <th className="py-2.5 px-3 text-right">कार्रवाई (Actions)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 font-medium">
-                          {filteredTrashStudents.map((st) => (
-                            <tr key={st.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-2 px-3 font-bold text-[#0f2b48]">{st.rollNo}</td>
-                              <td className="py-2 px-3 font-bold uppercase text-slate-900">{st.name}</td>
-                              <td className="py-2 px-3">
-                                {st.className} - {st.section}
-                              </td>
-                              <td className="py-2 px-3 text-slate-600 uppercase">{st.fatherName}</td>
-                              <td className="py-2 px-3 text-[11px] text-slate-400 font-mono">
-                                {st.deletedAt ? new Date(st.deletedAt).toLocaleString('hi-IN') : '—'}
-                              </td>
-                              <td className="py-2 px-3 text-right space-x-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (onRestoreStudent) onRestoreStudent(st.id);
-                                  }}
-                                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
-                                  title="इस छात्र को वापस लाएं"
-                                >
-                                  <RotateCcw className="w-3 h-3" />
-                                  <span>वापस लाएं (Restore)</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (
-                                      confirm(
-                                        `क्या आप "${st.name}" को हमेशा के लिए हटाना चाहते हैं? यह वापस नहीं लाया जा सकेगा।`
-                                      )
-                                    ) {
-                                      if (onPermanentlyDeleteStudent) onPermanentlyDeleteStudent(st.id);
-                                    }
-                                  }}
-                                  className="p-1 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"
-                                  title="स्थायी रूप से हटाएं"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
+
+                      {/* Trash List Table */}
+                      <div className="overflow-y-auto max-h-[55vh] p-2">
+                        {filteredTrashStudents.length === 0 ? (
+                          <div className="py-12 text-center text-slate-400">
+                            <Archive className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                            <p className="font-bold text-xs">रीसायकल बिन खाली है।</p>
+                            <p className="text-[11px] text-slate-400">यहाँ कोई हटाया गया छात्र नहीं है।</p>
+                          </div>
+                        ) : (
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-100 text-slate-700 font-bold uppercase sticky top-0 border-b border-slate-200">
+                              <tr>
+                                <th className="py-2.5 px-3">Roll</th>
+                                <th className="py-2.5 px-3">छात्र का नाम</th>
+                                <th className="py-2.5 px-3">कक्षा</th>
+                                <th className="py-2.5 px-3">पिता का नाम</th>
+                                <th className="py-2.5 px-3">हटाने का समय</th>
+                                <th className="py-2.5 px-3 text-right">कार्रवाई (Actions)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 font-medium">
+                              {filteredTrashStudents.map((st) => (
+                                <tr key={st.id} className="hover:bg-slate-50 transition-colors">
+                                  <td className="py-2 px-3 font-bold text-[#0f2b48]">{st.rollNo}</td>
+                                  <td className="py-2 px-3 font-bold uppercase text-slate-900">{st.name}</td>
+                                  <td className="py-2 px-3">
+                                    {st.className} - {st.section}
+                                  </td>
+                                  <td className="py-2 px-3 text-slate-600 uppercase">{st.fatherName}</td>
+                                  <td className="py-2 px-3 text-[11px] text-slate-400 font-mono">
+                                    {st.deletedAt ? new Date(st.deletedAt).toLocaleString('hi-IN') : '—'}
+                                  </td>
+                                  <td className="py-2 px-3 text-right space-x-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (onRestoreStudent) onRestoreStudent(st.id);
+                                      }}
+                                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                                      title="इस छात्र को वापस लाएं"
+                                    >
+                                      <RotateCcw className="w-3 h-3" />
+                                      <span>वापस लाएं (Restore)</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (
+                                          confirm(
+                                            `क्या आप "${st.name}" को हमेशा के लिए हटाना चाहते हैं? यह वापस नहीं लाया जा सकेगा।`
+                                          )
+                                        ) {
+                                          if (onPermanentlyDeleteStudent) onPermanentlyDeleteStudent(st.id);
+                                        }
+                                      }}
+                                      className="p-1 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"
+                                      title="स्थायी रूप से हटाएं"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: CLEARED MARKS BACKUPS */}
+                  {recycleBinActiveTab === 'marks' && (
+                    <div className="flex flex-col flex-1 overflow-hidden">
+                      {/* Toolbar inside Cleared Marks */}
+                      <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                        <div className="text-xs text-slate-600">
+                          <strong>{clearedMarksHistory.length} बैकअप उपलब्ध</strong> — किसी भी बैकअप के <strong>"अंक पुनः बहाल करें"</strong> बटन पर क्लिक करके अंक तुरंत वापस लाएं।
+                        </div>
+
+                        {clearedMarksHistory.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm('क्या आप सभी साफ़ किए गए अंकों के बैकअप को स्थायी रूप से हटाना चाहते हैं?')) {
+                                if (onEmptyClearedMarksHistory) onEmptyClearedMarksHistory();
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded cursor-pointer shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 inline mr-1" />
+                            <span>सभी मार्क्स बैकअप हटाएं</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Marks Backups List */}
+                      <div className="overflow-y-auto max-h-[55vh] p-3 space-y-3">
+                        {clearedMarksHistory.length === 0 ? (
+                          <div className="py-12 text-center text-slate-400">
+                            <RotateCcw className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                            <p className="font-bold text-xs">कोई साफ़ किए गए अंक नहीं मिले।</p>
+                            <p className="text-[11px] text-slate-400">
+                              जब आप किसी छात्र या कक्षा के अंक साफ़ करेंगे, तो उनका बैकअप यहाँ सुरक्षित रहेगा।
+                            </p>
+                          </div>
+                        ) : (
+                          clearedMarksHistory.map((backup) => {
+                            const isExpanded = viewingBackupDetailsId === backup.id;
+
+                            return (
+                              <div
+                                key={backup.id}
+                                className="bg-white border-2 border-slate-200 rounded-xl p-3 shadow-2xs hover:border-blue-300 transition-all space-y-2"
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                  <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <h4 className="font-bold text-xs text-[#0f2b48]">
+                                        {backup.description}
+                                      </h4>
+                                      <span className="px-2 py-0.5 bg-blue-100 text-blue-900 font-bold rounded-full text-[10px]">
+                                        {backup.studentCount} छात्र
+                                      </span>
+                                      {backup.targetClassName && (
+                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-bold rounded text-[10px]">
+                                          Class {backup.targetClassName}
+                                        </span>
+                                      )}
+                                      <span className="px-2 py-0.5 bg-amber-100 text-amber-900 font-bold rounded text-[10px]">
+                                        {backup.clearType === 'all'
+                                          ? 'सभी अंक'
+                                          : backup.clearType === 'subject'
+                                          ? `विषय: ${backup.targetSubjectName || 'विषय'}`
+                                          : backup.clearType === 'half_only'
+                                          ? 'केवल अर्द्धवार्षिक'
+                                          : 'केवल वार्षिक'}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 mt-1 font-mono">
+                                      {new Date(backup.timestamp).toLocaleString('hi-IN')}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (confirm(`क्या आप "${backup.description}" के सभी अंक वापस लाना चाहते हैं?`)) {
+                                          if (onRestoreClearedMarksBackup) {
+                                            const ok = onRestoreClearedMarksBackup(backup.id);
+                                            if (ok) {
+                                              alert('✓ अंक सफलतापूर्वक पुनर्स्थापित (Restore) हो गए!');
+                                              setIsTrashModalOpen(false);
+                                            }
+                                          }
+                                        }
+                                      }}
+                                      className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded font-bold text-xs flex items-center gap-1 shadow-2xs cursor-pointer"
+                                      title="अंक पुनः बहाल करें"
+                                    >
+                                      <RotateCcw className="w-3.5 h-3.5" />
+                                      <span>अंक पुनः बहाल करें</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setViewingBackupDetailsId(isExpanded ? null : backup.id)
+                                      }
+                                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-bold border border-slate-300 cursor-pointer"
+                                    >
+                                      {isExpanded ? 'विवरण छुपाएं' : 'छात्र देखें'}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (confirm('क्या आप इस बैकअप को स्थायी रूप से हटाना चाहते हैं?')) {
+                                          if (onDeleteClearedMarksBackup) {
+                                            onDeleteClearedMarksBackup(backup.id);
+                                          }
+                                        }
+                                      }}
+                                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"
+                                      title="हटाएं"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Collapsible student details */}
+                                {isExpanded && (
+                                  <div className="pt-2 border-t border-slate-100 bg-slate-50/70 p-2.5 rounded-lg text-[11px] max-h-48 overflow-y-auto">
+                                    <div className="font-bold text-slate-700 mb-1">
+                                      इस बैकअप में सुरक्षित छात्र:
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                      {backup.studentsSnapshot.map((st) => (
+                                        <div
+                                          key={st.studentId}
+                                          className="p-1.5 bg-white rounded border border-slate-200 flex justify-between items-center"
+                                        >
+                                          <span>
+                                            <strong className="text-[#0f2b48]">#{st.rollNo}</strong> {st.name} ({st.className})
+                                          </span>
+                                          <span className="text-[10px] text-slate-500 font-mono">
+                                            {Object.keys(st.marks || {}).length} विषय के अंक
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end">
                     <button
@@ -2507,8 +2899,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
               </div>
             )}
-          </div>
-        )}
+
+            {/* Floating Cleared Marks Undo Toast */}
+            {clearedMarksToast && (
+              <div className="fixed bottom-6 left-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border-2 border-emerald-500 flex items-center gap-3 animate-fade-in">
+                <RotateCcw className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="text-xs font-bold">{clearedMarksToast.message}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onRestoreClearedMarksBackup) {
+                      onRestoreClearedMarksBackup(clearedMarksToast.backupId);
+                    }
+                    setClearedMarksToast(null);
+                  }}
+                  className="ml-2 px-3 py-1 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-lg cursor-pointer flex items-center gap-1 shadow-sm transition-all"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>पूर्ववत करें (Undo)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClearedMarksToast(null)}
+                  className="text-slate-400 hover:text-white p-0.5 ml-1 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
         {/* TAB 3: MARKS MANAGEMENT */}
         {activeTab === 'marks' && (
@@ -2632,6 +3050,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>बल्क अंक (Excel)</span>
                 </button>
 
+                {/* Clear Marks Menu Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClearTargetScopeChoice(selectedStudentIdsForMarksClear.length > 0 ? 'selected' : 'class');
+                    setClearExamScope('all');
+                    setSelectedSubjectIdToClear(subjects[0]?.id || '');
+                    setIsClearMarksModalOpen(true);
+                  }}
+                  className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+                  title="अंक साफ़ / रीसेट करें (रीसायकल बिन में बैकअप सुरक्षित रहेगा)"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>अंक साफ़ करें (Clear Marks)</span>
+                </button>
+
+                {/* Recycle Bin Button directly in Marks tab */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecycleBinActiveTab('marks');
+                    setIsTrashModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+                  title="रीसायकल बिन — हटाए गए अंक व छात्र बैकअप देखें"
+                >
+                  <Archive className="w-3.5 h-3.5 text-amber-700" />
+                  <span>रीसायकल बिन ({clearedMarksHistory.length + deletedStudents.length})</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => onViewStudentResult(selectedStudentIdForMarks)}
@@ -2676,11 +3124,69 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </div>
 
+                {/* Batch Selection Action Bar for Selected Students */}
+                {selectedStudentIdsForMarksClear.length > 0 && (
+                  <div className="p-3 bg-blue-50 border-b border-blue-200 flex flex-wrap items-center justify-between gap-2 text-xs animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-blue-900 bg-blue-100 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-blue-700" />
+                        <span>{selectedStudentIdsForMarksClear.length} छात्र चयनित (Selected)</span>
+                      </span>
+                      <span className="text-slate-500 text-[11px]">
+                        (कक्षा {studentClassFilter === 'ALL' ? 'सभी' : studentClassFilter})
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setClearTargetScopeChoice('selected');
+                          setClearExamScope('all');
+                          setSelectedSubjectIdToClear(subjects[0]?.id || '');
+                          setIsClearMarksModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 bg-rose-700 hover:bg-rose-800 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
+                        title="चुने गए छात्रों के अंक साफ़ करें (Recycle Bin में सुरक्षित)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>चुने गए ({selectedStudentIdsForMarksClear.length}) छात्रों के अंक साफ़ करें</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStudentIdsForMarksClear([])}
+                        className="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg font-bold text-xs border border-slate-300 cursor-pointer"
+                      >
+                        चयन हटाएं (Deselect)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs min-w-[760px]">
+                  <table className="w-full text-left text-xs min-w-[800px]">
                     <thead className="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
                       <tr>
+                        <th className="py-2.5 px-3 w-10 text-center">
+                          <input
+                            type="checkbox"
+                            checked={
+                              studentsForMarks.length > 0 &&
+                              studentsForMarks.every((s) => selectedStudentIdsForMarksClear.includes(s.id))
+                            }
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedStudentIdsForMarksClear(studentsForMarks.map((s) => s.id));
+                              } else {
+                                setSelectedStudentIdsForMarksClear([]);
+                              }
+                            }}
+                            className="rounded text-blue-600 cursor-pointer"
+                            title="सभी छात्रों को चुनें"
+                          />
+                        </th>
                         <th className="py-2.5 px-3 text-center w-12">Roll</th>
                         <th className="py-2.5 px-3">विद्यार्थी का नाम (Student Name)</th>
                         <th className="py-2.5 px-3">पिता का नाम (Father's Name)</th>
@@ -2696,7 +3202,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <tbody className="divide-y divide-slate-100">
                       {studentsForMarks.length === 0 ? (
                         <tr>
-                          <td colSpan={10} className="py-8 text-center text-slate-400">
+                          <td colSpan={11} className="py-8 text-center text-slate-400">
                             इस कक्षा में कोई छात्र नहीं मिला।
                           </td>
                         </tr>
@@ -2705,14 +3211,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           const res = calculateStudentResult(st, subjects, schoolSettings, gradeRules);
                           const hasMarks = st.marks && Object.values(st.marks).some((m: any) => (m?.halfObtained || 0) > 0 || (m?.annualObtained || 0) > 0);
                           const isCurrent = st.id === selectedStudentIdForMarks;
+                          const isSelectedForClear = selectedStudentIdsForMarksClear.includes(st.id);
 
                           return (
                             <tr
                               key={st.id}
                               className={`hover:bg-slate-50 transition-colors ${
-                                isCurrent ? 'bg-blue-50/40 font-semibold' : ''
+                                isSelectedForClear
+                                  ? 'bg-blue-50/60'
+                                  : isCurrent
+                                  ? 'bg-blue-50/40 font-semibold'
+                                  : ''
                               }`}
                             >
+                              <td className="py-2 px-3 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelectedForClear}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedStudentIdsForMarksClear((prev) => [...prev, st.id]);
+                                    } else {
+                                      setSelectedStudentIdsForMarksClear((prev) => prev.filter((id) => id !== st.id));
+                                    }
+                                  }}
+                                  className="rounded text-blue-600 cursor-pointer"
+                                />
+                              </td>
                               <td className="py-2 px-3 text-center font-bold text-slate-800">
                                 <span className="inline-block w-7 h-7 leading-7 bg-slate-100 rounded-full font-mono text-xs">
                                   {st.rollNo}
@@ -2783,7 +3308,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       handleSelectStudentForMarks(st.id);
                                       setMarksViewMode('entry');
                                     }}
-                                    className="px-2.5 py-1 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-[11px] font-bold rounded flex items-center gap-1 cursor-pointer transition-all"
+                                    className="px-2 py-1 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-[11px] font-bold rounded flex items-center gap-1 cursor-pointer transition-all"
                                     title="इस छात्र के अंक भरें"
                                   >
                                     <Edit2 className="w-3 h-3" />
@@ -2796,6 +3321,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     title="मार्कशीट प्रिव्यू"
                                   >
                                     <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (confirm(`क्या आप "${st.name}" के अंक साफ़ करना चाहते हैं? (अंक रीसायकल बिन में सुरक्षित रहेंगे)`)) {
+                                        handleExecuteClearMarks({
+                                          scope: 'single',
+                                          targetStudentIds: [st.id],
+                                          clearType: 'all',
+                                        });
+                                      }
+                                    }}
+                                    className="p-1 hover:bg-rose-100 text-rose-600 rounded cursor-pointer"
+                                    title="इस छात्र के अंक साफ़ करें (Clear Marks to Recycle Bin)"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
                               </td>
@@ -2944,6 +3485,97 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <div className="p-3 bg-emerald-50 border-l-4 border-emerald-600 rounded text-emerald-800 text-xs font-bold flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Marks and Teacher Remark saved successfully!</span>
+                  </div>
+                )}
+
+                {/* COMPREHENSIVE STUDENT DETAILS PROFILE CARD (छात्र संपूर्ण विवरण कार्ड) */}
+                {currentStudent && (
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+                    <div className="p-4 bg-gradient-to-r from-[#0f2b48] to-[#1a4470] text-white flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-14 h-14 rounded-full bg-white/10 p-0.5 border-2 border-amber-400 overflow-hidden shrink-0 shadow-md">
+                          <img
+                            src={currentStudent.photoUrl || DEFAULT_STUDENT_PHOTO_FALLBACK}
+                            alt={currentStudent.name}
+                            className="w-full h-full object-cover rounded-full"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = DEFAULT_STUDENT_PHOTO_FALLBACK;
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-lg font-black uppercase text-white tracking-wide">
+                              {currentStudent.name}
+                            </h2>
+                            <span className="px-2 py-0.5 bg-amber-400 text-[#0f2b48] font-black rounded text-xs font-mono">
+                              ROLL #{currentStudent.rollNo}
+                            </span>
+                            <span className="px-2 py-0.5 bg-blue-500 text-white font-bold rounded text-xs">
+                              कक्षा {currentStudent.className}-{currentStudent.section || 'A'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-slate-200 mt-1 flex-wrap">
+                            <span>SR/प्रवेश सं: <strong className="font-mono text-white">{currentStudent.admissionNo || '—'}</strong></span>
+                            <span>•</span>
+                            <span>सत्र: <strong className="text-amber-300 font-mono">{currentStudent.session || schoolSettings.session || '2025–2026'}</strong></span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start md:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => onViewStudentResult(currentStudent.id)}
+                          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-amber-300" />
+                          <span>मार्कशीट प्रिव्यू</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClearTargetScopeChoice('single');
+                            setClearExamScope('all');
+                            setSelectedSubjectIdToClear(subjects[0]?.id || '');
+                            setIsClearMarksModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                          title="इस छात्र के अंक साफ़ करें (Recycle Bin में सुरक्षित)"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-300" />
+                          <span>अंक साफ़ करें</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Detailed Metadata Grid */}
+                    <div className="p-3 bg-slate-50 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+                      <div className="bg-white p-2 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">पिता का नाम (Father)</span>
+                        <strong className="text-slate-800 uppercase block truncate">{currentStudent.fatherName || '—'}</strong>
+                      </div>
+                      <div className="bg-white p-2 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">माता का नाम (Mother)</span>
+                        <strong className="text-slate-800 uppercase block truncate">{currentStudent.motherName || '—'}</strong>
+                      </div>
+                      <div className="bg-white p-2 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">जन्म तिथि (DOB)</span>
+                        <strong className="text-slate-800 font-mono block">{currentStudent.dob || '—'}</strong>
+                      </div>
+                      <div className="bg-white p-2 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">लिंग (Gender)</span>
+                        <strong className="text-slate-800 uppercase block">{currentStudent.gender || '—'}</strong>
+                      </div>
+                      <div className="bg-white p-2 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">मोबाइल (Mobile)</span>
+                        <strong className="text-slate-800 font-mono block">{currentStudent.mobile || '—'}</strong>
+                      </div>
+                      <div className="bg-white p-2 rounded-lg border border-slate-200">
+                        <span className="text-[10px] text-slate-400 font-bold block uppercase">आधार (Aadhar)</span>
+                        <strong className="text-slate-800 font-mono block">{currentStudent.aadharNo || '—'}</strong>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -5822,6 +6454,217 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onSaveMarks={handleSaveBulkMarks}
           onSaveBulkMarks={handleSaveBulkMarks}
         />
+      )}
+
+      {/* CLEAR MARKS MODAL (WITH DIRECT RECYCLE BIN INTEGRATION) */}
+      {isClearMarksModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in"
+          onClick={() => setIsClearMarksModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-rose-700 text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base">
+                    अंक साफ़ / रीसेट करें (Clear Marks)
+                  </h3>
+                  <p className="text-[11px] text-rose-100">
+                    रीसायकल बिन में ऑटोमैटिक सुरक्षित बैकअप रहेगा
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsClearMarksModalOpen(false)}
+                className="p-1 hover:bg-white/10 rounded-full text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 text-xs">
+              {/* Step 1: Target Scope */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 block">
+                  1. किन छात्रों के अंक साफ़ करने हैं? (Select Target Students):
+                </label>
+                <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  {selectedStudentIdsForMarksClear.length > 0 && (
+                    <label className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer font-bold text-blue-900">
+                      <input
+                        type="radio"
+                        name="clearTargetScope"
+                        checked={clearTargetScopeChoice === 'selected'}
+                        onChange={() => setClearTargetScopeChoice('selected')}
+                        className="text-blue-600"
+                      />
+                      <span>चयनित छात्र ({selectedStudentIdsForMarksClear.length} छात्र)</span>
+                    </label>
+                  )}
+
+                  <label className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer font-medium text-slate-800">
+                    <input
+                      type="radio"
+                      name="clearTargetScope"
+                      checked={clearTargetScopeChoice === 'class'}
+                      onChange={() => setClearTargetScopeChoice('class')}
+                      className="text-rose-600"
+                    />
+                    <span>
+                      {studentClassFilter === 'ALL'
+                        ? 'सभी कक्षाओं के सभी छात्र'
+                        : `केवल कक्षा ${studentClassFilter} के छात्र (${studentsForMarks.length} छात्र)`}
+                    </span>
+                  </label>
+
+                  {currentStudent && (
+                    <label className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-lg cursor-pointer font-medium text-slate-800">
+                      <input
+                        type="radio"
+                        name="clearTargetScope"
+                        checked={clearTargetScopeChoice === 'single'}
+                        onChange={() => setClearTargetScopeChoice('single')}
+                        className="text-rose-600"
+                      />
+                      <span>
+                        केवल वर्तमान छात्र: <strong>{currentStudent.name}</strong> (Roll #{currentStudent.rollNo})
+                      </span>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Step 2: What to clear */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 block">
+                  2. क्या साफ़ करना चाहते हैं? (What to Clear):
+                </label>
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 p-2.5 bg-rose-50/70 border border-rose-200 rounded-xl cursor-pointer font-bold text-rose-900">
+                    <input
+                      type="radio"
+                      name="clearExamScope"
+                      value="all"
+                      checked={clearExamScope === 'all'}
+                      onChange={() => setClearExamScope('all')}
+                      className="text-rose-600"
+                    />
+                    <div>
+                      <div>सभी अंक (All Subjects & All Exams)</div>
+                      <div className="text-[11px] text-rose-600 font-normal">अर्द्धवार्षिक व वार्षिक दोनों के सभी अंक खाली हो जाएंगे</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer font-bold text-slate-800">
+                    <input
+                      type="radio"
+                      name="clearExamScope"
+                      value="subject"
+                      checked={clearExamScope === 'subject'}
+                      onChange={() => setClearExamScope('subject')}
+                      className="text-blue-600"
+                    />
+                    <div className="flex-1">
+                      <div>केवल एक विशिष्ट विषय के अंक साफ़ करें (Single Subject)</div>
+                      <div className="text-[11px] text-slate-500 font-normal">बाकी सभी विषयों के अंक सुरक्षित रहेंगे</div>
+                    </div>
+                  </label>
+
+                  {clearExamScope === 'subject' && (
+                    <div className="pl-6 pr-2 py-1 space-y-1">
+                      <label className="text-[11px] font-bold text-blue-900 block">विषय चुनें (Select Subject):</label>
+                      <select
+                        value={selectedSubjectIdToClear}
+                        onChange={(e) => setSelectedSubjectIdToClear(e.target.value)}
+                        className="w-full p-2 bg-white border-2 border-blue-400 rounded-lg text-xs font-bold text-[#0f2b48]"
+                      >
+                        {subjects.map((sub) => (
+                          <option key={sub.id} value={sub.id}>
+                            {sub.name} (अर्द्ध: {sub.halfMax}, वार्ष: {sub.annualMax})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <label className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer font-bold text-slate-800">
+                    <input
+                      type="radio"
+                      name="clearExamScope"
+                      value="half_only"
+                      checked={clearExamScope === 'half_only'}
+                      onChange={() => setClearExamScope('half_only')}
+                      className="text-amber-600"
+                    />
+                    <div>
+                      <div>केवल अर्द्धवार्षिक परीक्षा अंक साफ़ करें (Half-Yearly Only)</div>
+                      <div className="text-[11px] text-slate-500 font-normal">वार्षिक परीक्षा के अंक सुरक्षित रहेंगे</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer font-bold text-slate-800">
+                    <input
+                      type="radio"
+                      name="clearExamScope"
+                      value="annual_only"
+                      checked={clearExamScope === 'annual_only'}
+                      onChange={() => setClearExamScope('annual_only')}
+                      className="text-emerald-600"
+                    />
+                    <div>
+                      <div>केवल वार्षिक परीक्षा अंक साफ़ करें (Annual Only)</div>
+                      <div className="text-[11px] text-slate-500 font-normal">अर्द्धवार्षिक परीक्षा के अंक सुरक्षित रहेंगे</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Recycle Bin Guarantee Banner */}
+              <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-950 flex items-start gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="text-[11px] leading-relaxed">
+                  <strong>सुरक्षित रीसायकल बिन:</strong> साफ़ किए गए सभी अंक रीसायकल बिन में बैकअप के रूप में सुरक्षित रहेंगे। आप जब चाहें <strong>"वापस लाएं (Undo)"</strong> बटन से उन्हें पुनर्स्थापित कर सकते हैं।
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => setIsClearMarksModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg cursor-pointer"
+              >
+                रद्द करें (Cancel)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleExecuteClearMarks({
+                    scope: clearTargetScopeChoice,
+                    targetStudentIds: clearTargetScopeChoice === 'selected' ? selectedStudentIdsForMarksClear : undefined,
+                    clearType: clearExamScope,
+                    targetSubjectId: clearExamScope === 'subject' ? selectedSubjectIdToClear : undefined,
+                  });
+                }}
+                className="px-5 py-2.5 bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-98"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>हाँ, अंक साफ़ करें (Clear Marks)</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
