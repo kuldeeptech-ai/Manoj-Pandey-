@@ -49,21 +49,39 @@ import {
 
 type ViewMode = 'public_search' | 'result_view' | 'admin';
 
+// Purge legacy local storage items on boot to guarantee online-first persistence across all devices
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('hd_pandey_students');
+    localStorage.removeItem('hd_pandey_deleted_students');
+    localStorage.removeItem('hd_pandey_cleared_marks_history');
+    localStorage.removeItem('hd_pandey_subjects');
+    localStorage.removeItem('hd_pandey_settings');
+    localStorage.removeItem('hd_pandey_grades');
+  } catch {}
+}
+
 const getInitialViewMode = (): ViewMode => {
   if (typeof window === 'undefined') return 'public_search';
   const path = window.location.pathname.toLowerCase();
   const hash = window.location.hash.toLowerCase();
   const search = window.location.search.toLowerCase();
   const params = new URLSearchParams(window.location.search);
-  if (
+  const isAdmin =
     path.endsWith('/admin') ||
     path.endsWith('/admin/') ||
     path.includes('/admin') ||
     hash.includes('admin') ||
     params.get('view') === 'admin' ||
     params.has('admin') ||
-    search.includes('admin')
-  ) {
+    search.includes('admin');
+
+  if (isAdmin) {
+    if (path.includes('/admin')) {
+      try {
+        window.history.replaceState({}, '', '/?admin');
+      } catch {}
+    }
     return 'admin';
   }
   return 'public_search';
@@ -79,53 +97,34 @@ export default function App() {
     return getInitialViewMode() === 'admin';
   });
 
-  // Persistence State
+  // Online-First Database State (No reliance on local storage so all users see identical live records)
   const [students, setStudents] = useState<Student[]>(() => {
-    try {
-      const saved = localStorage.getItem('hd_pandey_students');
-      const raw = saved ? JSON.parse(saved) : DEFAULT_STUDENTS;
-      return sortStudentsByRoll((raw || []).map(normalizeStudentRecord));
-    } catch {
-      return sortStudentsByRoll((DEFAULT_STUDENTS || []).map(normalizeStudentRecord));
-    }
+    return sortStudentsByRoll((DEFAULT_STUDENTS || []).map(normalizeStudentRecord));
   });
 
-  const [deletedStudents, setDeletedStudents] = useState<Student[]>(() => {
-    try {
-      const saved = localStorage.getItem('hd_pandey_deleted_students');
-      const raw = saved ? JSON.parse(saved) : [];
-      return (raw || []).map(normalizeStudentRecord);
-    } catch {
-      return [];
-    }
-  });
-
-  const [clearedMarksHistory, setClearedMarksHistory] = useState<ClearedMarksBackup[]>(() => {
-    try {
-      const saved = localStorage.getItem('hd_pandey_cleared_marks_history');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [subjects, setSubjects] = useState<SubjectConfig[]>(() => {
-    const saved = localStorage.getItem('hd_pandey_subjects');
-    return saved ? JSON.parse(saved) : DEFAULT_SUBJECTS;
-  });
-
+  const [deletedStudents, setDeletedStudents] = useState<Student[]>([]);
+  const [clearedMarksHistory, setClearedMarksHistory] = useState<ClearedMarksBackup[]>([]);
+  const [subjects, setSubjects] = useState<SubjectConfig[]>(DEFAULT_SUBJECTS);
   const [schoolSettings, setSchoolSettings] = useState<SchoolSettings>(() => {
-    const saved = localStorage.getItem('hd_pandey_settings');
-    const initial = saved ? JSON.parse(saved) : DEFAULT_SCHOOL_SETTINGS;
+    const initial = { ...DEFAULT_SCHOOL_SETTINGS };
     if (!initial.classTeachers || !Array.isArray(initial.classTeachers) || initial.classTeachers.length === 0) {
       initial.classTeachers = DEFAULT_SCHOOL_SETTINGS.classTeachers;
     }
     return initial;
   });
+  const [gradeRules, setGradeRules] = useState<GradeRule[]>(DEFAULT_GRADE_RULES);
 
-  const [gradeRules, setGradeRules] = useState<GradeRule[]>(() => {
-    const saved = localStorage.getItem('hd_pandey_grades');
-    return saved ? JSON.parse(saved) : DEFAULT_GRADE_RULES;
+  // Real-time Cloud / Online Synchronization Status
+  const [onlineSyncStatus, setOnlineSyncStatus] = useState<{
+    isSaving: boolean;
+    message: string | null;
+    lastSyncTime: string | null;
+    type: 'idle' | 'saving' | 'success' | 'error';
+  }>({
+    isSaving: false,
+    message: null,
+    lastSyncTime: null,
+    type: 'idle',
   });
 
   const schoolSettingsRef = useRef(schoolSettings);
@@ -138,6 +137,8 @@ export default function App() {
   subjectsRef.current = subjects;
   const gradeRulesRef = useRef(gradeRules);
   gradeRulesRef.current = gradeRules;
+  const clearedMarksHistoryRef = useRef(clearedMarksHistory);
+  clearedMarksHistoryRef.current = clearedMarksHistory;
 
   const [activeResult, setActiveResult] = useState<StudentResultData | null>(null);
   const [resultSource, setResultSource] = useState<'public' | 'admin'>('public');
@@ -180,10 +181,10 @@ export default function App() {
   // Tracks the timestamp of recent admin mutations (deletions/edits) to prevent polling race conditions
   const lastLocalMutationTimeRef = useRef<number>(0);
 
-  // Sync with backend API and Google Sheet on initial mount & periodic refresh
+  // Sync with backend API and Firebase on initial mount & periodic refresh (Live Online Truth)
   const syncCloudData = useCallback(async () => {
-    // If local changes were made in the last 10 seconds, pause background polling to prevent race condition
-    if (Date.now() - lastLocalMutationTimeRef.current < 10000) {
+    // If local changes were made in the last 15 seconds, pause background polling to prevent race condition
+    if (Date.now() - lastLocalMutationTimeRef.current < 15000) {
       return;
     }
 
@@ -198,94 +199,66 @@ export default function App() {
         if (data) {
           if (data.schoolSettings) {
             const norm = normalizeSchoolSettings(data.schoolSettings);
-            setSchoolSettings((prev) => {
-              if (JSON.stringify(prev) !== JSON.stringify(norm)) {
-                localStorage.setItem('hd_pandey_settings', JSON.stringify(norm));
-                return norm;
-              }
-              return prev;
-            });
+            setSchoolSettings(norm);
           }
-          if (Array.isArray(data.students)) {
-            const normalizedStudents = data.students.map(normalizeStudentRecord);
-            setStudents((prev) => {
-              if (JSON.stringify(prev) !== JSON.stringify(normalizedStudents)) {
-                localStorage.setItem('hd_pandey_students', JSON.stringify(normalizedStudents));
-                return normalizedStudents;
-              }
-              return prev;
-            });
+          if (Array.isArray(data.students) && data.students.length > 0) {
+            const normalizedStudents = sortStudentsByRoll(data.students.map(normalizeStudentRecord));
+            setStudents(normalizedStudents);
           }
           if (Array.isArray(data.subjects) && data.subjects.length > 0) {
-            setSubjects((prev) => {
-              if (JSON.stringify(prev) !== JSON.stringify(data.subjects)) {
-                localStorage.setItem('hd_pandey_subjects', JSON.stringify(data.subjects));
-                return data.subjects;
-              }
-              return prev;
-            });
+            setSubjects(data.subjects);
           }
           if (Array.isArray(data.gradeRules) && data.gradeRules.length > 0) {
-            setGradeRules((prev) => {
-              if (JSON.stringify(prev) !== JSON.stringify(data.gradeRules)) {
-                localStorage.setItem('hd_pandey_grades', JSON.stringify(data.gradeRules));
-                return data.gradeRules;
-              }
-              return prev;
-            });
+            setGradeRules(data.gradeRules);
+          }
+          if (Array.isArray(data.deletedStudents)) {
+            setDeletedStudents(data.deletedStudents.map(normalizeStudentRecord));
+          }
+          if (Array.isArray(data.clearedMarksHistory)) {
+            setClearedMarksHistory(data.clearedMarksHistory);
           }
           backendSuccess = true;
+          setOnlineSyncStatus((prev) => ({
+            ...prev,
+            isSaving: false,
+            lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            type: 'idle',
+          }));
         }
       }
     } catch (e) {
       // Backend not accessible
     }
 
-    // 2. Fetch initial dataset from Firebase Realtime Database
-    try {
-      const fbData = await fetchAllFromFirebase();
-      if (fbData) {
-        if (fbData.students && fbData.students.length > 0) {
-          const normalizedStudents = fbData.students.map(normalizeStudentRecord);
-          setStudents((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(normalizedStudents)) {
-              localStorage.setItem('hd_pandey_students', JSON.stringify(normalizedStudents));
-              return normalizedStudents;
-            }
-            return prev;
-          });
+    // 2. Fetch dataset from Firebase Realtime Database if backend didn't supply
+    if (!backendSuccess) {
+      try {
+        const fbData = await fetchAllFromFirebase();
+        if (fbData) {
+          if (fbData.students && fbData.students.length > 0) {
+            const normalizedStudents = sortStudentsByRoll(fbData.students.map(normalizeStudentRecord));
+            setStudents(normalizedStudents);
+          }
+          if (fbData.subjects && fbData.subjects.length > 0) {
+            setSubjects(fbData.subjects);
+          }
+          if (fbData.settings) {
+            const norm = normalizeSchoolSettings({ ...currentSettings, ...fbData.settings });
+            setSchoolSettings(norm);
+          }
+          if (fbData.gradeRules && fbData.gradeRules.length > 0) {
+            setGradeRules(fbData.gradeRules);
+          }
+          setOnlineSyncStatus((prev) => ({
+            ...prev,
+            isSaving: false,
+            lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            type: 'idle',
+          }));
         }
-        if (fbData.subjects && fbData.subjects.length > 0) {
-          setSubjects((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(fbData.subjects)) {
-              localStorage.setItem('hd_pandey_subjects', JSON.stringify(fbData.subjects));
-              return fbData.subjects;
-            }
-            return prev;
-          });
-        }
-        if (fbData.settings) {
-          const norm = normalizeSchoolSettings({ ...currentSettings, ...fbData.settings });
-          setSchoolSettings((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(norm)) {
-              localStorage.setItem('hd_pandey_settings', JSON.stringify(norm));
-              return norm;
-            }
-            return prev;
-          });
-        }
-        if (fbData.gradeRules && fbData.gradeRules.length > 0) {
-          setGradeRules((prev) => {
-            if (JSON.stringify(prev) !== JSON.stringify(fbData.gradeRules)) {
-              localStorage.setItem('hd_pandey_grades', JSON.stringify(fbData.gradeRules));
-              return fbData.gradeRules;
-            }
-            return prev;
-          });
-        }
+      } catch (e) {
+        // Firebase fallback notice
       }
-    } catch (e) {
-      // Firebase fallback notice
     }
   }, []);
 
@@ -300,7 +273,6 @@ export default function App() {
           ...newToggles,
           toggles: { ...(prev.toggles || {}), ...newToggles },
         });
-        localStorage.setItem('hd_pandey_settings', JSON.stringify(merged));
         return merged;
       });
 
@@ -322,53 +294,32 @@ export default function App() {
     const unsubAll = subscribeToFirebaseData({
       onSettings: (newSettings) => {
         setSchoolSettings((prev) => {
-          const norm = normalizeSchoolSettings({ ...prev, ...newSettings });
-          if (JSON.stringify(prev) === JSON.stringify(norm)) return prev;
-          localStorage.setItem('hd_pandey_settings', JSON.stringify(norm));
-          return norm;
+          return normalizeSchoolSettings({ ...prev, ...newSettings });
         });
       },
       onStudents: (newStudents) => {
-        if (Date.now() - lastLocalMutationTimeRef.current < 8000) return;
+        if (Date.now() - lastLocalMutationTimeRef.current < 15000) return;
         const formatted = sortStudentsByRoll(newStudents.map(normalizeStudentRecord));
-        setStudents((prev) => {
-          if (JSON.stringify(prev) === JSON.stringify(formatted)) return prev;
-          localStorage.setItem('hd_pandey_students', JSON.stringify(formatted));
-          return formatted;
-        });
+        setStudents(formatted);
       },
       onSubjects: (newSubjects) => {
-        if (Date.now() - lastLocalMutationTimeRef.current < 8000) return;
-        setSubjects((prev) => {
-          if (JSON.stringify(prev) === JSON.stringify(newSubjects)) return prev;
-          localStorage.setItem('hd_pandey_subjects', JSON.stringify(newSubjects));
-          return newSubjects;
-        });
+        if (Date.now() - lastLocalMutationTimeRef.current < 15000) return;
+        setSubjects(newSubjects);
       },
       onGradeRules: (newRules) => {
-        setGradeRules((prev) => {
-          if (JSON.stringify(prev) === JSON.stringify(newRules)) return prev;
-          localStorage.setItem('hd_pandey_grades', JSON.stringify(newRules));
-          return newRules;
-        });
+        setGradeRules(newRules);
       },
     });
 
     const unsubDeleted = subscribeToDeletedStudents((newDeleted) => {
+      if (Date.now() - lastLocalMutationTimeRef.current < 15000) return;
       const formatted = newDeleted.map(normalizeStudentRecord);
-      setDeletedStudents((prev) => {
-        if (JSON.stringify(prev) === JSON.stringify(formatted)) return prev;
-        localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(formatted));
-        return formatted;
-      });
+      setDeletedStudents(formatted);
     });
 
     const unsubClearedMarks = subscribeToClearedMarksHistory((newHistory) => {
-      setClearedMarksHistory((prev) => {
-        if (JSON.stringify(prev) === JSON.stringify(newHistory)) return prev;
-        localStorage.setItem('hd_pandey_cleared_marks_history', JSON.stringify(newHistory));
-        return newHistory;
-      });
+      if (Date.now() - lastLocalMutationTimeRef.current < 15000) return;
+      setClearedMarksHistory(newHistory);
     });
 
     return () => {
@@ -381,49 +332,21 @@ export default function App() {
 
   useEffect(() => {
     syncCloudData();
-    // Calmed background check cycle (WebSocket already delivers real-time updates)
+    // Calmed background check cycle
     const timer = setInterval(() => {
       syncCloudData();
     }, 25000);
 
     const handleFocus = () => syncCloudData();
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'hd_pandey_settings' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          setSchoolSettings(normalizeSchoolSettings(parsed));
-        } catch {}
-      }
-    };
-
     window.addEventListener('focus', handleFocus);
-    window.addEventListener('storage', handleStorageChange);
     document.addEventListener('visibilitychange', handleFocus);
 
     return () => {
       clearInterval(timer);
       window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('visibilitychange', handleFocus);
     };
   }, [syncCloudData]);
-
-  // Save to localStorage whenever states change
-  useEffect(() => {
-    localStorage.setItem('hd_pandey_students', JSON.stringify(students));
-  }, [students]);
-
-  useEffect(() => {
-    localStorage.setItem('hd_pandey_subjects', JSON.stringify(subjects));
-  }, [subjects]);
-
-  useEffect(() => {
-    localStorage.setItem('hd_pandey_settings', JSON.stringify(schoolSettings));
-  }, [schoolSettings]);
-
-  useEffect(() => {
-    localStorage.setItem('hd_pandey_grades', JSON.stringify(gradeRules));
-  }, [gradeRules]);
 
   // Handle Search function requiring Class, Roll/Admission No., and verified Captcha
   const handleSearch = useCallback(
@@ -559,6 +482,11 @@ export default function App() {
         search.includes('admin');
 
       if (isAdminRoute) {
+        if (path.includes('/admin')) {
+          try {
+            window.history.replaceState({}, '', '/?admin');
+          } catch {}
+        }
         setViewMode('admin');
         const isAuth =
           sessionStorage.getItem('school_admin_auth') === 'true' ||
@@ -656,7 +584,7 @@ export default function App() {
     setErrorMessage(null);
     setShowAdminLoginModal(false);
     try {
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.pushState({}, '', '/');
     } catch {
       window.location.hash = '';
     }
@@ -667,7 +595,7 @@ export default function App() {
     setViewMode('admin');
     setActiveResult(null);
     try {
-      window.history.replaceState({}, '', '/admin');
+      window.history.replaceState({}, '', '/?admin');
     } catch {}
   };
 
@@ -690,11 +618,11 @@ export default function App() {
     }
   };
 
-  // Admin access gatekeeper (Navigates to /admin)
+  // Admin access gatekeeper (Navigates cleanly to /?admin)
   // Strict rule: EVERY visit to Admin Panel demands ID & Password. Never auto-login.
   const handleOpenAdmin = () => {
     try {
-      window.history.pushState({}, '', '/admin');
+      window.history.pushState({}, '', '/?admin');
     } catch {
       window.location.hash = '#admin';
     }
@@ -708,7 +636,7 @@ export default function App() {
     setShowAdminLoginModal(false);
     setViewMode('admin');
     try {
-      window.history.pushState({}, '', '/admin');
+      window.history.pushState({}, '', '/?admin');
     } catch {
       window.location.hash = '#admin';
     }
@@ -718,8 +646,6 @@ export default function App() {
     setIsAdminAuthenticated(false);
     sessionStorage.removeItem('school_admin_auth');
     sessionStorage.removeItem('school_admin_user');
-    localStorage.removeItem('school_admin_auth');
-    localStorage.removeItem('school_admin_user');
     setViewMode('public_search');
     setShowAdminLoginModal(false);
     try {
@@ -733,7 +659,7 @@ export default function App() {
   const handleOpenAdminMarks = (studentId: string) => {
     setSelectedStudentForAdminMarks(studentId);
     try {
-      window.history.pushState({}, '', '/admin');
+      window.history.pushState({}, '', '/?admin');
     } catch {
       window.location.hash = '#admin';
     }
@@ -743,7 +669,7 @@ export default function App() {
     }
   };
 
-  // Save Handlers (Local state, LocalStorage, Express API, and Firebase Realtime Database)
+  // Save Handlers (Online Express API and Firebase Realtime Database - NO localStorage)
   const handleSaveStudents = async (newStudents: Student[]) => {
     lastLocalMutationTimeRef.current = Date.now();
     const formatted = sortStudentsByRoll(newStudents.map((s) => ({
@@ -754,28 +680,58 @@ export default function App() {
       aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
     })));
     setStudents(formatted);
-    localStorage.setItem('hd_pandey_students', JSON.stringify(formatted));
+    setOnlineSyncStatus({
+      isSaving: true,
+      message: 'ऑनलाइन सर्वर व डेटाबेस में सुरक्षित हो रहा है...',
+      lastSyncTime: onlineSyncStatus.lastSyncTime,
+      type: 'saving',
+    });
+
     try {
-      await fetch('/api/admin/data', {
+      const res = await fetch('/api/admin/data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          schoolSettings,
+          schoolSettings: schoolSettingsRef.current,
           students: formatted,
-          subjects,
-          gradeRules,
+          subjects: subjectsRef.current,
+          gradeRules: gradeRulesRef.current,
+          deletedStudents: deletedStudentsRef.current,
+          clearedMarksHistory: clearedMarksHistoryRef.current,
         }),
       });
-    } catch {}
+      if (res.ok) {
+        const json = await res.json().catch(() => null);
+        if (json?.store?.students) {
+          setStudents(sortStudentsByRoll(json.store.students.map(normalizeStudentRecord)));
+        }
+      }
+      setOnlineSyncStatus({
+        isSaving: false,
+        message: '✓ ऑनलाइन सर्वर पर सफलतापूर्वक सुरक्षित हो गया! (सभी उपयोगकर्ताओं को तुरंत दिखेगा)',
+        lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        type: 'success',
+      });
+      setTimeout(() => {
+        setOnlineSyncStatus((prev) => ({ ...prev, message: null }));
+      }, 5000);
+    } catch (e) {
+      setOnlineSyncStatus({
+        isSaving: false,
+        message: '⚠️ ऑनलाइन सेव करने में समस्या, पुनः प्रयास करें',
+        lastSyncTime: onlineSyncStatus.lastSyncTime,
+        type: 'error',
+      });
+    }
 
-    // Firebase Realtime Database: ref(db, 'students'), set(...)
+    // Persist directly to Firebase Realtime Database
     saveAllStudentsToFirebase(formatted).catch((err) => {
       console.warn('[Firebase RTDB] Error saving students to Firebase:', err);
     });
   };
 
   // Move single student to Recycle Bin (Trash)
-  const handleDeleteStudent = (studentId: string) => {
+  const handleDeleteStudent = async (studentId: string) => {
     lastLocalMutationTimeRef.current = Date.now();
     const target = students.find((s) => s.id === studentId);
     if (!target) return;
@@ -788,15 +744,31 @@ export default function App() {
 
     setStudents(remaining);
     setDeletedStudents(updatedTrash);
-    localStorage.setItem('hd_pandey_students', JSON.stringify(remaining));
-    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(updatedTrash));
+    setOnlineSyncStatus({
+      isSaving: true,
+      message: 'ऑनलाइन डेटाबेस से छात्र हटाया जा रहा है...',
+      lastSyncTime: onlineSyncStatus.lastSyncTime,
+      type: 'saving',
+    });
+
+    try {
+      await fetch(`/api/admin/student/${encodeURIComponent(studentId)}`, { method: 'DELETE' });
+      setOnlineSyncStatus({
+        isSaving: false,
+        message: `✓ छात्र "${target.name}" ऑनलाइन डेटाबेस से हटाकर रीसायकल बिन में सुरक्षित कर दिया गया!`,
+        lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        type: 'success',
+      });
+      setTimeout(() => {
+        setOnlineSyncStatus((prev) => ({ ...prev, message: null }));
+      }, 5000);
+    } catch {}
 
     moveStudentToTrashInFirebase(target).catch(console.warn);
-    fetch(`/api/admin/student/${encodeURIComponent(studentId)}`, { method: 'DELETE' }).catch(() => {});
   };
 
   // Move multiple students to Recycle Bin (Trash) in batch
-  const handleBatchDeleteStudents = (studentIds: string[]) => {
+  const handleBatchDeleteStudents = async (studentIds: string[]) => {
     if (!studentIds || studentIds.length === 0) return;
     lastLocalMutationTimeRef.current = Date.now();
     const targetIds = new Set(studentIds);
@@ -809,19 +781,35 @@ export default function App() {
 
     setStudents(remaining);
     setDeletedStudents(updatedTrash);
-    localStorage.setItem('hd_pandey_students', JSON.stringify(remaining));
-    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(updatedTrash));
+    setOnlineSyncStatus({
+      isSaving: true,
+      message: `${studentIds.length} छात्र ऑनलाइन रीसायकल बिन में भेजे जा रहे हैं...`,
+      lastSyncTime: onlineSyncStatus.lastSyncTime,
+      type: 'saving',
+    });
+
+    try {
+      await fetch('/api/admin/student/batch-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: studentIds }),
+      });
+      setOnlineSyncStatus({
+        isSaving: false,
+        message: `✓ ${studentIds.length} छात्र ऑनलाइन रीसायकल बिन में सफलतापूर्वक भेज दिए गए!`,
+        lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        type: 'success',
+      });
+      setTimeout(() => {
+        setOnlineSyncStatus((prev) => ({ ...prev, message: null }));
+      }, 5000);
+    } catch {}
 
     moveBatchStudentsToTrashInFirebase(targets).catch(console.warn);
-    fetch('/api/admin/student/batch-delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: studentIds }),
-    }).catch(() => {});
   };
 
   // Restore 1 student from Recycle Bin back to active list
-  const handleRestoreStudent = (studentId: string) => {
+  const handleRestoreStudent = async (studentId: string) => {
     lastLocalMutationTimeRef.current = Date.now();
     const target = deletedStudents.find((s) => s.id === studentId);
     if (!target) return;
@@ -832,15 +820,16 @@ export default function App() {
 
     setStudents(updatedStudents);
     setDeletedStudents(remainingTrash);
-    localStorage.setItem('hd_pandey_students', JSON.stringify(updatedStudents));
-    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(remainingTrash));
+
+    try {
+      await fetch(`/api/admin/trash/restore/${encodeURIComponent(studentId)}`, { method: 'POST' });
+    } catch {}
 
     restoreStudentFromTrashInFirebase(target).catch(console.warn);
-    fetch(`/api/admin/trash/restore/${encodeURIComponent(studentId)}`, { method: 'POST' }).catch(() => {});
   };
 
   // Restore all students from Recycle Bin
-  const handleRestoreAllStudents = () => {
+  const handleRestoreAllStudents = async () => {
     if (deletedStudents.length === 0) return;
     lastLocalMutationTimeRef.current = Date.now();
     const restoredList = deletedStudents.map((s) => {
@@ -851,18 +840,18 @@ export default function App() {
 
     setStudents(updatedStudents);
     setDeletedStudents([]);
-    localStorage.setItem('hd_pandey_students', JSON.stringify(updatedStudents));
-    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify([]));
+
+    try {
+      await fetch('/api/admin/trash/restore-all', { method: 'POST' });
+    } catch {}
 
     restoreAllStudentsFromTrashInFirebase(deletedStudents).catch(console.warn);
-    fetch('/api/admin/trash/restore-all', { method: 'POST' }).catch(() => {});
   };
 
   // Permanently delete student from Trash
   const handlePermanentlyDeleteStudent = (studentId: string) => {
     const remainingTrash = deletedStudents.filter((s) => s.id !== studentId);
     setDeletedStudents(remainingTrash);
-    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify(remainingTrash));
 
     permanentlyDeleteStudentFromTrashInFirebase(studentId).catch(console.warn);
     fetch(`/api/admin/trash/${encodeURIComponent(studentId)}`, { method: 'DELETE' }).catch(() => {});
@@ -871,7 +860,6 @@ export default function App() {
   // Empty entire Recycle Bin
   const handleEmptyTrash = () => {
     setDeletedStudents([]);
-    localStorage.setItem('hd_pandey_deleted_students', JSON.stringify([]));
 
     emptyTrashInFirebase().catch(console.warn);
     fetch('/api/admin/trash', { method: 'DELETE' }).catch(() => {});
@@ -882,7 +870,6 @@ export default function App() {
     lastLocalMutationTimeRef.current = Date.now();
     setClearedMarksHistory((prev) => {
       const updated = [backup, ...prev.filter((b) => b.id !== backup.id)];
-      localStorage.setItem('hd_pandey_cleared_marks_history', JSON.stringify(updated));
       return updated;
     });
     saveClearedMarksBackupToFirebase(backup).catch(console.warn);
@@ -949,14 +936,12 @@ export default function App() {
   const handleDeleteClearedMarksBackup = (backupId: string) => {
     const updated = clearedMarksHistory.filter((b) => b.id !== backupId);
     setClearedMarksHistory(updated);
-    localStorage.setItem('hd_pandey_cleared_marks_history', JSON.stringify(updated));
     deleteClearedMarksBackupFromFirebase(backupId).catch(console.warn);
     fetch(`/api/admin/cleared-marks/${encodeURIComponent(backupId)}`, { method: 'DELETE' }).catch(() => {});
   };
 
   const handleEmptyClearedMarksHistory = () => {
     setClearedMarksHistory([]);
-    localStorage.setItem('hd_pandey_cleared_marks_history', JSON.stringify([]));
     emptyClearedMarksHistoryInFirebase().catch(console.warn);
     fetch('/api/admin/cleared-marks', { method: 'DELETE' }).catch(() => {});
   };
@@ -964,7 +949,6 @@ export default function App() {
   const handleSaveSubjects = async (newSubjects: SubjectConfig[]) => {
     lastLocalMutationTimeRef.current = Date.now();
     setSubjects(newSubjects);
-    localStorage.setItem('hd_pandey_subjects', JSON.stringify(newSubjects));
 
     // Initialize marks map for newly added subjects so no student calculations break
     const updatedStudents = students.map((stu) => {
@@ -979,7 +963,12 @@ export default function App() {
       return changed ? { ...stu, marks: updatedMarks } : stu;
     });
     setStudents(updatedStudents);
-    localStorage.setItem('hd_pandey_students', JSON.stringify(updatedStudents));
+    setOnlineSyncStatus({
+      isSaving: true,
+      message: 'विषय सूची ऑनलाइन डेटाबेस में सुरक्षित हो रही है...',
+      lastSyncTime: onlineSyncStatus.lastSyncTime,
+      type: 'saving',
+    });
 
     try {
       await fetch('/api/admin/data', {
@@ -990,11 +979,21 @@ export default function App() {
           students: updatedStudents,
           subjects: newSubjects,
           gradeRules,
+          deletedStudents,
+          clearedMarksHistory,
         }),
       });
+      setOnlineSyncStatus({
+        isSaving: false,
+        message: '✓ विषय सूची ऑनलाइन डेटाबेस में सफलतापूर्वक सुरक्षित हो गई!',
+        lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        type: 'success',
+      });
+      setTimeout(() => {
+        setOnlineSyncStatus((prev) => ({ ...prev, message: null }));
+      }, 5000);
     } catch {}
 
-    // Firebase Realtime Database: ref(db, 'subjects'), set(...)
     saveSubjectsToFirebase(newSubjects).catch((err) => {
       console.warn('[Firebase RTDB] Error saving subjects to Firebase:', err);
     });
@@ -1007,7 +1006,12 @@ export default function App() {
     lastLocalMutationTimeRef.current = Date.now();
     const normalized = normalizeSchoolSettings(newSettings);
     setSchoolSettings(normalized);
-    localStorage.setItem('hd_pandey_settings', JSON.stringify(normalized));
+    setOnlineSyncStatus({
+      isSaving: true,
+      message: 'स्कूल सेटिंग्स ऑनलाइन डेटाबेस में सुरक्षित हो रही हैं...',
+      lastSyncTime: onlineSyncStatus.lastSyncTime,
+      type: 'saving',
+    });
 
     try {
       await fetch('/api/admin/data', {
@@ -1018,13 +1022,23 @@ export default function App() {
           students,
           subjects,
           gradeRules,
+          deletedStudents,
+          clearedMarksHistory,
         }),
       });
+      setOnlineSyncStatus({
+        isSaving: false,
+        message: '✓ स्कूल सेटिंग्स ऑनलाइन डेटाबेस में सफलतापूर्वक सुरक्षित हो गईं!',
+        lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        type: 'success',
+      });
+      setTimeout(() => {
+        setOnlineSyncStatus((prev) => ({ ...prev, message: null }));
+      }, 5000);
     } catch (e) {
       console.warn('Backend save error:', e);
     }
 
-    // Firebase Realtime Database: ref(db, 'school_settings'), set(...)
     saveSchoolSettingsToFirebase(normalized).catch((err) => {
       console.warn('[Firebase RTDB] Error saving settings to Firebase:', err);
     });
@@ -1041,10 +1055,11 @@ export default function App() {
         students,
         subjects,
         gradeRules: newRules,
+        deletedStudents,
+        clearedMarksHistory,
       }),
     }).catch(() => {});
 
-    // Firebase Realtime Database: ref(db, 'grade_rules'), set(...)
     saveGradeRulesToFirebase(newRules).catch((err) => {
       console.warn('[Firebase RTDB] Error saving grade rules to Firebase:', err);
     });
@@ -1132,6 +1147,33 @@ export default function App() {
           adminPassword={schoolSettings.adminPassword || (typeof localStorage !== 'undefined' ? localStorage.getItem('school_admin_pass') || '' : '')}
           adminEmail={schoolSettings.adminEmail || 'kuldeeprai75220@gmail.com'}
         />
+      )}
+
+      {/* Global Real-time Online Sync Toast Notification */}
+      {onlineSyncStatus.message && (
+        <div
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-bold transition-all duration-300 animate-in slide-in-from-bottom-5 max-w-sm ${
+            onlineSyncStatus.type === 'saving'
+              ? 'bg-blue-950 text-blue-100 border-blue-500/70 shadow-blue-500/20'
+              : onlineSyncStatus.type === 'error'
+              ? 'bg-rose-950 text-rose-100 border-rose-500/70 shadow-rose-500/20'
+              : 'bg-emerald-950 text-emerald-100 border-emerald-500/70 shadow-emerald-500/20'
+          }`}
+        >
+          {onlineSyncStatus.type === 'saving' ? (
+            <div className="w-4 h-4 border-2 border-blue-400 border-t-white rounded-full animate-spin shrink-0" />
+          ) : onlineSyncStatus.type === 'error' ? (
+            <span className="text-rose-400 text-base">⚠️</span>
+          ) : (
+            <span className="text-emerald-400 text-base">✓</span>
+          )}
+          <div className="min-w-0">
+            <p className="leading-tight">{onlineSyncStatus.message}</p>
+            {onlineSyncStatus.lastSyncTime && (
+              <p className="text-[11px] text-white/70 mt-0.5 font-medium">लाइव ऑनलाइन सिंक: {onlineSyncStatus.lastSyncTime}</p>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

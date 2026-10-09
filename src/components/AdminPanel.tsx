@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Student,
   SubjectConfig,
@@ -390,20 +390,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       setCurrentRemark(currentInUpdated.teacherRemark || '');
     }
 
-    setBulkNotice('✓ सभी छात्रों के अर्द्धवार्षिक व वार्षिक अंक तुरंत सुरक्षित हो गए!');
+    setBulkNotice('✓ सभी छात्रों के अर्द्धवार्षिक व वार्षिक अंक ऑनलाइन डेटाबेस में तुरंत सुरक्षित हो गए!');
     setTimeout(() => setBulkNotice(null), 7000);
-
-    // Save directly to Express API so data-store.json is saved immediately
-    fetch('/api/admin/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        schoolSettings,
-        students: updatedStudents,
-        subjects,
-        gradeRules,
-      }),
-    }).catch(() => {});
 
     // Persist to Firebase Realtime Database
     syncAllDataToFirebase({
@@ -414,14 +402,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }).catch((err) => console.warn('[Firebase Bulk Marks Sync] Error:', err));
   };
 
-  // Synchronize current student's marks and remarks whenever students data is updated
+  // Synchronize current student's marks and remarks only when switching selected student
+  const prevSelectedStudentIdRef = useRef<string>(selectedStudentIdForMarks);
   useEffect(() => {
-    const std = students.find((s) => s.id === selectedStudentIdForMarks);
-    if (std) {
-      setCurrentMarks(std.marks || {});
-      setCurrentRemark(std.teacherRemark || '');
+    if (prevSelectedStudentIdRef.current !== selectedStudentIdForMarks) {
+      prevSelectedStudentIdRef.current = selectedStudentIdForMarks;
+      const std = students.find((s) => s.id === selectedStudentIdForMarks);
+      if (std) {
+        setCurrentMarks(std.marks || {});
+        setCurrentRemark(std.teacherRemark || '');
+      }
     }
-  }, [students, selectedStudentIdForMarks]);
+  }, [selectedStudentIdForMarks, students]);
 
   // CLEAR MARKS LOGIC WITH FULL RECYCLE BIN INTEGRATION
   const handleExecuteClearMarks = (options: {
@@ -661,19 +653,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
     onSaveStudents(updated);
     setMarksSaveSuccess(true);
-    setTimeout(() => setMarksSaveSuccess(false), 3000);
-
-    // Save directly to Express API so server-side data-store.json is updated immediately
-    fetch('/api/admin/data', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        schoolSettings,
-        students: updated,
-        subjects,
-        gradeRules,
-      }),
-    }).catch(() => {});
+    setBulkNotice(`✓ छात्र "${currentStudent?.name || ''}" (रोल नं. ${currentStudent?.rollNo || ''}) के अंक ऑनलाइन डेटाबेस में सफलतापूर्वक सुरक्षित हो गए!`);
+    setTimeout(() => {
+      setMarksSaveSuccess(false);
+      setBulkNotice(null);
+    }, 5000);
 
     // Realtime Database CRUD: update marks and remarks at students/{id}
     setIsCloudSyncing(true);
@@ -750,9 +734,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     if (isNewStudent) {
       onSaveStudents(sortStudentsByRoll([...students, sanitizedStudent]));
+      setBulkNotice(`✓ छात्र "${sanitizedStudent.name}" (रोल नं. ${sanitizedStudent.rollNo}, कक्षा ${sanitizedStudent.className}) ऑनलाइन डेटाबेस में सफलतापूर्वक जोड़ा गया!`);
     } else {
       onSaveStudents(sortStudentsByRoll(students.map((s) => (s.id === sanitizedStudent.id ? sanitizedStudent : s))));
+      setBulkNotice(`✓ छात्र "${sanitizedStudent.name}" (रोल नं. ${sanitizedStudent.rollNo}) का विवरण ऑनलाइन डेटाबेस में सफलतापूर्वक अपडेट हो गया!`);
     }
+    setTimeout(() => setBulkNotice(null), 6000);
 
     // Realtime Database CRUD: set student record at students/{id}
     saveStudentToFirebase(sanitizedStudent).catch((err) => {
@@ -779,6 +766,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         setSelectedStudentIdForMarks(students.find((s) => s.id !== st.id)?.id || '');
       }
       setSelectedStudentIds((prev) => prev.filter((id) => id !== st.id));
+      setBulkNotice(`✓ छात्र "${st.name}" को ऑनलाइन डेटाबेस से हटाकर रीसायकल बिन में भेज दिया गया है।`);
+      setTimeout(() => setBulkNotice(null), 6000);
       setUndoToast({
         message: `छात्र "${st.name}" को रीसायकल बिन में भेज दिया गया है।`,
         studentIds: [st.id],
@@ -807,6 +796,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         setSelectedStudentIdForMarks(remaining[0]?.id || '');
       }
       setSelectedStudentIds([]);
+      setBulkNotice(`✓ चुने हुए ${count} छात्र ऑनलाइन डेटाबेस से हटाकर रीसायकल बिन में भेज दिए गए हैं।`);
+      setTimeout(() => setBulkNotice(null), 6000);
       setUndoToast({
         message: `${count} छात्र रीसायकल बिन में भेज दिए गए हैं।`,
         studentIds: idsToDelete,
@@ -1552,6 +1543,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <span>Connect Google Sheet</span>
             </button>
           )}
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>ऑनलाइन डेटाबेस सक्रिय</span>
+          </span>
           <span className="hidden lg:inline-block text-xs font-semibold px-2.5 py-1 rounded bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 shrink-0">
             ● {schoolSettings.adminUserId || 'Admin'}
           </span>

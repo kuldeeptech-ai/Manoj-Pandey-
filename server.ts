@@ -66,9 +66,108 @@ function saveStore() {
   }
 }
 
-// Background sync function (Google Sheets API calls removed in favor of Firebase Realtime Database)
+// Background sync function: keep Firebase Realtime Database in sync with backend store
+async function syncToFirebaseInBackground() {
+  try {
+    const studentMap: Record<string, any> = {};
+    (store.students || []).forEach((s: any) => {
+      if (s && s.id) studentMap[s.id] = s;
+    });
+
+    await Promise.all([
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/school_settings.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(store.schoolSettings),
+      }),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/students.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(studentMap),
+      }),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/subjects.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(store.subjects),
+      }),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/grade_rules.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(store.gradeRules),
+      }),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/deleted_students.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(store.deletedStudents || []),
+      }),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/cleared_marks_history.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(store.clearedMarksHistory || []),
+      }),
+    ]);
+  } catch (err) {
+    console.warn('[Server] Error syncing to Firebase RTDB in background:', err);
+  }
+}
+
+async function syncFromFirebaseOnStart() {
+  try {
+    const [stRes, sRes, subRes, gRes, delRes, clrRes] = await Promise.all([
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/students.json'),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/school_settings.json'),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/subjects.json'),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/grade_rules.json'),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/deleted_students.json'),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/cleared_marks_history.json'),
+    ]);
+
+    const rawStudents = await stRes.json();
+    const toList = (val: any) =>
+      Array.isArray(val)
+        ? val.filter(Boolean)
+        : val && typeof val === 'object'
+        ? Object.values(val)
+        : [];
+    const students = toList(rawStudents);
+    if (students.length > 0 && (store.students.length === 0 || students.length >= store.students.length)) {
+      store.students = students.map(normalizeStudent);
+    } else if (store.students.length > 0) {
+      // Server data-store.json has data; push to Firebase to keep cloud updated
+      syncToFirebaseInBackground();
+    }
+
+    const settings = await sRes.json();
+    if (settings && typeof settings === 'object') {
+      store.schoolSettings = normalizeSchoolSettings({ ...store.schoolSettings, ...settings });
+    }
+
+    const rawSubs = await subRes.json();
+    const subs = toList(rawSubs);
+    if (subs.length > 0) store.subjects = subs;
+
+    const rawGrades = await gRes.json();
+    const grades = toList(rawGrades);
+    if (grades.length > 0) store.gradeRules = grades;
+
+    const rawDeleted = await delRes.json();
+    const deleted = toList(rawDeleted);
+    if (deleted.length > 0) store.deletedStudents = deleted;
+
+    const rawCleared = await clrRes.json();
+    const cleared = toList(rawCleared);
+    if (cleared.length > 0) store.clearedMarksHistory = cleared;
+
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    console.log(`[Server] Synced on startup from Firebase: ${store.students.length} students loaded.`);
+  } catch (err) {
+    console.warn('[Server] Could not sync from Firebase on startup:', err);
+  }
+}
+
 function syncToGoogleSheetInBackground() {
-  // No-op: Data is synced in real-time via Firebase Realtime Database
+  syncToFirebaseInBackground();
 }
 
 async function startServer() {
@@ -672,6 +771,11 @@ async function startServer() {
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Sync failed' });
     }
+  });
+
+  // Seamless Admin URL Handling: Redirect /admin to /?admin to prevent 404 on Back button / refresh
+  app.get(['/admin', '/admin/'], (req, res) => {
+    res.redirect(302, '/?admin');
   });
 
   // Vite middleware in dev or static files in prod
