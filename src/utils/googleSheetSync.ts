@@ -318,7 +318,7 @@ function setupOrUpdateAllSheets() {
   if (setSheet.getLastRow() === 0) {
     setSheet.appendRow(setHeaders);
     var defaultSettings = [
-      ["school_name", "H.D. PANDEY PUBLIC JUNIOR HIGH SCHOOL"],
+      ["school_name", "H.D.P. PUBLIC SCHOOL"],
       ["address", "KUSHMAHA, SANT KABIR NAGAR, U.P."],
       ["managed_by", "H.D. Pandey Shikshan Sansthan"],
       ["mobile", "9838123456"],

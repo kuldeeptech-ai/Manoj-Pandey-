@@ -107,11 +107,23 @@ export default function App() {
   const [clearedMarksHistory, setClearedMarksHistory] = useState<ClearedMarksBackup[]>([]);
   const [subjects, setSubjects] = useState<SubjectConfig[]>(DEFAULT_SUBJECTS);
   const [schoolSettings, setSchoolSettings] = useState<SchoolSettings>(() => {
+    // 1. Immediately check localStorage cache so on page load (frame 0),
+    // original school name ("H.D.P. PUBLIC SCHOOL") and logo appear instantly with zero delay!
+    try {
+      const cached = localStorage.getItem('school_settings_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object' && parsed.schoolName) {
+          return normalizeSchoolSettings(parsed);
+        }
+      }
+    } catch {}
+
     const initial = { ...DEFAULT_SCHOOL_SETTINGS };
     if (!initial.classTeachers || !Array.isArray(initial.classTeachers) || initial.classTeachers.length === 0) {
       initial.classTeachers = DEFAULT_SCHOOL_SETTINGS.classTeachers;
     }
-    return initial;
+    return normalizeSchoolSettings(initial);
   });
   const [gradeRules, setGradeRules] = useState<GradeRule[]>(DEFAULT_GRADE_RULES);
 
@@ -178,6 +190,16 @@ export default function App() {
       }
     } catch {}
   }, [schoolSettings.logoUrl]);
+
+  // Synchronize document title and cache schoolSettings in localStorage for zero-latency frame-0 loading
+  useEffect(() => {
+    if (schoolSettings.schoolName) {
+      document.title = `${schoolSettings.schoolName} — Official Portal`;
+    }
+    try {
+      localStorage.setItem('school_settings_cache', JSON.stringify(schoolSettings));
+    } catch {}
+  }, [schoolSettings]);
 
   // Tracks the timestamp of recent admin mutations (deletions/edits) to prevent polling race conditions
   const lastLocalMutationTimeRef = useRef<number>(0);

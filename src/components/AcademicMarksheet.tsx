@@ -110,7 +110,7 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
     return cleaned.length > 0 ? cleaned : fallback;
   };
 
-  const safeSchoolName = stripHindi(school.schoolName, 'H.D. PANDEY PUBLIC JUNIOR HIGH SCHOOL');
+  const safeSchoolName = stripHindi(school.schoolName, 'H.D.P. PUBLIC SCHOOL');
   const safeAddress = stripHindi(school.address, 'Baurbyas, Shiv Mandir Side S.K.N. (U.P.) – 272154');
   const safeManagedBy = stripHindi(school.managedBy, 'Manoj Panday');
   const safeTagline = stripHindi(school.tagline, 'DISCIPLINE • KNOWLEDGE • CHARACTER • BRIGHT FUTURE');

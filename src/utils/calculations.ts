@@ -144,22 +144,22 @@ export function normalizeSchoolSettings(settings?: Partial<SchoolSettings>): Sch
   const s = settings || {};
   return {
     ...s,
-    schoolName: s.schoolName || 'H.D. PANDEY PUBLIC JUNIOR HIGH SCHOOL',
+    schoolName: s.schoolName || 'H.D.P. PUBLIC SCHOOL',
     address: s.address || 'Baurbyas, Shiv Mandir Side S.K.N. (U.P.) – 272154',
     managedBy: s.managedBy || 'Manoj Panday',
     mobile: String(s.mobile || '9838767297'),
     tagline: s.tagline || 'Discipline • Knowledge • Character • Bright Future',
-    logoUrl: s.logoUrl || '',
-    logoSize: s.logoSize ? Number(s.logoSize) : 85,
-    marksheetSchoolNameSize: s.marksheetSchoolNameSize ? Number(s.marksheetSchoolNameSize) : 20,
-    publicPortalSchoolNameSize: s.publicPortalSchoolNameSize ? Number(s.publicPortalSchoolNameSize) : 20,
+    logoUrl: s.logoUrl || 'https://raw.githubusercontent.com/kuldeeptech-ai/dd/refs/heads/main/my-audio/6a50c4fb-10a6-40ae-afe0-eafeb0a5991b-removebackgrounds-ai.png',
+    logoSize: s.logoSize ? Number(s.logoSize) : 100,
+    marksheetSchoolNameSize: s.marksheetSchoolNameSize ? Number(s.marksheetSchoolNameSize) : 28,
+    publicPortalSchoolNameSize: s.publicPortalSchoolNameSize ? Number(s.publicPortalSchoolNameSize) : 24,
     marksheetTextScale: (s.marksheetTextScale === 'large' || s.marksheetTextScale === 'extra_large' || s.marksheetTextScale === 'normal')
       ? s.marksheetTextScale
-      : 'large', // Default to 'large' so printout is immediately clearer and bolder
-    schoolBadgeType: (s.schoolBadgeType as any) || 'OFFICIAL RESULT',
+      : 'large',
+    schoolBadgeType: (s.schoolBadgeType as any) || 'ACADEMIC RESULT',
     resultTitle: s.resultTitle || 'ACADEMIC RESULT — HALF-YEARLY & ANNUAL',
     resultTitleHalfYearly: s.resultTitleHalfYearly || 'ACADEMIC RESULT — HALF-YEARLY EXAMINATION',
-    session: s.session || '2025–2026',
+    session: s.session || '2026–2027',
     footerText: s.footerText || 'Keep Learning • Keep Growing • Keep Shining!',
     teacherSignatureUrl: s.teacherSignatureUrl || '',
     principalSignatureUrl: s.principalSignatureUrl || '',

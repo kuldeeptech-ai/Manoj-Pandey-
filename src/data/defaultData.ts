@@ -201,18 +201,20 @@ export const DEFAULT_CLASS_TEACHERS: ClassTeacherConfig[] = [
   },
 ];
 
+export const ORIGINAL_SCHOOL_LOGO = 'https://raw.githubusercontent.com/kuldeeptech-ai/dd/refs/heads/main/my-audio/6a50c4fb-10a6-40ae-afe0-eafeb0a5991b-removebackgrounds-ai.png';
+
 export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
-  schoolName: 'H.D. PANDEY PUBLIC JUNIOR HIGH SCHOOL',
+  schoolName: 'H.D.P. PUBLIC SCHOOL',
   address: 'Baurbyas, Shiv Mandir Side S.K.N. (U.P.) – 272154',
   managedBy: 'Manoj Panday',
   mobile: '9838767297',
   tagline: 'Discipline • Knowledge • Character • Bright Future',
-  logoUrl: DEFAULT_SCHOOL_LOGO,
-  logoSize: 85,
-  schoolBadgeType: 'OFFICIAL RESULT',
+  logoUrl: ORIGINAL_SCHOOL_LOGO,
+  logoSize: 100,
+  schoolBadgeType: 'ACADEMIC RESULT',
   resultTitle: 'ACADEMIC RESULT — HALF-YEARLY & ANNUAL',
   resultTitleHalfYearly: 'ACADEMIC RESULT — HALF-YEARLY EXAMINATION',
-  session: '2025–2026',
+  session: '2026–2027',
   footerText: 'Keep Learning • Keep Growing • Keep Shining!',
   teacherSignatureUrl: DEFAULT_TEACHER_SIGNATURE,
   principalSignatureUrl: DEFAULT_PRINCIPAL_SIGNATURE,
@@ -231,7 +233,7 @@ export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
   showStudentPhoto: true,
   showSignatures: true,
   showPercentage: true,
-  showGrade: false,
+  showGrade: true,
   showProgressGraph: true,
   allowPublicSearch: true,
   enableCaptcha: true,
@@ -242,11 +244,14 @@ export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
   saveLastResult: true,
   autoFillOnLoad: true,
   isMaintenanceMode: false,
-  isResultLive: true,
+  isResultLive: false,
   maintenanceNotice: '',
   maintenanceMessage: 'पोर्टल पर वर्तमान में मेंटेनेंस एवं अंकपत्र अपडेट का कार्य चल रहा है। कृपया कुछ समय बाद पुनः प्रयास करें।',
-  liveBannerText: 'सत्र 2025–2026 की सभी कक्षाओं की मार्कशीट लाइव हो चुकी हैं! आप नीचे अपना रोल नंबर व कक्षा दर्ज करके रिजल्ट देख सकते हैं।',
+  liveBannerText: 'सत्र 2026–2027 की सभी कक्षाओं की मार्कशीट लाइव हो चुकी हैं! आप नीचे अपना रोल नंबर व कक्षा दर्ज करके रिजल्ट देख सकते हैं।',
   activeClasses: ['5th', '6th', '7th', '8th'],
+  marksheetSchoolNameSize: 28,
+  publicPortalSchoolNameSize: 24,
+  marksheetTextScale: 'large',
 };
 
 export const DEFAULT_SUBJECTS: SubjectConfig[] = [
