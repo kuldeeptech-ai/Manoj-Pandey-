@@ -45,6 +45,7 @@ import {
   deleteClearedMarksBackupFromFirebase,
   emptyClearedMarksHistoryInFirebase,
   subscribeToClearedMarksHistory,
+  updateSchoolToggleInFirebase,
 } from './utils/firebase';
 
 type ViewMode = 'public_search' | 'result_view' | 'admin';
@@ -381,6 +382,21 @@ export default function App() {
               sessionStorage.setItem('active_verified_class', cleanCls);
               sessionStorage.setItem('active_verified_source', 'public');
 
+              // Cache last result and history in localStorage if allowed by Admin schoolSettings
+              try {
+                if (schoolSettings.saveLastResult !== false) {
+                  localStorage.setItem('hp_cached_last_result', JSON.stringify(resultData));
+                }
+                if (schoolSettings.saveRecentSearches !== false) {
+                  const raw = localStorage.getItem('hp_recent_searches');
+                  const list = raw ? JSON.parse(raw) : [];
+                  const studentName = resultData?.student?.name;
+                  const filtered = list.filter((it: any) => !(it.rollNo === cleanRoll && it.className === cleanCls));
+                  filtered.unshift({ rollNo: cleanRoll, className: cleanCls, studentName, timestamp: Date.now() });
+                  localStorage.setItem('hp_recent_searches', JSON.stringify(filtered.slice(0, 8)));
+                }
+              } catch {}
+
               setActiveResult(resultData);
               setResultSource('public');
               setViewMode('result_view');
@@ -420,6 +436,22 @@ export default function App() {
         sessionStorage.setItem('active_verified_source', 'public');
 
         const result = calculateStudentResult(matched, subjects, normalizeSchoolSettings(schoolSettings), gradeRules);
+
+        // Cache last result and history in localStorage if allowed by Admin schoolSettings
+        try {
+          if (schoolSettings.saveLastResult !== false) {
+            localStorage.setItem('hp_cached_last_result', JSON.stringify(result));
+          }
+          if (schoolSettings.saveRecentSearches !== false) {
+            const raw = localStorage.getItem('hp_recent_searches');
+            const list = raw ? JSON.parse(raw) : [];
+            const studentName = result?.student?.name;
+            const filtered = list.filter((it: any) => !(it.rollNo === cleanRoll && it.className === cleanCls));
+            filtered.unshift({ rollNo: cleanRoll, className: cleanCls, studentName, timestamp: Date.now() });
+            localStorage.setItem('hp_recent_searches', JSON.stringify(filtered.slice(0, 8)));
+          }
+        } catch {}
+
         setActiveResult(result);
         setResultSource('public');
         setViewMode('result_view');
@@ -1065,6 +1097,20 @@ export default function App() {
     });
   };
 
+  // Direct View Result Handler from Public Portal (Cached or History)
+  const handleDirectViewResult = useCallback((resultData: StudentResultData) => {
+    setActiveResult(resultData);
+    setResultSource('public');
+    setViewMode('result_view');
+    if (resultData?.student) {
+      const cleanRoll = resultData.student.rollNo.trim();
+      const cleanCls = resultData.student.className.trim();
+      try {
+        window.history.replaceState({}, '', `?roll=${encodeURIComponent(cleanRoll)}&class=${encodeURIComponent(cleanCls)}`);
+      } catch {}
+    }
+  }, []);
+
   return (
     <div className="w-full min-h-screen bg-slate-100 font-sans">
       {/* 1. Public Search View (Address Bar: /) */}
@@ -1076,6 +1122,7 @@ export default function App() {
           errorMessage={errorMessage}
           isLoading={isLoading}
           onSwitchToAdmin={handleOpenAdmin}
+          onDirectViewResult={handleDirectViewResult}
         />
       )}
 

@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { SchoolSettings } from '../types';
-import { Search, GraduationCap, Award, FileText, ArrowRight, RotateCw, ShieldCheck, Hash, Lock, BookOpen, Wrench, Clock, Radio } from 'lucide-react';
+import { SchoolSettings, StudentResultData, RecentSearchItem } from '../types';
+import {
+  Search,
+  GraduationCap,
+  Award,
+  FileText,
+  ArrowRight,
+  RotateCw,
+  ShieldCheck,
+  Hash,
+  Lock,
+  BookOpen,
+  Wrench,
+  Clock,
+  History,
+  X,
+} from 'lucide-react';
 import { Toast, ToastMessage } from './Toast';
 
 interface PublicSearchProps {
@@ -10,6 +25,7 @@ interface PublicSearchProps {
   errorMessage: string | null;
   isLoading: boolean;
   onSwitchToAdmin?: () => void;
+  onDirectViewResult?: (result: StudentResultData) => void;
 }
 
 export const PublicSearch: React.FC<PublicSearchProps> = ({
@@ -19,12 +35,61 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
   errorMessage,
   isLoading,
   onSwitchToAdmin,
+  onDirectViewResult,
 }) => {
-  const [selectedClass, setSelectedClass] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Captcha active state strictly governed by Admin Panel schoolSettings
+  const isCaptchaActive = schoolSettings.enableCaptcha !== false;
+
+  // Local storage rules governed by Admin Panel schoolSettings
+  const allowSaveClass = schoolSettings.saveSelectedClass !== false;
+  const allowSaveRoll = schoolSettings.saveSearchRoll !== false;
+  const allowRecentSearches = schoolSettings.saveRecentSearches !== false;
+  const allowSaveLastResult = schoolSettings.saveLastResult !== false;
+  const allowAutoFill = schoolSettings.autoFillOnLoad !== false;
+
+  // Initialize selected class from LocalStorage if allowed by Admin
+  const [selectedClass, setSelectedClass] = useState<string>(() => {
+    try {
+      if (allowAutoFill && allowSaveClass) {
+        return localStorage.getItem('hp_saved_class') || '';
+      }
+    } catch {}
+    return '';
+  });
+
+  // Initialize roll number from LocalStorage if allowed by Admin
+  const [searchTerm, setSearchTerm] = useState<string>(() => {
+    try {
+      if (allowAutoFill && allowSaveRoll) {
+        return localStorage.getItem('hp_saved_roll') || '';
+      }
+    } catch {}
+    return '';
+  });
+
   const [captchaInput, setCaptchaInput] = useState('');
   const [captchaCode, setCaptchaCode] = useState('');
   const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  // Recent Searches from LocalStorage
+  const [recentSearches, setRecentSearches] = useState<RecentSearchItem[]>(() => {
+    if (!allowRecentSearches) return [];
+    try {
+      const saved = localStorage.getItem('hp_recent_searches');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  // Cached Last Result from LocalStorage
+  const [cachedLastResult, setCachedLastResult] = useState<StudentResultData | null>(() => {
+    if (!allowSaveLastResult) return null;
+    try {
+      const saved = localStorage.getItem('hp_cached_last_result');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
 
   // Compute active class options from schoolSettings.activeClasses or availableClasses prop
   const classOptions = useMemo(() => {
@@ -45,8 +110,10 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
   }, []);
 
   useEffect(() => {
-    generateNumericCaptcha();
-  }, [generateNumericCaptcha]);
+    if (isCaptchaActive) {
+      generateNumericCaptcha();
+    }
+  }, [isCaptchaActive, generateNumericCaptcha]);
 
   // Sync errorMessage from parent into Toast notification if triggered
   useEffect(() => {
@@ -57,10 +124,46 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
         title: 'रिजल्ट नहीं मिला (Not Found)',
         message: errorMessage,
       });
-      generateNumericCaptcha();
+      if (isCaptchaActive) {
+        generateNumericCaptcha();
+      }
     }
-  }, [errorMessage, generateNumericCaptcha]);
+  }, [errorMessage, isCaptchaActive, generateNumericCaptcha]);
 
+  // Synchronize inputs to LocalStorage as per Admin Panel settings
+  const handleClassChange = (newClass: string) => {
+    setSelectedClass(newClass);
+    try {
+      if (allowSaveClass) {
+        localStorage.setItem('hp_saved_class', newClass);
+      } else {
+        localStorage.removeItem('hp_saved_class');
+      }
+    } catch {}
+  };
+
+  const handleRollChange = (newRoll: string) => {
+    setSearchTerm(newRoll);
+    try {
+      if (allowSaveRoll) {
+        localStorage.setItem('hp_saved_roll', newRoll);
+      } else {
+        localStorage.removeItem('hp_saved_roll');
+      }
+    } catch {}
+  };
+
+  // Remove single recent search item
+  const handleRemoveRecentSearch = (rollNo: string, className: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = recentSearches.filter((item) => !(item.rollNo === rollNo && item.className === className));
+    setRecentSearches(updated);
+    try {
+      localStorage.setItem('hp_recent_searches', JSON.stringify(updated));
+    } catch {}
+  };
+
+  // Submit search
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -90,33 +193,85 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
       return;
     }
 
-    // 3. Validation: Captcha empty check
-    if (!cleanCaptcha) {
-      setToast({
-        id: `toast-${Date.now()}`,
-        type: 'warning',
-        title: 'कैप्चा आवश्यक है',
-        message: 'कृपया विकल्प 3 में नीचे दिया गया 4-अंकीय कैप्चा कोड दर्ज करें!',
-      });
-      return;
+    // 3. Validation: Captcha (Strictly executed ONLY when isCaptchaActive is enabled by Admin)
+    if (isCaptchaActive) {
+      if (!cleanCaptcha) {
+        setToast({
+          id: `toast-${Date.now()}`,
+          type: 'warning',
+          title: 'कैप्चा आवश्यक है',
+          message: 'कृपया विकल्प 3 में नीचे दिया गया 4-अंकीय कैप्चा कोड दर्ज करें!',
+        });
+        return;
+      }
+
+      if (cleanCaptcha !== captchaCode) {
+        generateNumericCaptcha();
+        setToast({
+          id: `toast-${Date.now()}`,
+          type: 'error',
+          title: 'गलत कैप्चा (Invalid Captcha)',
+          message: 'दर्ज किया गया कैप्चा कोड सही नहीं है! कृपया नया 4-अंकीय कोड देखकर दोबारा भरें।',
+        });
+        return;
+      }
     }
 
-    // 4. Validation: Captcha match check (Numeric strictly)
-    if (cleanCaptcha !== captchaCode) {
-      generateNumericCaptcha();
-      setToast({
-        id: `toast-${Date.now()}`,
-        type: 'error',
-        title: 'गलत कैप्चा (Invalid Captcha)',
-        message: 'दर्ज किया गया कैप्चा कोड सही नहीं है! कृपया नया 4-अंकीय कोड देखकर दोबारा भरें।',
-      });
-      return;
-    }
+    // Save inputs to localStorage if configured by Admin
+    try {
+      if (allowSaveClass) {
+        localStorage.setItem('hp_saved_class', cleanClass);
+      }
+      if (allowSaveRoll) {
+        localStorage.setItem('hp_saved_roll', cleanRoll);
+      }
+    } catch {}
 
-    // Proceed with verified search with all 3 validated options
+    // Execute verified search
     const success = await onSearch(cleanRoll, cleanClass);
-    if (!success) {
-      generateNumericCaptcha();
+
+    if (success) {
+      // Save to recent searches if allowed
+      if (allowRecentSearches) {
+        const newItem: RecentSearchItem = {
+          rollNo: cleanRoll,
+          className: cleanClass,
+          timestamp: Date.now(),
+        };
+        const updated = [newItem, ...recentSearches.filter((item) => !(item.rollNo === cleanRoll && item.className === cleanClass))].slice(0, 8);
+        setRecentSearches(updated);
+        try {
+          localStorage.setItem('hp_recent_searches', JSON.stringify(updated));
+        } catch {}
+      }
+    } else {
+      if (isCaptchaActive) {
+        generateNumericCaptcha();
+      }
+    }
+  };
+
+  // Quick search when clicking a recent search tag
+  const handleQuickRecentSearch = (item: RecentSearchItem) => {
+    setSelectedClass(item.className);
+    setSearchTerm(item.rollNo);
+    if (allowSaveClass) {
+      localStorage.setItem('hp_saved_class', item.className);
+    }
+    if (allowSaveRoll) {
+      localStorage.setItem('hp_saved_roll', item.rollNo);
+    }
+    onSearch(item.rollNo, item.className);
+  };
+
+  // View cached last result directly
+  const handleOpenCachedResult = () => {
+    if (cachedLastResult && onDirectViewResult) {
+      onDirectViewResult(cachedLastResult);
+    } else if (cachedLastResult?.student) {
+      setSelectedClass(cachedLastResult.student.className);
+      setSearchTerm(cachedLastResult.student.rollNo);
+      onSearch(cachedLastResult.student.rollNo, cachedLastResult.student.className);
     }
   };
 
@@ -244,12 +399,12 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
       {/* Toast Notification */}
       <Toast toast={toast} onClose={() => setToast(null)} duration={4000} />
 
-      {/* Top Banner (Admin Button Completely Removed for Security) */}
-      <header className="bg-[#0f2b48] text-white py-3.5 px-4 sm:px-8 border-b-4 border-[#b8860b] shadow-md">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      {/* Top Banner (Clean, Public Header with School Info) */}
+      <header className="bg-[#0f2b48] text-white py-3.5 px-4 sm:px-8 border-b-4 border-[#b8860b] shadow-md sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             {schoolSettings.logoUrl && (
-              <div className="w-12 h-12 bg-white rounded-full p-1 flex items-center justify-center shadow-inner">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 bg-white rounded-full p-1 flex items-center justify-center shadow-inner shrink-0">
                 <img
                   src={schoolSettings.logoUrl}
                   alt={schoolSettings.schoolName}
@@ -259,7 +414,7 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
             )}
             <div>
               <h1
-                className="font-bold text-base sm:text-xl tracking-tight leading-none uppercase"
+                className="font-bold text-sm sm:text-xl tracking-tight leading-none uppercase"
                 style={{
                   fontSize: schoolSettings.publicPortalSchoolNameSize
                     ? `${schoolSettings.publicPortalSchoolNameSize}px`
@@ -268,7 +423,7 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
               >
                 {schoolSettings.schoolName}
               </h1>
-              <p className="text-xs text-slate-300 font-medium mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-300 font-medium mt-1">
                 {schoolSettings.address}
               </p>
             </div>
@@ -282,11 +437,10 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
       </header>
 
       {/* Main Search Section */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-8 sm:py-12 flex flex-col items-center justify-center">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-6 sm:py-10 flex flex-col items-center justify-center">
         {/* Live Status Notification Banner */}
         {schoolSettings.isResultLive !== false ? (
-          <div className="w-full mb-5 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white p-3.5 sm:p-4 rounded-xl shadow-lg border-2 border-emerald-400/50 flex items-center gap-3.5 relative overflow-hidden transition-all duration-300">
-            {/* Ambient light glow */}
+          <div className="w-full mb-4 bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white p-3.5 sm:p-4 rounded-xl shadow-lg border-2 border-emerald-400/50 flex items-center gap-3.5 relative overflow-hidden transition-all duration-300">
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none animate-pulse"></div>
             
             <div className="relative flex items-center justify-center shrink-0 w-9 h-9 bg-emerald-950/70 rounded-full border border-emerald-400/60 shadow-inner">
@@ -309,7 +463,7 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
             </div>
           </div>
         ) : (
-          <div className="w-full mb-5 bg-amber-50 text-amber-950 p-3.5 rounded-xl border border-amber-300 flex items-center gap-3 shadow-xs">
+          <div className="w-full mb-4 bg-amber-50 text-amber-950 p-3.5 rounded-xl border border-amber-300 flex items-center gap-3 shadow-xs">
             <Clock className="w-5 h-5 text-amber-700 shrink-0" />
             <div className="flex-1 text-xs">
               <span className="font-bold block text-amber-950">
@@ -322,10 +476,37 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
           </div>
         )}
 
+        {/* Cached Last Result Quick-Open Banner (if enabled and cached) */}
+        {allowSaveLastResult && cachedLastResult?.student && (
+          <div className="w-full mb-4 bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between gap-3 text-xs shadow-xs hover:border-blue-300 transition-all">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 font-bold">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <span className="font-bold text-blue-950 block truncate">
+                  पिछला देखा गया अंकपत्र: {cachedLastResult.student.name}
+                </span>
+                <span className="text-[11px] text-blue-700 block truncate">
+                  कक्षा: {cachedLastResult.student.className} • रोल नंबर: {cachedLastResult.student.rollNo}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleOpenCachedResult}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shrink-0 flex items-center gap-1 cursor-pointer transition-all shadow-xs"
+            >
+              <span>अंकपत्र देखें</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Verification Card */}
         <div className="w-full bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
           {/* Card Header */}
-          <div className="bg-gradient-to-r from-[#0f2b48] to-[#1b4975] text-white p-6 sm:p-8 text-center relative">
+          <div className="bg-gradient-to-r from-[#0f2b48] to-[#1b4975] text-white p-6 sm:p-7 text-center relative">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/10 backdrop-blur-xs mb-3 border border-white/20">
               <GraduationCap className="w-8 h-8 text-[#ffd54f]" />
             </div>
@@ -337,7 +518,7 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
             </p>
           </div>
 
-          {/* Secure Search Form with 3 Mandatory Fields: Class, Roll No, Captcha */}
+          {/* Search Form */}
           <div className="p-6 sm:p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Field 1: Class Selection */}
@@ -356,7 +537,7 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
                   <select
                     id="class-select"
                     value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
+                    onChange={(e) => handleClassChange(e.target.value)}
                     className="w-full px-4 py-3 text-base font-bold text-slate-900 bg-white border-2 border-slate-300 rounded-lg focus:border-[#0f2b48] focus:ring-2 focus:ring-[#0f2b48]/20 transition-all outline-none cursor-pointer"
                     autoFocus
                   >
@@ -393,7 +574,7 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
                     id="search-input"
                     type="text"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => handleRollChange(e.target.value)}
                     placeholder="उदा. 17 अथवा ADM-2024-0017"
                     className="w-full pl-10 pr-4 py-3 text-base font-bold text-slate-900 border-2 border-slate-300 rounded-lg focus:border-[#0f2b48] focus:ring-2 focus:ring-[#0f2b48]/20 transition-all outline-none"
                   />
@@ -403,56 +584,102 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
                 </p>
               </div>
 
-              {/* Field 3: Numeric Captcha Code (Numbers only for maximum convenience & security) */}
-              <div>
-                <label
-                  htmlFor="captcha-input"
-                  className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-[#0f2b48]" />
-                    <span>3. सुरक्षा कैप्चा कोड (Security Captcha Code)</span>
-                  </span>
-                  <span className="text-rose-500 font-bold">*केवल 4 अंक</span>
-                </label>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  {/* Styled Numeric Security Captcha Display */}
-                  <div className="flex items-center gap-2 bg-slate-900 text-amber-300 px-4 py-2.5 rounded-lg border-2 border-slate-700 select-none shadow-inner shrink-0">
-                    <Hash className="w-4 h-4 text-slate-500" />
-                    <span className="text-2xl font-black tracking-widest font-mono text-[#ffd54f] drop-shadow-md">
-                      {captchaCode}
+              {/* Recent Searches Tags (if enabled in Admin Panel) */}
+              {allowRecentSearches && recentSearches.length > 0 && (
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
+                      <History className="w-3.5 h-3.5 text-[#0f2b48]" />
+                      <span>हालिया सर्च (Recent Searches):</span>
                     </span>
                     <button
                       type="button"
-                      onClick={generateNumericCaptcha}
-                      className="ml-2 p-1.5 hover:bg-slate-800 text-slate-300 hover:text-white rounded transition-colors"
-                      title="नया कैप्चा कोड बनाएं (Refresh Captcha)"
-                      aria-label="Refresh Captcha"
+                      onClick={() => {
+                        setRecentSearches([]);
+                        try {
+                          localStorage.removeItem('hp_recent_searches');
+                        } catch {}
+                      }}
+                      className="text-[10px] text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                     >
-                      <RotateCw className="w-4 h-4" />
+                      इतिहास साफ करें
                     </button>
                   </div>
-
-                  {/* Numeric Captcha Input */}
-                  <div className="flex-1 relative">
-                    <input
-                      id="captcha-input"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={4}
-                      value={captchaInput}
-                      onChange={(e) => setCaptchaInput(e.target.value.replace(/[^0-9]/g, ''))}
-                      placeholder="सामने दिख रहे 4 अंक दर्ज करें"
-                      className="w-full px-4 py-3 text-base font-bold tracking-widest text-slate-900 border-2 border-slate-300 rounded-lg focus:border-[#0f2b48] focus:ring-2 focus:ring-[#0f2b48]/20 transition-all outline-none"
-                    />
+                  <div className="flex flex-wrap gap-1.5">
+                    {recentSearches.map((item, idx) => (
+                      <div
+                        key={`${item.className}-${item.rollNo}-${idx}`}
+                        onClick={() => handleQuickRecentSearch(item)}
+                        className="group inline-flex items-center gap-1.5 px-2.5 py-1 bg-white hover:bg-[#0f2b48] text-slate-700 hover:text-white border border-slate-300 hover:border-[#0f2b48] rounded-md text-xs font-bold cursor-pointer transition-all shadow-2xs"
+                        title={`कक्षा ${item.className}, रोल ${item.rollNo} का तुरंत रिजल्ट देखें`}
+                      >
+                        <span>कक्षा {item.className} • रोल {item.rollNo}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleRemoveRecentSearch(item.rollNo, item.className, e)}
+                          className="text-slate-400 group-hover:text-slate-300 hover:text-rose-400 p-0.5 rounded transition-colors"
+                          title="हटाएं"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1.5">
-                  सुरक्षा के लिए केवल संख्यात्मक (Numbers only) कोड दर्ज करें।
-                </p>
-              </div>
+              )}
+
+              {/* Field 3: Security Captcha Code (ONLY rendered if enabled by Admin) */}
+              {isCaptchaActive ? (
+                <div>
+                  <label
+                    htmlFor="captcha-input"
+                    className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-[#0f2b48]" />
+                      <span>3. सुरक्षा कैप्चा कोड (Security Captcha Code)</span>
+                    </span>
+                    <span className="text-rose-500 font-bold">*केवल 4 अंक</span>
+                  </label>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Styled Numeric Security Captcha Display */}
+                    <div className="flex items-center gap-2 bg-slate-900 text-amber-300 px-4 py-2.5 rounded-lg border-2 border-slate-700 select-none shadow-inner shrink-0">
+                      <Hash className="w-4 h-4 text-slate-500" />
+                      <span className="text-2xl font-black tracking-widest font-mono text-[#ffd54f] drop-shadow-md">
+                        {captchaCode}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={generateNumericCaptcha}
+                        className="ml-2 p-1.5 hover:bg-slate-800 text-slate-300 hover:text-white rounded transition-colors cursor-pointer"
+                        title="नया कैप्चा कोड बनाएं (Refresh Captcha)"
+                        aria-label="Refresh Captcha"
+                      >
+                        <RotateCw className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Numeric Captcha Input */}
+                    <div className="flex-1 relative">
+                      <input
+                        id="captcha-input"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={4}
+                        value={captchaInput}
+                        onChange={(e) => setCaptchaInput(e.target.value.replace(/[^0-9]/g, ''))}
+                        placeholder="सामने दिख रहे 4 अंक दर्ज करें"
+                        className="w-full px-4 py-3 text-base font-bold tracking-widest text-slate-900 border-2 border-slate-300 rounded-lg focus:border-[#0f2b48] focus:ring-2 focus:ring-[#0f2b48]/20 transition-all outline-none"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1.5">
+                    सुरक्षा के लिए केवल संख्यात्मक (Numbers only) कोड दर्ज करें।
+                  </p>
+                </div>
+              ) : null}
 
               {/* Submit Button */}
               <button
@@ -487,7 +714,9 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span className="font-semibold">कैप्चा द्वारा सुरक्षित पोर्टल</span>
+              <span className="font-semibold">
+                {isCaptchaActive ? 'कैप्चा द्वारा सुरक्षित पोर्टल' : 'सुरक्षित ऑनलाइन पोर्टल'}
+              </span>
             </div>
           </div>
         </div>

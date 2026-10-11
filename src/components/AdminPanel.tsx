@@ -82,6 +82,8 @@ import {
   Layers,
   Download,
   Shield,
+  ShieldCheck,
+  Database,
   AlertCircle,
   Key,
   Shuffle,
@@ -1204,6 +1206,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       toastMsg = value
         ? '🪪 अंकपत्र पर आधार कार्ड नंबर दिखना सक्रिय हुआ।'
         : '🪪 अंकपत्र पर आधार कार्ड नंबर छुपाया गया।';
+    } else if (key === 'enableCaptcha') {
+      toastMsg = value
+        ? '🛡️ कैप्चा सुरक्षा कोड चालू! अब छात्रों को रिजल्ट खोजने के लिए 4-अंकीय कैप्चा कोड भरना होगा।'
+        : '⚡ कैप्चा सुरक्षा कोड बंद किया गया! अब बिना किसी कैप्चा के सीधे 1-क्लिक में सुपर-फास्ट रिजल्ट खुलेगा।';
+    } else if (key === 'saveSelectedClass') {
+      toastMsg = value
+        ? '📌 कक्षा सहेजने का विकल्प चालू हुआ! होमपेज पर चुनी गई कक्षा लोकल स्टोरेज में सुरक्षित रहेगी।'
+        : '📌 कक्षा सहेजने का विकल्प बंद किया गया!';
+    } else if (key === 'saveSearchRoll') {
+      toastMsg = value
+        ? '🔢 रोल नंबर सहेजने का विकल्प चालू हुआ! होमपेज पर रोल नंबर लोकल स्टोरेज में सुरक्षित रहेगा।'
+        : '🔢 रोल नंबर सहेजने का विकल्प बंद किया गया!';
+    } else if (key === 'saveRecentSearches') {
+      toastMsg = value
+        ? '🕒 हालिया सर्च हिस्ट्री विकल्प चालू हुआ! खोजे गए छात्र होमपेज पर दिखेंगे।'
+        : '🕒 हालिया सर्च हिस्ट्री विकल्प बंद किया गया!';
+    } else if (key === 'saveLastResult') {
+      toastMsg = value
+        ? '📄 पिछला रिजल्ट ऑफलाइन सहेजना चालू हुआ!'
+        : '📄 पिछला रिजल्ट ऑफलाइन सहेजना बंद किया गया!';
+    } else if (key === 'autoFillOnLoad') {
+      toastMsg = value
+        ? '⚡ पेज लोड पर स्वतः भराव (Auto-Fill) चालू हुआ!'
+        : '⚡ पेज लोड पर स्वतः भराव (Auto-Fill) बंद किया गया!';
     }
 
     setToggleSaveToast(toastMsg);
@@ -5209,6 +5235,219 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             यह संदेश पब्लिक पोर्टल पर हरे LIVE बैज के साथ प्रदर्शित होता है।
                           </p>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Toggle 3: Homepage Security Captcha Toggle */}
+                    <div className={`p-3.5 rounded-lg border-2 transition-all duration-300 ${
+                      isSettingEnabled(settingsForm.enableCaptcha, true)
+                        ? 'bg-blue-50/90 border-blue-400 shadow-md ring-2 ring-blue-400/40'
+                        : 'bg-emerald-50/90 border-emerald-400 shadow-md ring-2 ring-emerald-400/40'
+                    }`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <div className={`p-2 rounded-lg shrink-0 transition-all ${
+                            isSettingEnabled(settingsForm.enableCaptcha, true)
+                              ? 'bg-[#0f2b48] text-white shadow-sm ring-2 ring-blue-300'
+                              : 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-300'
+                          }`}>
+                            <ShieldCheck className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-black text-slate-900 uppercase">
+                                होमपेज सुरक्षा कैप्चा कोड (Homepage Captcha Protection)
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center ${
+                                isSettingEnabled(settingsForm.enableCaptcha, true)
+                                  ? 'bg-blue-100 text-blue-900 border border-blue-300'
+                                  : 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-black'
+                              }`}>
+                                {isSettingEnabled(settingsForm.enableCaptcha, true)
+                                  ? '🛡️ कैप्चा चालू (4-अंकीय कोड अनिवार्य)'
+                                  : '⚡ कैप्चा बंद (1-क्लिक फास्ट सर्च)'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                              {isSettingEnabled(settingsForm.enableCaptcha, true)
+                                ? 'चालू है: छात्रों/अभिभावकों को रिजल्ट देखने के लिए 4-अंकीय सुरक्षा कैप्चा कोड भरना होगा।'
+                                : 'बंद है: कैप्चा कोड पूरी तरह हटा दिया गया है। छात्र केवल कक्षा व रोल नंबर डालकर 1-क्लिक में तुरंत रिजल्ट देख सकते हैं।'}
+                            </p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                          <input
+                            type="checkbox"
+                            checked={isSettingEnabled(settingsForm.enableCaptcha, true)}
+                            onChange={(e) => handleToggleSetting('enableCaptcha', e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0f2b48]"></div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Granular Section: Homepage LocalStorage Persistence & Data Controls */}
+                    <div className="p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/80 shadow-xs space-y-3">
+                      <div className="flex items-start justify-between gap-3 border-b border-indigo-200/80 pb-2.5">
+                        <div className="flex items-start gap-2.5">
+                          <div className="p-2 rounded-lg shrink-0 bg-indigo-700 text-white shadow-xs">
+                            <Database className="w-5 h-5 text-amber-300" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-black text-indigo-950 uppercase">
+                                होमपेज लोकल स्टोरेज सेटिंग्स (Homepage Local Storage Rules)
+                              </span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-900 border border-indigo-300">
+                                एडमिन नियंत्रण • क्या सेव करना है क्या नहीं
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-indigo-900/90 mt-1 leading-snug">
+                              यहाँ से आप तय कर सकते हैं कि पब्लिक पोर्टल (होमपेज) पर छात्रों/अभिभावकों के डिवाइस में कौन-सी जानकारी लोकल स्टोरेज में सुरक्षित रहेगी और कौन-सी नहीं।
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 5 Granular Switches */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        {/* 1. Save Selected Class */}
+                        <label className="flex items-start justify-between p-2.5 bg-white border border-indigo-200 rounded-lg hover:border-indigo-300 transition-all cursor-pointer shadow-2xs">
+                          <div className="pr-2">
+                            <span className="text-xs font-bold text-slate-900 block">
+                              1. चुनी गई कक्षा सहेजें (Save Class)
+                            </span>
+                            <span className="text-[10px] text-slate-500 block mt-0.5">
+                              होमपेज पर छात्र द्वारा चुनी गई कक्षा डिवाइस में सेव रहे।
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isSettingEnabled(settingsForm.saveSelectedClass, true)}
+                            onChange={(e) => handleToggleSetting('saveSelectedClass', e.target.checked)}
+                            className="w-4 h-4 accent-indigo-700 rounded mt-0.5 cursor-pointer shrink-0"
+                          />
+                        </label>
+
+                        {/* 2. Save Roll Number */}
+                        <label className="flex items-start justify-between p-2.5 bg-white border border-indigo-200 rounded-lg hover:border-indigo-300 transition-all cursor-pointer shadow-2xs">
+                          <div className="pr-2">
+                            <span className="text-xs font-bold text-slate-900 block">
+                              2. रोल नंबर सहेजें (Save Roll No.)
+                            </span>
+                            <span className="text-[10px] text-slate-500 block mt-0.5">
+                              दर्ज किया गया रोल नंबर या प्रवेश संख्या सहेजी रहे।
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isSettingEnabled(settingsForm.saveSearchRoll, true)}
+                            onChange={(e) => handleToggleSetting('saveSearchRoll', e.target.checked)}
+                            className="w-4 h-4 accent-indigo-700 rounded mt-0.5 cursor-pointer shrink-0"
+                          />
+                        </label>
+
+                        {/* 3. Save & Show Recent Searches */}
+                        <label className="flex items-start justify-between p-2.5 bg-white border border-indigo-200 rounded-lg hover:border-indigo-300 transition-all cursor-pointer shadow-2xs">
+                          <div className="pr-2">
+                            <span className="text-xs font-bold text-slate-900 block">
+                              3. सर्च हिस्ट्री टैग्स (Recent Searches)
+                            </span>
+                            <span className="text-[10px] text-slate-500 block mt-0.5">
+                              हालिया खोजे गए छात्रों की हिस्ट्री होमपेज पर दिखे व सहेजी जाए।
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isSettingEnabled(settingsForm.saveRecentSearches, true)}
+                            onChange={(e) => handleToggleSetting('saveRecentSearches', e.target.checked)}
+                            className="w-4 h-4 accent-indigo-700 rounded mt-0.5 cursor-pointer shrink-0"
+                          />
+                        </label>
+
+                        {/* 4. Save Last Result Offline */}
+                        <label className="flex items-start justify-between p-2.5 bg-white border border-indigo-200 rounded-lg hover:border-indigo-300 transition-all cursor-pointer shadow-2xs">
+                          <div className="pr-2">
+                            <span className="text-xs font-bold text-slate-900 block">
+                              4. पिछला रिजल्ट ऑफलाइन (Last Marksheet)
+                            </span>
+                            <span className="text-[10px] text-slate-500 block mt-0.5">
+                              अंतिम देखा गया अंकपत्र डिवाइस में ऑफलाइन कैश रहे।
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isSettingEnabled(settingsForm.saveLastResult, true)}
+                            onChange={(e) => handleToggleSetting('saveLastResult', e.target.checked)}
+                            className="w-4 h-4 accent-indigo-700 rounded mt-0.5 cursor-pointer shrink-0"
+                          />
+                        </label>
+
+                        {/* 5. Auto-Fill on Page Load */}
+                        <label className="flex items-start justify-between p-2.5 bg-white border border-indigo-200 rounded-lg hover:border-indigo-300 transition-all cursor-pointer shadow-2xs sm:col-span-2">
+                          <div className="pr-2">
+                            <span className="text-xs font-bold text-slate-900 block">
+                              5. पेज रीलोड पर स्वतः भरें (Auto-Fill on Page Load)
+                            </span>
+                            <span className="text-[10px] text-slate-500 block mt-0.5">
+                              पेज रिफ्रेश करने पर सहेजा गया विवरण अपने-आप इनपुट फील्ड में भर जाए।
+                            </span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isSettingEnabled(settingsForm.autoFillOnLoad, true)}
+                            onChange={(e) => handleToggleSetting('autoFillOnLoad', e.target.checked)}
+                            className="w-4 h-4 accent-indigo-700 rounded mt-0.5 cursor-pointer shrink-0"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Quick Presets & Clear Local Storage Button */}
+                      <div className="pt-2 border-t border-indigo-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              (['saveSelectedClass', 'saveSearchRoll', 'saveRecentSearches', 'saveLastResult', 'autoFillOnLoad'] as (keyof SchoolSettings)[]).forEach(k => {
+                                handleToggleSetting(k, true);
+                              });
+                            }}
+                            className="px-2.5 py-1 bg-indigo-700 hover:bg-indigo-800 text-white rounded font-bold text-[11px] cursor-pointer transition-all shadow-2xs"
+                          >
+                            ✓ सब कुछ चालू रखें (Enable All)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              (['saveSelectedClass', 'saveSearchRoll', 'saveRecentSearches', 'saveLastResult', 'autoFillOnLoad'] as (keyof SchoolSettings)[]).forEach(k => {
+                                handleToggleSetting(k, false);
+                              });
+                            }}
+                            className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-indigo-300 rounded font-bold text-[11px] cursor-pointer transition-all"
+                          >
+                            ✕ कुछ भी सेव न करें (Disable All)
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try {
+                              localStorage.removeItem('hp_saved_class');
+                              localStorage.removeItem('hp_saved_roll');
+                              localStorage.removeItem('hp_recent_searches');
+                              localStorage.removeItem('hp_cached_last_result');
+                            } catch {}
+                            setToggleSaveToast('🗑️ इस ब्राउज़र का होमपेज लोकल स्टोरेज डेटा साफ कर दिया गया है!');
+                            setTimeout(() => setToggleSaveToast(null), 3500);
+                          }}
+                          className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-all"
+                          title="इस कंप्यूटर / ब्राउज़र का होमपेज डेटा हटाएं"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>लोकल स्टोरेज डेटा साफ करें</span>
+                        </button>
                       </div>
                     </div>
                   </div>

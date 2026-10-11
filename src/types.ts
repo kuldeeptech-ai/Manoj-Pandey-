@@ -103,6 +103,13 @@ export interface SchoolSettings {
   showPrintButton?: boolean;
   showImageButton?: boolean;
   allowPublicSearch?: boolean;
+  enableCaptcha?: boolean; // Captcha Toggle: true = Captcha active, false = Captcha disabled / removed
+  enableAdminLoginCaptcha?: boolean;
+  saveSelectedClass?: boolean; // Admin setting: Save selected class in localStorage
+  saveSearchRoll?: boolean; // Admin setting: Save roll / admission number in localStorage
+  saveRecentSearches?: boolean; // Admin setting: Save history of recent searches
+  saveLastResult?: boolean; // Admin setting: Cache last viewed student result marksheet for offline view
+  autoFillOnLoad?: boolean; // Admin setting: Auto-fill inputs on reload
   isMaintenanceMode?: boolean;
   isResultLive?: boolean;
   maintenanceNotice?: string;
@@ -110,6 +117,21 @@ export interface SchoolSettings {
   liveBannerText?: string;
   activeClasses?: string[];
   toggles?: Record<string, boolean>;
+}
+
+export interface HomepageStorageConfig {
+  saveSelectedClass: boolean; // Save selected class in localStorage
+  saveSearchRoll: boolean; // Save roll / admission number in localStorage
+  saveRecentSearches: boolean; // Save history of recent searches
+  saveLastResult: boolean; // Cache last viewed student result marksheet for offline view
+  autoFillOnLoad: boolean; // Auto-fill inputs on reload
+}
+
+export interface RecentSearchItem {
+  rollNo: string;
+  className: string;
+  studentName?: string;
+  timestamp: number;
 }
 
 export interface GradeRule {
