@@ -535,7 +535,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                         required
                         value={emailInput}
                         onChange={(e) => setEmailInput(e.target.value)}
-                        placeholder={`${AUTHORIZED_ADMIN_EMAIL} या ${adminUserId}`}
+                        placeholder="व्यवस्थापक ईमेल या यूजर आईडी दर्ज करें"
                         className="w-full pl-9 pr-20 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0f2b48]"
                       />
                       <span className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none">
@@ -624,7 +624,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                     सहायक / शिक्षक लॉगिन:
                   </p>
                   <p className="text-[11px] text-emerald-800 leading-snug">
-                    विद्यालय व्यवस्थापक द्वारा आपको <strong>विद्यार्थी जोड़ने</strong> एवं <strong>अंक चढ़ाने</strong> का कार्य सौंपा गया है। अपना यूजरनेम व पासवर्ड दर्ज करें।
+                    विद्यालय व्यवस्थापक द्वारा जारी किया गया अपना यूजरनेम व पासवर्ड दर्ज करें।
                   </p>
                 </div>
 
@@ -641,13 +641,10 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                       required
                       value={staffUsernameInput}
                       onChange={(e) => setStaffUsernameInput(e.target.value)}
-                      placeholder="जैसे staff1 या teacher1"
+                      placeholder="सहायक यूजरनेम दर्ज करें"
                       className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600"
                     />
                   </div>
-                  <span className="text-[10px] text-slate-500 mt-1 block">
-                    डिफ़ॉल्ट यूजरनेम: <code className="bg-slate-100 px-1 py-0.5 rounded font-bold">staff1</code>
-                  </span>
                 </div>
 
                 <div>
@@ -674,9 +671,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                       {showStaffPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <span className="text-[10px] text-slate-500 mt-1 block">
-                    डिफ़ॉल्ट पासवर्ड: <code className="bg-slate-100 px-1 py-0.5 rounded font-bold">teacher123</code>
-                  </span>
                 </div>
 
                 <div className="pt-2 flex items-center gap-3">
