@@ -13,7 +13,7 @@ import {
   BookOpen,
   Wrench,
   Clock,
-  History,
+  History as HistoryIcon,
   X,
 } from 'lucide-react';
 import { Toast, ToastMessage } from './Toast';
@@ -589,7 +589,7 @@ export const PublicSearch: React.FC<PublicSearchProps> = ({
                 <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
-                      <History className="w-3.5 h-3.5 text-[#0f2b48]" />
+                      <HistoryIcon className="w-3.5 h-3.5 text-[#0f2b48]" />
                       <span>हालिया सर्च (Recent Searches):</span>
                     </span>
                     <button

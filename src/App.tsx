@@ -6,11 +6,16 @@ import {
   GradeRule,
   StudentResultData,
   ClearedMarksBackup,
+  StaffUser,
+  AuthAdminUser,
 } from './types';
 import {
   DEFAULT_SCHOOL_SETTINGS,
   DEFAULT_SUBJECTS,
   DEFAULT_STUDENTS,
+  DEFAULT_STAFF_USERS,
+  SUPER_ADMIN_PERMISSIONS,
+  ORIGINAL_SCHOOL_LOGO,
 } from './data/defaultData';
 import {
   DEFAULT_GRADE_RULES,
@@ -46,6 +51,9 @@ import {
   emptyClearedMarksHistoryInFirebase,
   subscribeToClearedMarksHistory,
   updateSchoolToggleInFirebase,
+  subscribeToStaffUsers,
+  saveStaffUserToFirebase,
+  deleteStaffUserFromFirebase,
 } from './utils/firebase';
 
 type ViewMode = 'public_search' | 'result_view' | 'admin';
@@ -59,6 +67,22 @@ if (typeof window !== 'undefined') {
     localStorage.removeItem('hd_pandey_subjects');
     localStorage.removeItem('hd_pandey_settings');
     localStorage.removeItem('hd_pandey_grades');
+
+    // Clean up any stale cache where the logo was an SVG or old school name with J.H.S.
+    ['school_settings_cache_v2', 'school_settings_cache'].forEach((key) => {
+      const stale = localStorage.getItem(key);
+      if (stale) {
+        try {
+          const p = JSON.parse(stale);
+          if (p.logoUrl && p.logoUrl.startsWith('data:image/svg+xml')) {
+            localStorage.removeItem(key);
+          }
+          if (p.schoolName && p.schoolName.includes('J.H.S.')) {
+            localStorage.removeItem(key);
+          }
+        } catch {}
+      }
+    });
   } catch {}
 }
 
@@ -94,6 +118,28 @@ export default function App() {
   // Strict Admin authentication state: NO auto-login. Every access requires ID and Password.
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
 
+  const [currentAdminUser, setCurrentAdminUser] = useState<AuthAdminUser | null>(() => {
+    try {
+      const saved = localStorage.getItem('school_current_auth_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.role) return parsed;
+      }
+    } catch {}
+    return null;
+  });
+
+  const [staffUsers, setStaffUsers] = useState<StaffUser[]>(() => {
+    try {
+      const saved = localStorage.getItem('staff_users_cache');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [...DEFAULT_STAFF_USERS];
+  });
+
   const [showAdminLoginModal, setShowAdminLoginModal] = useState<boolean>(() => {
     return getInitialViewMode() === 'admin';
   });
@@ -110,16 +156,30 @@ export default function App() {
     // 1. Immediately check localStorage cache so on page load (frame 0),
     // original school name ("H.D.P. PUBLIC SCHOOL") and logo appear instantly with zero delay!
     try {
-      const cached = localStorage.getItem('school_settings_cache');
+      const cached =
+        localStorage.getItem('school_settings_cache_v3') ||
+        localStorage.getItem('school_settings_cache_v2') ||
+        localStorage.getItem('school_settings_cache');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed && typeof parsed === 'object' && parsed.schoolName) {
+        if (parsed && typeof parsed === 'object') {
+          // If cached contains outdated SVG logo or wrong name, sanitize to official original
+          if (parsed.logoUrl && parsed.logoUrl.startsWith('data:image/svg+xml')) {
+            parsed.logoUrl = ORIGINAL_SCHOOL_LOGO;
+          }
+          if (parsed.schoolName && (parsed.schoolName.includes('J.H.S.') || !parsed.schoolName)) {
+            parsed.schoolName = 'H.D.P. PUBLIC SCHOOL';
+          }
           return normalizeSchoolSettings(parsed);
         }
       }
     } catch {}
 
-    const initial = { ...DEFAULT_SCHOOL_SETTINGS };
+    const initial = {
+      ...DEFAULT_SCHOOL_SETTINGS,
+      schoolName: 'H.D.P. PUBLIC SCHOOL',
+      logoUrl: ORIGINAL_SCHOOL_LOGO,
+    };
     if (!initial.classTeachers || !Array.isArray(initial.classTeachers) || initial.classTeachers.length === 0) {
       initial.classTeachers = DEFAULT_SCHOOL_SETTINGS.classTeachers;
     }
@@ -197,6 +257,8 @@ export default function App() {
       document.title = `${schoolSettings.schoolName} — Official Portal`;
     }
     try {
+      localStorage.setItem('school_settings_cache_v3', JSON.stringify(schoolSettings));
+      localStorage.setItem('school_settings_cache_v2', JSON.stringify(schoolSettings));
       localStorage.setItem('school_settings_cache', JSON.stringify(schoolSettings));
     } catch {}
   }, [schoolSettings]);
@@ -240,6 +302,12 @@ export default function App() {
           if (Array.isArray(data.clearedMarksHistory)) {
             setClearedMarksHistory(data.clearedMarksHistory);
           }
+          if (Array.isArray(data.staffUsers) && data.staffUsers.length > 0) {
+            setStaffUsers(data.staffUsers);
+            try {
+              localStorage.setItem('staff_users_cache', JSON.stringify(data.staffUsers));
+            } catch {}
+          }
           backendSuccess = true;
           setOnlineSyncStatus((prev) => ({
             ...prev,
@@ -271,6 +339,12 @@ export default function App() {
           }
           if (fbData.gradeRules && fbData.gradeRules.length > 0) {
             setGradeRules(fbData.gradeRules);
+          }
+          if (Array.isArray(fbData.staffUsers) && fbData.staffUsers.length > 0) {
+            setStaffUsers(fbData.staffUsers);
+            try {
+              localStorage.setItem('staff_users_cache', JSON.stringify(fbData.staffUsers));
+            } catch {}
           }
           setOnlineSyncStatus((prev) => ({
             ...prev,
@@ -345,11 +419,21 @@ export default function App() {
       setClearedMarksHistory(newHistory);
     });
 
+    const unsubStaff = subscribeToStaffUsers((newStaff) => {
+      if (Array.isArray(newStaff) && newStaff.length > 0) {
+        setStaffUsers(newStaff);
+        try {
+          localStorage.setItem('staff_users_cache', JSON.stringify(newStaff));
+        } catch {}
+      }
+    });
+
     return () => {
       unsubToggles();
       unsubAll();
       unsubDeleted();
       unsubClearedMarks();
+      if (unsubStaff) unsubStaff();
     };
   }, []);
 
@@ -685,9 +769,20 @@ export default function App() {
     setShowAdminLoginModal(true);
   };
 
-  const handleAdminLoginSuccess = () => {
+  const handleAdminLoginSuccess = (authUser?: AuthAdminUser) => {
     setIsAdminAuthenticated(true);
     setShowAdminLoginModal(false);
+    if (authUser) {
+      setCurrentAdminUser(authUser);
+    } else {
+      setCurrentAdminUser({
+        name: 'मुख्य व्यवस्थापक (Super Admin)',
+        username: schoolSettings.adminUserId || 'Kld7522',
+        role: 'admin',
+        email: schoolSettings.adminEmail || 'kuldeeprai75220@gmail.com',
+        permissions: SUPER_ADMIN_PERMISSIONS,
+      });
+    }
     setViewMode('admin');
     try {
       window.history.pushState({}, '', '/?admin');
@@ -698,6 +793,11 @@ export default function App() {
 
   const handleAdminLogout = () => {
     setIsAdminAuthenticated(false);
+    setCurrentAdminUser(null);
+    try {
+      localStorage.removeItem('school_current_auth_user');
+      localStorage.removeItem('school_admin_logged_in');
+    } catch {}
     sessionStorage.removeItem('school_admin_auth');
     sessionStorage.removeItem('school_admin_user');
     setViewMode('public_search');
@@ -708,6 +808,49 @@ export default function App() {
       window.location.hash = '';
     }
   };
+
+  const handleSaveStaffUser = useCallback(async (staffUser: StaffUser) => {
+    setStaffUsers((prev) => {
+      const idx = prev.findIndex((s) => s.id === staffUser.id || s.username === staffUser.username);
+      let updated: StaffUser[];
+      if (idx >= 0) {
+        updated = [...prev];
+        updated[idx] = staffUser;
+      } else {
+        updated = [...prev, staffUser];
+      }
+      try {
+        localStorage.setItem('staff_users_cache', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    try {
+      await fetch('/api/admin/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(staffUser),
+      });
+    } catch {}
+
+    saveStaffUserToFirebase(staffUser).catch(() => {});
+  }, []);
+
+  const handleDeleteStaffUser = useCallback(async (staffId: string) => {
+    setStaffUsers((prev) => {
+      const updated = prev.filter((s) => s.id !== staffId);
+      try {
+        localStorage.setItem('staff_users_cache', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    try {
+      await fetch(`/api/admin/staff/${staffId}`, { method: 'DELETE' });
+    } catch {}
+
+    deleteStaffUserFromFirebase(staffId).catch(() => {});
+  }, []);
 
   // Jump from ResultViewer to Admin Marks
   const handleOpenAdminMarks = (studentId: string) => {
@@ -1187,6 +1330,10 @@ export default function App() {
             onRestoreClearedMarksBackup={handleRestoreClearedMarksBackup}
             onDeleteClearedMarksBackup={handleDeleteClearedMarksBackup}
             onEmptyClearedMarksHistory={handleEmptyClearedMarksHistory}
+            currentUser={currentAdminUser}
+            staffUsers={staffUsers}
+            onSaveStaffUser={handleSaveStaffUser}
+            onDeleteStaffUser={handleDeleteStaffUser}
           />
         ) : (
           <div className="w-full min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
@@ -1199,6 +1346,7 @@ export default function App() {
               adminUserId={schoolSettings.adminUserId || (typeof localStorage !== 'undefined' ? localStorage.getItem('school_admin_user') || '' : '')}
               adminPassword={schoolSettings.adminPassword || (typeof localStorage !== 'undefined' ? localStorage.getItem('school_admin_pass') || '' : '')}
               adminEmail={schoolSettings.adminEmail || 'kuldeeprai75220@gmail.com'}
+              staffUsers={staffUsers}
             />
           </div>
         )
@@ -1215,6 +1363,7 @@ export default function App() {
           adminUserId={schoolSettings.adminUserId || (typeof localStorage !== 'undefined' ? localStorage.getItem('school_admin_user') || '' : '')}
           adminPassword={schoolSettings.adminPassword || (typeof localStorage !== 'undefined' ? localStorage.getItem('school_admin_pass') || '' : '')}
           adminEmail={schoolSettings.adminEmail || 'kuldeeprai75220@gmail.com'}
+          staffUsers={staffUsers}
         />
       )}
 

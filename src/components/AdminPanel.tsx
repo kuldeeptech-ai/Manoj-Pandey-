@@ -6,6 +6,8 @@ import {
   GradeRule,
   StudentResultData,
   ClearedMarksBackup,
+  StaffUser,
+  AuthAdminUser,
 } from '../types';
 import {
   calculateStudentResult,
@@ -56,6 +58,7 @@ import {
 import { ClassTeachersManager } from './ClassTeachersManager';
 import { BulkImportModal } from './BulkImportModal';
 import { BulkMarksModal } from './BulkMarksModal';
+import { StaffManager } from './StaffManager';
 import {
   Users,
   UserCheck,
@@ -76,13 +79,14 @@ import {
   Sparkles,
   LogOut,
   Upload,
-  Image,
+  Image as ImageIcon,
   RefreshCw,
   FileText,
   Layers,
   Download,
   Shield,
   ShieldCheck,
+  Lock,
   Database,
   AlertCircle,
   Key,
@@ -133,9 +137,13 @@ interface AdminPanelProps {
   onRestoreClearedMarksBackup?: (backupId: string) => boolean;
   onDeleteClearedMarksBackup?: (backupId: string) => void;
   onEmptyClearedMarksHistory?: () => void;
+  currentUser?: AuthAdminUser | null;
+  staffUsers?: StaffUser[];
+  onSaveStaffUser?: (staff: StaffUser) => void;
+  onDeleteStaffUser?: (staffId: string) => void;
 }
 
-type TabType = 'dashboard' | 'students' | 'marks' | 'subjects' | 'school' | 'grades' | 'sheets' | 'teachers';
+type TabType = 'dashboard' | 'students' | 'marks' | 'subjects' | 'school' | 'grades' | 'sheets' | 'teachers' | 'staff';
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
   students,
@@ -162,6 +170,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   onRestoreClearedMarksBackup,
   onDeleteClearedMarksBackup,
   onEmptyClearedMarksHistory,
+  currentUser,
+  staffUsers = [],
+  onSaveStaffUser,
+  onDeleteStaffUser,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(initialSelectedStudentId ? 'marks' : 'dashboard');
   const [selectedStudentIdForMarks, setSelectedStudentIdForMarks] = useState<string>(
@@ -1003,7 +1015,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Synchronize school settings when parent updates
   useEffect(() => {
-    if (activeTab !== 'settings') {
+    if (activeTab !== 'school') {
       setSettingsForm((prev) => {
         if (JSON.stringify(prev) === JSON.stringify(schoolSettings)) return prev;
         return { ...schoolSettings };
@@ -1573,9 +1585,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span>ऑनलाइन डेटाबेस सक्रिय</span>
           </span>
-          <span className="hidden lg:inline-block text-xs font-semibold px-2.5 py-1 rounded bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 shrink-0">
-            ● {schoolSettings.adminUserId || 'Admin'}
-          </span>
+          {currentUser?.role === 'staff' ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 shrink-0">
+              <UserCheck className="w-3.5 h-3.5 text-emerald-300" />
+              <span>सहायक: {currentUser.name}</span>
+            </span>
+          ) : (
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-amber-500/25 text-amber-200 border border-amber-400/40 shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+              <span>👑 मुख्य व्यवस्थापक</span>
+            </span>
+          )}
           {onLogout && (
             <button
               onClick={onLogout}
@@ -1615,6 +1635,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <span className="truncate">{manualSyncMsg}</span>
           </div>
           <button onClick={() => setManualSyncMsg(null)} className="text-white/80 hover:text-white cursor-pointer ml-2 shrink-0">✕</button>
+        </div>
+      )}
+
+      {/* Dedicated Helper Staff Identity & Assigned Permissions Banner */}
+      {currentUser?.role === 'staff' && (
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white px-3 sm:px-6 py-2.5 text-xs flex flex-wrap items-center justify-between gap-2 shadow border-b border-indigo-700/60">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/25 text-emerald-200 font-bold border border-emerald-400/40 text-xs">
+              <UserCheck className="w-3.5 h-3.5 text-emerald-300" />
+              <span>सहायक ऑपरेटर: {currentUser.name} (@{currentUser.username})</span>
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-200">
+              <span className="text-amber-300 font-bold">अनुमत कार्य:</span>
+              <span className={`px-2 py-0.5 rounded ${currentUser.permissions?.canAddStudents !== false ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 line-through'}`}>
+                विद्यार्थी जोड़ना {currentUser.permissions?.canAddStudents !== false ? '✓' : '✗'}
+              </span>
+              <span className={`px-2 py-0.5 rounded ${currentUser.permissions?.canEnterMarks !== false ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 line-through'}`}>
+                अंक चढ़ाना {currentUser.permissions?.canEnterMarks !== false ? '✓' : '✗'}
+              </span>
+              <span className={`px-2 py-0.5 rounded ${currentUser.permissions?.canBulkMarks !== false ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 line-through'}`}>
+                थोक अंक {currentUser.permissions?.canBulkMarks !== false ? '✓' : '✗'}
+              </span>
+              <span className={`px-2 py-0.5 rounded ${currentUser.permissions?.canEditStudents !== false ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 line-through'}`}>
+                विवरण संपादन {currentUser.permissions?.canEditStudents !== false ? '✓' : '✗'}
+              </span>
+            </div>
+          </div>
+          <span className="text-[11px] text-amber-300 font-semibold flex items-center gap-1">
+            <Lock className="w-3 h-3" />
+            <span>स्कूल का नाम/लोगो व व्यवस्थापक सेटिंग्स केवल मुख्य व्यवस्थापक ही बदल सकते हैं</span>
+          </span>
         </div>
       )}
 
@@ -1715,6 +1766,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
           <span>Google Sheets Sync & Export</span>
         </button>
+
+        {/* Dedicated Staff & Permission Management Tab (Super Admin Only) */}
+        {currentUser?.role !== 'staff' && (
+          <button
+            onClick={() => setActiveTab('staff')}
+            className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
+              activeTab === 'staff'
+                ? 'border-amber-500 text-amber-900 bg-amber-50/70 font-black'
+                : 'border-transparent text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-600" />
+            <span>👥 स्टाफ व अनुमति नियंत्रण ({staffUsers?.length || 0})</span>
+          </button>
+        )}
 
         <button
           onClick={onBackToPublic}
@@ -1913,8 +1979,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowBulkImportModal(true)}
-                  className="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all"
-                  title="Excel या CSV से एक साथ कई छात्रों का डेटा इम्पोर्ट करें"
+                  disabled={currentUser?.role === 'staff' && currentUser?.permissions?.canAddStudents === false}
+                  className={`px-3 py-2 text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 transition-all ${
+                    currentUser?.role === 'staff' && currentUser?.permissions?.canAddStudents === false
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                      : 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
+                  }`}
+                  title={
+                    currentUser?.role === 'staff' && currentUser?.permissions?.canAddStudents === false
+                      ? 'विद्यार्थी जोड़ने की अनुमति केवल मुख्य व्यवस्थापक द्वारा प्रदान की जाती है'
+                      : 'Excel या CSV से एक साथ कई छात्रों का डेटा इम्पोर्ट करें'
+                  }
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-300" />
                   <span>बल्क इम्पोर्ट (Bulk Import)</span>
@@ -1922,7 +1997,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={handleStartAddStudent}
-                  className="px-3.5 py-2 bg-[#0f2b48] hover:bg-[#1b4975] text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                  disabled={currentUser?.role === 'staff' && currentUser?.permissions?.canAddStudents === false}
+                  className={`px-3.5 py-2 text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 transition-all ${
+                    currentUser?.role === 'staff' && currentUser?.permissions?.canAddStudents === false
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                      : 'bg-[#0f2b48] hover:bg-[#1b4975] text-white cursor-pointer'
+                  }`}
+                  title={
+                    currentUser?.role === 'staff' && currentUser?.permissions?.canAddStudents === false
+                      ? 'विद्यार्थी जोड़ने की अनुमति केवल मुख्य व्यवस्थापक द्वारा प्रदान की जाती है'
+                      : 'Add New Student'
+                  }
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add New Student</span>
@@ -2201,15 +2286,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   setIsNewStudent(false);
                                   setEditingStudent(st);
                                 }}
-                                className="p-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded cursor-pointer"
-                                title="Edit Student Info"
+                                disabled={currentUser?.role === 'staff' && currentUser?.permissions?.canEditStudents === false}
+                                className={`p-1.5 rounded transition-all ${
+                                  currentUser?.role === 'staff' && currentUser?.permissions?.canEditStudents === false
+                                    ? 'bg-slate-100 text-slate-300 cursor-not-allowed opacity-50'
+                                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100 cursor-pointer'
+                                }`}
+                                title={
+                                  currentUser?.role === 'staff' && currentUser?.permissions?.canEditStudents === false
+                                    ? 'छात्र विवरण संपादन की अनुमति नहीं है'
+                                    : 'Edit Student Info'
+                                }
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteStudent(st)}
-                                className="p-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded cursor-pointer"
-                                title="रीसायकल बिन में भेजें (Delete to Trash)"
+                                disabled={currentUser?.role === 'staff' && currentUser?.permissions?.canDeleteStudents === false}
+                                className={`p-1.5 rounded transition-all ${
+                                  currentUser?.role === 'staff' && currentUser?.permissions?.canDeleteStudents === false
+                                    ? 'bg-slate-100 text-slate-300 cursor-not-allowed opacity-50'
+                                    : 'bg-rose-50 text-rose-700 hover:bg-rose-100 cursor-pointer'
+                                }`}
+                                title={
+                                  currentUser?.role === 'staff' && currentUser?.permissions?.canDeleteStudents === false
+                                    ? 'छात्र हटाने की अनुमति केवल मुख्य व्यवस्थापक को है'
+                                    : 'रीसायकल बिन में भेजें (Delete to Trash)'
+                                }
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -3064,8 +3167,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowBulkMarksModal(true)}
-                  className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer transition-all"
-                  title="Excel से सभी बच्चों के अंक एक साथ अपलोड करें"
+                  disabled={currentUser?.role === 'staff' && currentUser?.permissions?.canBulkMarks === false}
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs transition-all ${
+                    currentUser?.role === 'staff' && currentUser?.permissions?.canBulkMarks === false
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                      : 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
+                  }`}
+                  title={
+                    currentUser?.role === 'staff' && currentUser?.permissions?.canBulkMarks === false
+                      ? 'थोक अंक प्रविष्टि की अनुमति केवल मुख्य व्यवस्थापक द्वारा प्रदान की जाती है'
+                      : 'Excel से सभी बच्चों के अंक एक साथ अपलोड करें'
+                  }
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-300" />
                   <span>बल्क अंक (Excel)</span>
@@ -3080,8 +3192,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     setSelectedSubjectIdToClear(subjects[0]?.id || '');
                     setIsClearMarksModalOpen(true);
                   }}
-                  className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
-                  title="अंक साफ़ / रीसेट करें (रीसायकल बिन में बैकअप सुरक्षित रहेगा)"
+                  disabled={currentUser?.role === 'staff' && currentUser?.permissions?.canDeleteStudents === false}
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-2xs transition-all ${
+                    currentUser?.role === 'staff' && currentUser?.permissions?.canDeleteStudents === false
+                      ? 'bg-slate-100 text-slate-300 border border-slate-200 cursor-not-allowed opacity-60'
+                      : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 cursor-pointer'
+                  }`}
+                  title={
+                    currentUser?.role === 'staff' && currentUser?.permissions?.canDeleteStudents === false
+                      ? 'अंक साफ़ / डिलीट करने का अधिकार केवल मुख्य व्यवस्थापक को है'
+                      : 'अंक साफ़ / रीसेट करें (रीसायकल बिन में बैकअप सुरक्षित रहेगा)'
+                  }
                 >
                   <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                   <span>अंक साफ़ करें (Clear Marks)</span>
@@ -3434,7 +3555,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <button
                       type="button"
                       onClick={handleSaveMarks}
-                      className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      disabled={currentUser?.role === 'staff' && currentUser?.permissions?.canEnterMarks === false}
+                      className={`px-4 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs transition-all ${
+                        currentUser?.role === 'staff' && currentUser?.permissions?.canEnterMarks === false
+                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                          : 'bg-blue-700 hover:bg-blue-800 text-white cursor-pointer'
+                      }`}
+                      title={
+                        currentUser?.role === 'staff' && currentUser?.permissions?.canEnterMarks === false
+                          ? 'अंक चढ़ाने की अनुमति नहीं है'
+                          : 'Save Marks'
+                      }
                     >
                       <Save className="w-3.5 h-3.5" />
                       <span>Save Marks</span>
@@ -3443,8 +3574,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <button
                         type="button"
                         onClick={handleSaveMarksAndNext}
-                        className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer"
-                        title="सेव करके अगले छात्र पर जाएं"
+                        disabled={currentUser?.role === 'staff' && currentUser?.permissions?.canEnterMarks === false}
+                        className={`px-4 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-xs transition-all ${
+                          currentUser?.role === 'staff' && currentUser?.permissions?.canEnterMarks === false
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                            : 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer'
+                        }`}
+                        title={
+                          currentUser?.role === 'staff' && currentUser?.permissions?.canEnterMarks === false
+                            ? 'अंक चढ़ाने की अनुमति नहीं है'
+                            : 'सेव करके अगले छात्र पर जाएं'
+                        }
                       >
                         <span>Save & Next</span>
                         <ChevronRight className="w-3.5 h-3.5" />
@@ -4287,7 +4427,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         )}
 
         {/* TAB 5: SCHOOL SETTINGS */}
-        {activeTab === 'school' && (
+        {activeTab === 'school' && currentUser?.role === 'staff' && currentUser?.permissions?.canEditSchoolSettings === false ? (
+          <div className="bg-white p-6 sm:p-10 rounded-2xl border-2 border-amber-300 shadow-xl max-w-2xl mx-auto my-8 text-center space-y-4">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-800 border border-amber-300">
+              <Lock className="w-8 h-8 text-amber-700" />
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-slate-900 uppercase">
+              स्कूल का नाम व सेटिंग्स केवल मुख्य व्यवस्थापक ही बदल सकते हैं
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-lg mx-auto">
+              मुख्य व्यवस्थापक द्वारा आपको <strong>विद्यार्थी जोड़ने</strong> तथा <strong>अंक चढ़ाने</strong> का कार्य सौंपा गया है। विद्यालय का नाम, लोगो, पता अथवा अन्य प्रशासनिक सेटिंग्स में बदलाव करने का अधिकार सुरक्षित रखा गया है।
+            </p>
+            <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setActiveTab('students')}
+                className="px-4 py-2 bg-[#0f2b48] hover:bg-[#18426d] text-white rounded-lg text-xs font-bold shadow transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Users className="w-4 h-4" />
+                <span>विद्यार्थी सूची पर जाएं (Students)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('marks')}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Edit2 className="w-4 h-4" />
+                <span>अंक प्रबंधन पर जाएं (Marks Entry)</span>
+              </button>
+            </div>
+          </div>
+        ) : activeTab === 'school' && (
           <div className="bg-white p-4 sm:p-6 rounded-lg border border-slate-200 shadow-xs max-w-4xl">
             <div className="border-b border-slate-200 pb-3 mb-6 flex justify-between items-center">
               <div>
@@ -4309,7 +4479,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               {/* SECTION A: SCHOOL LOGO & OFFICIAL SEAL */}
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-4">
                 <h3 className="text-xs font-bold text-[#0f2b48] uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-200 pb-2">
-                  <Image className="w-4 h-4 text-[#0f2b48]" />
+                  <ImageIcon className="w-4 h-4 text-[#0f2b48]" />
                   <span>1. Official School Logo & Crest (विद्यालय का लोगो)</span>
                 </h3>
 
@@ -6664,6 +6834,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             }}
           />
         )}
+
+        {/* TAB 9: STAFF & PERMISSION MANAGEMENT (SUPER ADMIN ONLY) */}
+        {activeTab === 'staff' && (
+          <StaffManager
+            staffUsers={staffUsers}
+            onSaveStaffUser={(staff) => {
+              if (onSaveStaffUser) {
+                onSaveStaffUser(staff);
+              }
+            }}
+            onDeleteStaffUser={(staffId) => {
+              if (onDeleteStaffUser) {
+                onDeleteStaffUser(staffId);
+              }
+            }}
+            schoolName={schoolSettings.schoolName}
+          />
+        )}
       </main>
 
       {/* BULK IMPORT STUDENTS MODAL */}
@@ -6674,7 +6862,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           onImport={handleImportStudents}
           onImportStudents={handleImportStudents}
           existingStudents={students}
-          currentSession={settingsForm.academicSession || schoolSettings.session || '2026–2027'}
+          currentSession={settingsForm.session || schoolSettings.session || '2026–2027'}
         />
       )}
 

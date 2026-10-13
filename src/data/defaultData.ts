@@ -1,4 +1,4 @@
-import { SchoolSettings, SubjectConfig, Student, GradeRule, ClassTeacherConfig } from '../types';
+import { SchoolSettings, SubjectConfig, Student, GradeRule, ClassTeacherConfig, StaffPermissions, StaffUser } from '../types';
 import { DEFAULT_GRADE_RULES } from '../utils/calculations';
 
 function svgUri(rawSvg: string): string {
@@ -43,7 +43,7 @@ export const DEFAULT_SCHOOL_LOGO = svgUri(`<svg xmlns="http://www.w3.org/2000/sv
   <path d="M 45 155 Q 100 175 155 155 L 150 142 Q 100 160 50 142 Z" fill="#d4af37"/>
   <text x="100" y="153" font-family="'Roboto Condensed', sans-serif" font-size="8.5" font-weight="bold" fill="#0f2b48" text-anchor="middle" letter-spacing="1">ESTD. 2008 • SKN, UP</text>
   <!-- Text along arc -->
-  <text x="100" y="34" font-family="'Roboto Condensed', sans-serif" font-size="9" font-weight="bold" fill="#0f2b48" text-anchor="middle" letter-spacing="0.5">H.D. PANDEY PUBLIC J.H.S.</text>
+  <text x="100" y="34" font-family="'Roboto Condensed', sans-serif" font-size="9" font-weight="bold" fill="#0f2b48" text-anchor="middle" letter-spacing="0.5">H.D.P. PUBLIC SCHOOL</text>
 </svg>`);
 
 export const DEFAULT_TEACHER_SIGNATURE = svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 60" width="160" height="60">
@@ -60,7 +60,7 @@ export const DEFAULT_PRINCIPAL_STAMP = svgUri(`<svg xmlns="http://www.w3.org/200
   <circle cx="50" cy="50" r="46" fill="none" stroke="#1e3a8a" stroke-width="2.5" opacity="0.65" stroke-dasharray="2,1"/>
   <circle cx="50" cy="50" r="41" fill="none" stroke="#1e3a8a" stroke-width="1.5" opacity="0.65"/>
   <circle cx="50" cy="50" r="28" fill="none" stroke="#1e3a8a" stroke-width="1" opacity="0.5"/>
-  <text x="50" y="32" font-family="'Roboto Condensed', sans-serif" font-size="6" font-weight="bold" fill="#1e3a8a" text-anchor="middle" opacity="0.75" letter-spacing="0.5">H.D. PANDEY PUBLIC J.H.S.</text>
+  <text x="50" y="32" font-family="'Roboto Condensed', sans-serif" font-size="6" font-weight="bold" fill="#1e3a8a" text-anchor="middle" opacity="0.75" letter-spacing="0.5">H.D.P. PUBLIC SCHOOL</text>
   <text x="50" y="52" font-family="'Roboto Condensed', sans-serif" font-size="7.5" font-weight="bold" fill="#1e3a8a" text-anchor="middle" opacity="0.85">★ PRINCIPAL ★</text>
   <text x="50" y="68" font-family="'Roboto Condensed', sans-serif" font-size="6" font-weight="bold" fill="#1e3a8a" text-anchor="middle" opacity="0.75">OFFICIAL SEAL</text>
 </svg>`);
@@ -468,3 +468,52 @@ export const DEFAULT_STUDENTS: Student[] = [
     },
   },
 ];
+
+export const DEFAULT_STAFF_PERMISSIONS: StaffPermissions = {
+  canAddStudents: true,
+  canEditStudents: true,
+  canDeleteStudents: false,
+  canEnterMarks: true,
+  canBulkMarks: true,
+  canExportData: true,
+  canEditSchoolSettings: false,
+  canManageStaff: false,
+  canResetDatabase: false,
+};
+
+export const SUPER_ADMIN_PERMISSIONS: StaffPermissions = {
+  canAddStudents: true,
+  canEditStudents: true,
+  canDeleteStudents: true,
+  canEnterMarks: true,
+  canBulkMarks: true,
+  canExportData: true,
+  canEditSchoolSettings: true,
+  canManageStaff: true,
+  canResetDatabase: true,
+};
+
+export const DEFAULT_STAFF_USERS: StaffUser[] = [
+  {
+    id: 'staff-helper-1',
+    name: 'श्री रमेश कुमार (सहायक शिक्षक / डेटा एंट्री)',
+    username: 'staff1',
+    password: 'teacher123',
+    role: 'staff',
+    phone: '9838700021',
+    isActive: true,
+    permissions: {
+      canAddStudents: true,
+      canEditStudents: true,
+      canDeleteStudents: false,
+      canEnterMarks: true,
+      canBulkMarks: true,
+      canExportData: true,
+      canEditSchoolSettings: false,
+      canManageStaff: false,
+      canResetDatabase: false,
+    },
+    createdAt: new Date().toISOString(),
+  },
+];
+

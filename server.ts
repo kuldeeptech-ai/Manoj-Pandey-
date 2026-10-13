@@ -6,6 +6,7 @@ import {
   DEFAULT_SCHOOL_SETTINGS,
   DEFAULT_SUBJECTS,
   DEFAULT_STUDENTS,
+  DEFAULT_STAFF_USERS,
 } from './src/data/defaultData';
 import {
   DEFAULT_GRADE_RULES,
@@ -36,6 +37,7 @@ let store = {
   subjects: [...DEFAULT_SUBJECTS],
   students: [...DEFAULT_STUDENTS],
   gradeRules: [...DEFAULT_GRADE_RULES],
+  staffUsers: [...DEFAULT_STAFF_USERS] as any[],
   deletedStudents: [] as any[],
   clearedMarksHistory: [] as any[],
   lastUpdated: new Date().toISOString(),
@@ -50,6 +52,11 @@ try {
     if (parsed.subjects) store.subjects = parsed.subjects;
     if (parsed.students) store.students = parsed.students;
     if (parsed.gradeRules) store.gradeRules = parsed.gradeRules;
+    if (Array.isArray(parsed.staffUsers) && parsed.staffUsers.length > 0) {
+      store.staffUsers = parsed.staffUsers;
+    } else {
+      store.staffUsers = [...DEFAULT_STAFF_USERS];
+    }
     if (parsed.deletedStudents) store.deletedStudents = parsed.deletedStudents;
     if (parsed.clearedMarksHistory) store.clearedMarksHistory = parsed.clearedMarksHistory;
     if (parsed.lastUpdated) store.lastUpdated = parsed.lastUpdated;
@@ -105,6 +112,11 @@ async function syncToFirebaseInBackground() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(store.clearedMarksHistory || []),
       }),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/staff_users.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(store.staffUsers || []),
+      }),
     ]);
   } catch (err) {
     console.warn('[Server] Error syncing to Firebase RTDB in background:', err);
@@ -113,13 +125,14 @@ async function syncToFirebaseInBackground() {
 
 async function syncFromFirebaseOnStart() {
   try {
-    const [stRes, sRes, subRes, gRes, delRes, clrRes] = await Promise.all([
+    const [stRes, sRes, subRes, gRes, delRes, clrRes, staffRes] = await Promise.all([
       fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/students.json'),
       fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/school_settings.json'),
       fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/subjects.json'),
       fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/grade_rules.json'),
       fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/deleted_students.json'),
       fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/cleared_marks_history.json'),
+      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/staff_users.json'),
     ]);
 
     const rawStudents = await stRes.json();
@@ -157,6 +170,10 @@ async function syncFromFirebaseOnStart() {
     const rawCleared = await clrRes.json();
     const cleared = toList(rawCleared);
     if (cleared.length > 0) store.clearedMarksHistory = cleared;
+
+    const rawStaff = await staffRes.json();
+    const staff = toList(rawStaff);
+    if (staff.length > 0) store.staffUsers = staff;
 
     store.lastUpdated = new Date().toISOString();
     saveStore();
@@ -329,17 +346,161 @@ async function startServer() {
       return res.json({
         success: true,
         token,
+        role: 'admin',
         adminEmail: currentEmail,
         adminUserId: store.schoolSettings?.adminUserId || 'Kld7522',
+        name: 'मुख्य व्यवस्थापक (Super Admin)',
         schoolName: store.schoolSettings?.schoolName,
       });
+    }
+
+    // Check if matching Staff user is attempting login
+    const matchingStaff = (store.staffUsers || []).find((u: any) => {
+      const uName = String(u.username || '').trim().toLowerCase();
+      return uName === inputIdentifier;
+    });
+
+    if (matchingStaff) {
+      if (matchingStaff.isActive === false) {
+        return res.status(403).json({
+          success: false,
+          error: 'यह सहायक खाता वर्तमान में निष्क्रिय (Deactivated) है। कृपया मुख्य व्यवस्थापक से संपर्क करें।',
+        });
+      }
+      if (String(matchingStaff.password || '').trim() === inputPass) {
+        const token = `staff_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        console.log(`[Staff Auth] Successful login for staff: ${matchingStaff.username} (${matchingStaff.name})`);
+        return res.json({
+          success: true,
+          token,
+          role: 'staff',
+          staffUser: matchingStaff,
+          name: matchingStaff.name,
+          username: matchingStaff.username,
+          permissions: matchingStaff.permissions,
+          schoolName: store.schoolSettings?.schoolName,
+        });
+      } else {
+        return res.status(401).json({
+          success: false,
+          error: 'गलत पासवर्ड! कृपया सहायक खाते का सही पासवर्ड दर्ज करें।',
+        });
+      }
     }
 
     console.warn(`[Admin Auth] Failed login attempt for: "${inputIdentifier}"`);
     return res.status(401).json({
       success: false,
-      error: `अमान्य ईमेल या पासवर्ड! केवल अधिकृत व्यवस्थापक (${currentEmail}) ही एडमिन बन सकते हैं।`,
+      error: `अमान्य क्रेडेंशियल! केवल अधिकृत व्यवस्थापक (${currentEmail}) अथवा मान्य सहायक स्टाफ ही लॉगिन कर सकते हैं।`,
     });
+  });
+
+  // Dedicated Staff Login Endpoint
+  app.post('/api/staff/login', (req, res) => {
+    const { username, password } = req.body || {};
+    const inputUser = String(username || '').trim().toLowerCase();
+    const inputPass = String(password || '').trim();
+
+    if (!inputUser || !inputPass) {
+      return res.status(400).json({ success: false, error: 'यूजरनेम और पासवर्ड आवश्यक हैं।' });
+    }
+
+    const staff = (store.staffUsers || []).find((u: any) => {
+      return String(u.username || '').trim().toLowerCase() === inputUser;
+    });
+
+    if (!staff) {
+      return res.status(404).json({ success: false, error: 'यह सहायक यूजरनेम मौजूद नहीं है।' });
+    }
+
+    if (staff.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        error: 'यह सहायक खाता वर्तमान में व्यवस्थापक द्वारा निष्क्रिय (Deactivated) कर दिया गया है।',
+      });
+    }
+
+    if (String(staff.password || '').trim() !== inputPass) {
+      return res.status(401).json({ success: false, error: 'गलत पासवर्ड! कृपया सही पासवर्ड दर्ज करें।' });
+    }
+
+    const token = `staff_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    return res.json({
+      success: true,
+      token,
+      role: 'staff',
+      staffUser: staff,
+      name: staff.name,
+      username: staff.username,
+      permissions: staff.permissions,
+      schoolName: store.schoolSettings?.schoolName,
+    });
+  });
+
+  // Staff Management Endpoints (CRUD)
+  app.get('/api/admin/staff', (req, res) => {
+    res.json({ success: true, staffUsers: store.staffUsers || [] });
+  });
+
+  app.post('/api/admin/staff', (req, res) => {
+    const staffData = req.body;
+    if (!staffData || !staffData.name || !staffData.username || !staffData.password) {
+      return res.status(400).json({ error: 'नाम, यूजरनेम और पासवर्ड अनिवार्य हैं।' });
+    }
+
+    store.staffUsers = store.staffUsers || [];
+    const cleanUsername = String(staffData.username).trim().toLowerCase();
+    const existingIndex = store.staffUsers.findIndex(
+      (u: any) => u.id === staffData.id || String(u.username).trim().toLowerCase() === cleanUsername
+    );
+
+    const defaultPerms = {
+      canAddStudents: true,
+      canEditStudents: true,
+      canDeleteStudents: false,
+      canEnterMarks: true,
+      canBulkMarks: true,
+      canExportData: true,
+      canEditSchoolSettings: false,
+      canManageStaff: false,
+      canResetDatabase: false,
+    };
+
+    const finalStaff: any = {
+      id: staffData.id || `staff-${Date.now()}`,
+      name: String(staffData.name).trim(),
+      username: cleanUsername,
+      password: String(staffData.password).trim(),
+      role: 'staff',
+      phone: staffData.phone ? String(staffData.phone).trim() : '',
+      isActive: staffData.isActive !== false,
+      permissions: {
+        ...defaultPerms,
+        ...(staffData.permissions || {}),
+      },
+      createdAt: staffData.createdAt || new Date().toISOString(),
+    };
+
+    if (existingIndex >= 0) {
+      store.staffUsers[existingIndex] = { ...store.staffUsers[existingIndex], ...finalStaff };
+    } else {
+      store.staffUsers.push(finalStaff);
+    }
+
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    syncToFirebaseInBackground();
+
+    res.json({ success: true, staffUsers: store.staffUsers, savedStaff: finalStaff });
+  });
+
+  app.delete('/api/admin/staff/:id', (req, res) => {
+    const { id } = req.params;
+    store.staffUsers = (store.staffUsers || []).filter((u: any) => u.id !== id);
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+    syncToFirebaseInBackground();
+    res.json({ success: true, staffUsers: store.staffUsers });
   });
 
   // Firebase Authentication Verification Endpoint
@@ -513,11 +674,12 @@ async function startServer() {
 
   // Save full state (Students, Subjects, Settings, Grade Rules)
   app.post('/api/admin/data', (req, res) => {
-    const { students, subjects, schoolSettings, gradeRules, deletedStudents, clearedMarksHistory } = req.body;
+    const { students, subjects, schoolSettings, gradeRules, deletedStudents, clearedMarksHistory, staffUsers } = req.body;
     if (Array.isArray(students)) store.students = students.map(normalizeStudent);
     if (Array.isArray(subjects)) store.subjects = subjects;
     if (Array.isArray(deletedStudents)) store.deletedStudents = deletedStudents;
     if (Array.isArray(clearedMarksHistory)) store.clearedMarksHistory = clearedMarksHistory;
+    if (Array.isArray(staffUsers)) store.staffUsers = staffUsers;
     if (schoolSettings && typeof schoolSettings === 'object') {
       // Retain active credentials if incoming object omits or leaves them blank
       const preservedEmail = schoolSettings.adminEmail?.trim() || store.schoolSettings.adminEmail || 'kuldeeprai75220@gmail.com';

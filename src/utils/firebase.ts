@@ -23,7 +23,7 @@ import {
   Unsubscribe,
   DataSnapshot,
 } from 'firebase/database';
-import { Student, SubjectConfig, SchoolSettings, GradeRule, ClearedMarksBackup } from '../types';
+import { Student, SubjectConfig, SchoolSettings, GradeRule, ClearedMarksBackup, StaffUser } from '../types';
 
 // ============================================================================
 // SOLE AUTHORIZED ADMIN EMAIL
@@ -466,6 +466,7 @@ export async function fetchAllFromFirebase(): Promise<{
   subjects?: SubjectConfig[];
   settings?: SchoolSettings;
   gradeRules?: GradeRule[];
+  staffUsers?: StaffUser[];
 } | null> {
   const database = getFirebaseDb();
   if (!database) return null;
@@ -513,11 +514,22 @@ export async function fetchAllFromFirebase(): Promise<{
       }
     }
 
+    // Normalize staff users
+    let staffUsers: StaffUser[] | undefined;
+    if (data.staff_users) {
+      if (Array.isArray(data.staff_users)) {
+        staffUsers = data.staff_users.filter(Boolean);
+      } else if (typeof data.staff_users === 'object') {
+        staffUsers = Object.values(data.staff_users);
+      }
+    }
+
     return {
       students,
       subjects,
       settings: data.school_settings || undefined,
       gradeRules,
+      staffUsers,
     };
   } catch (err) {
     console.warn('[Firebase RTDB] fetchAllFromFirebase failed:', err);
@@ -1045,3 +1057,82 @@ export async function syncAllDataToFirebase(payload: {
     };
   }
 }
+
+// ============================================================================
+// STAFF HELPERS OPERATIONS (staff_users node in RTDB)
+// ============================================================================
+
+export function subscribeToStaffUsers(callback: (staff: StaffUser[]) => void): Unsubscribe | null {
+  const database = getFirebaseDb();
+  if (!database) return null;
+
+  try {
+    const staffRef = ref(database, 'staff_users');
+    return onValue(
+      staffRef,
+      (snap) => {
+        if (snap.exists()) {
+          const val = snap.val();
+          let list: StaffUser[] = [];
+          if (Array.isArray(val)) {
+            list = val.filter(Boolean);
+          } else if (val && typeof val === 'object') {
+            list = Object.values(val);
+          }
+          callback(list);
+        }
+      },
+      (err) => console.warn('[Firebase RTDB] staff_users subscription error:', err)
+    );
+  } catch (err) {
+    console.warn('[Firebase RTDB] subscribeToStaffUsers error:', err);
+    return null;
+  }
+}
+
+export async function saveStaffUserToFirebase(staff: StaffUser): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const staffRef = ref(database, `staff_users/${staff.id}`);
+    await set(staffRef, cleanForFirebase(staff));
+    return true;
+  } catch (err) {
+    console.error('[Firebase RTDB] Error saving staff user:', err);
+    return false;
+  }
+}
+
+export async function deleteStaffUserFromFirebase(staffId: string): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const staffRef = ref(database, `staff_users/${staffId}`);
+    await remove(staffRef);
+    return true;
+  } catch (err) {
+    console.error('[Firebase RTDB] Error deleting staff user:', err);
+    return false;
+  }
+}
+
+export async function saveAllStaffUsersToFirebase(staffList: StaffUser[]): Promise<boolean> {
+  const database = getFirebaseDb();
+  if (!database) return false;
+
+  try {
+    const staffMap: Record<string, any> = {};
+    (staffList || []).forEach((s) => {
+      if (s && s.id) staffMap[s.id] = s;
+    });
+    const staffRef = ref(database, 'staff_users');
+    await set(staffRef, cleanForFirebase(staffMap));
+    return true;
+  } catch (err) {
+    console.error('[Firebase RTDB] Error saving all staff users:', err);
+    return false;
+  }
+}
+

@@ -3,7 +3,7 @@ import { StudentResultData } from '../types';
 import { AcademicMarksheet } from './AcademicMarksheet';
 import { downloadMarksheetPdf, downloadMarksheetImage, printMarksheet } from '../utils/pdfGenerator';
 import { isSettingEnabled } from '../utils/calculations';
-import { Printer, Download, ArrowLeft, ZoomIn, ZoomOut, RotateCcw, CheckCircle2, Image, Layers } from 'lucide-react';
+import { Printer, Download, ArrowLeft, ZoomIn, ZoomOut, RotateCcw, CheckCircle2, Image as ImageIcon, Layers } from 'lucide-react';
 
 interface ResultViewerProps {
   resultData: StudentResultData;
@@ -305,7 +305,7 @@ export const ResultViewer: React.FC<ResultViewerProps> = ({
               className="px-2.5 sm:px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-400 text-white rounded text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
               title="Download HD Image file (PNG)"
             >
-              <Image className="w-3.5 h-3.5 text-amber-300" />
+              <ImageIcon className="w-3.5 h-3.5 text-amber-300" />
               <span className="hidden xs:inline">IMAGE</span>
             </button>
           )}

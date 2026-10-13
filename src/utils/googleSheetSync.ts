@@ -462,7 +462,7 @@ function doPost(e) {
     if (data.action === "sendOtpEmail") {
       var to = data.toEmail || "kuldeeprai75220@gmail.com";
       var otpCode = data.otp;
-      var schName = data.schoolName || "H.D. PANDEY PUBLIC J.H.S.";
+      var schName = data.schoolName || "H.D.P. PUBLIC SCHOOL";
       var subj = data.subject || (schName + " - व्यवस्थापक पासवर्ड रीसेट OTP");
       var html = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;">' +
         '<div style="text-align:center;border-bottom:2px solid #0f2b48;padding-bottom:12px;margin-bottom:20px;">' +

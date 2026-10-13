@@ -227,3 +227,37 @@ export interface ClearedMarksBackup {
     teacherRemark?: string;
   }[];
 }
+
+export interface StaffPermissions {
+  canAddStudents: boolean;        // विद्यार्थी जोड़ना (Add new students)
+  canEditStudents: boolean;       // विद्यार्थी विवरण बदलना (Edit student basic details)
+  canDeleteStudents: boolean;     // विद्यार्थी डिलीट करना (Delete students - default false)
+  canEnterMarks: boolean;         // अंक चढ़ाना व संपादन (Enter & update marks)
+  canBulkMarks: boolean;          // एक साथ सभी अंक भरना (Bulk marks entry)
+  canExportData: boolean;         // डेटा एक्सेल/प्रिंट एक्सपोर्ट करना (Export data & marksheets)
+  canEditSchoolSettings: boolean; // स्कूल का नाम, लोगो व सेटिंग्स बदलना (School name & settings - default FALSE)
+  canManageStaff: boolean;        // स्टाफ जोड़ना व अनुमति बदलना (Staff management - default FALSE)
+  canResetDatabase: boolean;      // डेटाबेस रीसेट / खाली करना (Database reset - default FALSE)
+}
+
+export interface StaffUser {
+  id: string;
+  name: string;                   // जैसे 'श्री रमेश कुमार (सहायक शिक्षक)'
+  username: string;               // जैसे 'staff1' या 'teacher1'
+  password: string;               // जैसे 'teacher123'
+  role: 'admin' | 'staff';        // 'admin' (all permissions) or 'staff' (custom permissions)
+  phone?: string;
+  isActive: boolean;              // सक्रिय / निष्क्रिय
+  permissions: StaffPermissions;
+  createdAt?: string;
+}
+
+export interface AuthAdminUser {
+  id?: string;
+  name: string;
+  username: string;
+  role: 'admin' | 'staff';
+  email?: string;
+  permissions: StaffPermissions;
+}
+
