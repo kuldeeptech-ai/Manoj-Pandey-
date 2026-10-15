@@ -1,6 +1,6 @@
 import React from 'react';
-import { StudentResultData } from '../types';
-import { isSettingEnabled, findClassTeacher, formatDisplayDate } from '../utils/calculations';
+import { StudentResultData, SubjectConfig } from '../types';
+import { isSettingEnabled, findClassTeacher, formatDisplayDate, isUrduOrOptional } from '../utils/calculations';
 
 interface AcademicMarksheetProps {
   data: StudentResultData;
@@ -68,9 +68,28 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
   const showGrade = isSettingEnabled(school.showGrade, false);
   const showProgress = isSettingEnabled(school.showProgressGraph, true);
 
+  // Enforce user requirement:
+  // "aur aisa kr do ki agar urdu subject me koi mark nhi de rhe h to marksheet pr show hi n ho"
+  const visibleSubjects = (subjects || []).filter((row) => {
+    const isUrdu = isUrduOrOptional({ id: row.subjectId, name: row.subjectName } as SubjectConfig);
+    if (isUrdu) {
+      if (isHalfOnly) {
+        return Number(row.halfObtained) > 0;
+      }
+      if (isAnnualOnly) {
+        return Number(row.annualObtained) > 0;
+      }
+      return Number(row.halfObtained) > 0 || Number(row.annualObtained) > 0;
+    }
+    return true;
+  }).map((row, idx) => ({
+    ...row,
+    sNo: idx + 1,
+  }));
+
   // Dynamic density calculation to guarantee 100% perfect fit on exact A4 paper
-  const isDense = subjects.length >= 8;
-  const isVeryDense = subjects.length >= 11;
+  const isDense = visibleSubjects.length >= 8;
+  const isVeryDense = visibleSubjects.length >= 11;
   const textScale = school.marksheetTextScale || 'large'; // 'normal' | 'large' | 'extra_large'
   const isLarge = textScale === 'large' || textScale === 'extra_large';
   const isXtraLarge = textScale === 'extra_large';
@@ -571,7 +590,7 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {subjects.map((row) => (
+                    {visibleSubjects.map((row) => (
                       <tr
                         key={row.subjectId}
                         style={{ height: rowHeight, backgroundColor: '#ffffff' }}
@@ -615,7 +634,7 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {subjects.map((row) => (
+                    {visibleSubjects.map((row) => (
                       <tr
                         key={row.subjectId}
                         style={{ height: rowHeight, backgroundColor: '#ffffff' }}
@@ -669,7 +688,7 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {subjects.map((row) => (
+                    {visibleSubjects.map((row) => (
                       <tr
                         key={row.subjectId}
                         style={{ height: rowHeight, backgroundColor: '#ffffff' }}

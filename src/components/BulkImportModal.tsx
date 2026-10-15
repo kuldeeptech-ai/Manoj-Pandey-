@@ -6,7 +6,7 @@ import {
   Check,
   AlertCircle,
   X,
-  Clipboard,
+  Clipboard as ClipboardIcon,
   Info,
   Copy,
   CheckCheck,
@@ -384,7 +384,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <Clipboard className="w-3.5 h-3.5" />
+                <ClipboardIcon className="w-3.5 h-3.5" />
                 <span>1. Excel / Sheets से डायरेक्ट कॉपी-पेस्ट (सबसे आसान)</span>
               </button>
 

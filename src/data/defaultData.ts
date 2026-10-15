@@ -263,9 +263,9 @@ export const DEFAULT_SUBJECTS: SubjectConfig[] = [
   { id: 'sub-sanskrit', name: 'Sanskrit', displayOrder: 6, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
   { id: 'sub-computer', name: 'Computer', displayOrder: 7, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
   { id: 'sub-gk', name: 'General Knowledge', displayOrder: 8, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-moral', name: 'Moral Science / Knowledge', displayOrder: 9, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
   { id: 'sub-1789291043759', name: 'Hindi ii', displayOrder: 10, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['6th', '7th', '8th'] },
-  { id: 'sub-1789291370377', name: 'dgg', displayOrder: 11, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['8th'] },
+  { id: 'sub-1789291370377', name: 'dgg', displayOrder: 11, halfMax: 100, annualMax: 100, passingMarks: 33, active: false, applicableClasses: ['8th'] },
+  { id: 'sub-urdu', name: 'Urdu (उर्दू)', displayOrder: 12, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'], isOptional: true },
 ];
 
 export const DEFAULT_STUDENTS: Student[] = [

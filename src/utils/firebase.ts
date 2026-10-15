@@ -232,7 +232,7 @@ export async function sendAdminFirebasePasswordReset(
     if (err.code === 'auth/user-not-found') {
       return {
         success: false,
-        error: `Firebase Auth में अभी यह ईमेल (${targetEmail}) सीधे ईमेल-पासवर्ड से पंजीकृत नहीं है। आप Google Sign-in बटन से सीधे 1-क्लिक में लॉगिन कर सकते हैं या नीचे दिए गए मास्टर पासवर्ड से लॉगिन कर सकते हैं।`,
+        error: `Firebase Auth में अभी यह ईमेल (${targetEmail}) सीधे ईमेल-पासवर्ड से पंजीकृत नहीं है। आप Google Sign-in बटन से सीधे 1-क्लिक में लॉगिन कर सकते हैं अथवा व्यवस्थापक पासवर्ड से लॉगिन कर सकते हैं।`,
       };
     }
     return {

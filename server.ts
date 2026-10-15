@@ -26,6 +26,9 @@ function normalizeStudent(s: any): any {
     address: s.address ? String(s.address).trim() : (s.pata ? String(s.pata).trim() : ''),
     aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
     aparId: s.aparId ? String(s.aparId).trim() : (s.apaarId ? String(s.apaarId).trim() : (s.apar ? String(s.apar).trim() : '')),
+    assignedSubjectIds: Array.isArray(s.assignedSubjectIds)
+      ? s.assignedSubjectIds.map(String).filter(Boolean)
+      : undefined,
   };
 }
 
@@ -205,6 +208,19 @@ async function startServer() {
   // Health check
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
+  });
+
+  // Client-side error telemetry logger
+  app.post('/api/client-error', (req, res) => {
+    const errorData = {
+      timestamp: new Date().toISOString(),
+      ...req.body,
+    };
+    console.error('>>> [BROWSER CLIENT ERROR CAPTURED] <<<', JSON.stringify(errorData, null, 2));
+    try {
+      fs.appendFileSync(path.join(process.cwd(), 'client-error.log'), JSON.stringify(errorData) + '\n');
+    } catch {}
+    res.json({ status: 'received' });
   });
 
   // Public School Settings

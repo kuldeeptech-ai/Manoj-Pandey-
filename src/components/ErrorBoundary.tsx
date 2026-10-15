@@ -30,6 +30,18 @@ export class ErrorBoundary extends React.Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[Application ErrorBoundary Caught]:', error, errorInfo);
     this.setState({ error, errorInfo });
+    try {
+      fetch('/api/client-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'ErrorBoundary',
+          message: error?.message,
+          stack: error?.stack,
+          componentStack: errorInfo?.componentStack,
+        }),
+      }).catch(() => {});
+    } catch {}
   }
 
   private handleReload = () => {

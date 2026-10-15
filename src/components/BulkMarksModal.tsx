@@ -6,10 +6,10 @@ import {
   Check,
   AlertCircle,
   X,
-  Clipboard,
+  Clipboard as ClipboardIcon,
   Copy,
   CheckCheck,
-  Table,
+  Table as TableIcon,
   Sparkles,
   HelpCircle,
   Filter,
@@ -651,7 +651,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                 className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
                 title="छात्रों के नाम सहित पूरा TSV फॉर्मेट कॉपी करें"
               >
-                <Table className="w-3.5 h-3.5 text-emerald-700" />
+                <TableIcon className="w-3.5 h-3.5 text-emerald-700" />
                 <span>2. पूरा टेम्पलेट कॉपी करें ({filteredStudents.length} छात्र)</span>
               </button>
 
@@ -681,6 +681,9 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
               <p>
                 3. Excel के सभी सेल सेलेक्ट व कॉपी (Ctrl+C) करके नीचे दिए गए बॉक्स में पेस्ट (Ctrl+V) करें। नीचे तुरंत छात्र विवरण और अंकों का प्रीव्यू दिख जाएगा!
               </p>
+              <p className="text-amber-900 font-bold bg-amber-100/70 p-1.5 rounded border border-amber-300">
+                📗 <strong>उर्दू / ऐच्छिक विषय नियम:</strong> जिन छात्रों का उर्दू विषय नहीं है, उनके उर्दू कॉलम में 0 या खाली छोड़ दें। 0 या खाली रहने पर उनकी मार्कशीट पर उर्दू विषय बिल्कुल नहीं दिखेगा!
+              </p>
             </div>
           </div>
 
@@ -696,7 +699,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <Clipboard className="w-3.5 h-3.5" />
+                <ClipboardIcon className="w-3.5 h-3.5" />
                 <span>Excel से सीधे कॉपी-पेस्ट करें (Paste Here)</span>
               </button>
 

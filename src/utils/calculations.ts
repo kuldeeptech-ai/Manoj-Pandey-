@@ -115,6 +115,9 @@ export function normalizeStudentRecord(s: any): Student {
     address: s.address ? String(s.address).trim() : '',
     aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
     aparId: s.aparId ? String(s.aparId).trim() : (s.apaarId ? String(s.apaarId).trim() : ''),
+    assignedSubjectIds: Array.isArray(s.assignedSubjectIds)
+      ? s.assignedSubjectIds.map(String).filter(Boolean)
+      : undefined,
     className: String(s.className || '').trim(),
     rollNo: String(s.rollNo || '').trim(),
     name: String(s.name || '').trim(),
@@ -312,19 +315,125 @@ export function getSubjectsForClass(subjects: SubjectConfig[], className?: strin
     .sort((a, b) => a.displayOrder - b.displayOrder);
 }
 
+/**
+ * Checks if a subject is Urdu or marked as optional (e.g. Urdu, Sanskrit, Drawing)
+ */
+export function isUrduOrOptional(subject: SubjectConfig): boolean {
+  if (!subject) return false;
+  if (subject.isOptional) return true;
+  const name = (subject.name || '').toLowerCase();
+  return (
+    subject.id === 'sub-urdu' ||
+    name.includes('urdu') ||
+    name.includes('उर्दू')
+  );
+}
+
+/**
+ * Checks if a student has any recorded marks (> 0) for a subject
+ */
+export function studentHasEnteredMarks(
+  student?: Partial<Student> | null,
+  subjectId?: string,
+  examMode?: 'half_yearly_only' | 'annual_only' | 'combined'
+): boolean {
+  if (!student?.marks || !subjectId) return false;
+  const m = student.marks[subjectId];
+  if (!m) return false;
+  const half = Number(m.halfObtained);
+  const annual = Number(m.annualObtained);
+
+  if (examMode === 'half_yearly_only') {
+    return !isNaN(half) && half > 0;
+  }
+  if (examMode === 'annual_only') {
+    return !isNaN(annual) && annual > 0;
+  }
+  return (!isNaN(half) && half > 0) || (!isNaN(annual) && annual > 0);
+}
+
+/**
+ * Returns all active subjects specifically assigned to a student.
+ * 1. If student.assignedSubjectIds is explicitly provided with subject IDs:
+ *    Returns only those assigned subjects that are active.
+ * 2. If student.assignedSubjectIds is not specified (undefined or empty):
+ *    Returns all compulsory class subjects (excluding Urdu/optional unless marks already exist).
+ * 3. Crucial User Rule for Marksheet:
+ *    "aur aisa kr do ki agar urdu subject me koi mark nhi de rhe h to marksheet pr show hi n ho"
+ *    For marksheet generation and result totals, any Urdu or optional subject with 0 or empty
+ *    marks is strictly excluded from marksheet table, maximum marks, and percentage!
+ */
+export function getSubjectsForStudent(
+  subjects: SubjectConfig[],
+  student?: Partial<Student> | null,
+  classNameFallback?: string,
+  options?: {
+    forMarksEntry?: boolean;
+    examMode?: 'half_yearly_only' | 'annual_only' | 'combined';
+  }
+): SubjectConfig[] {
+  if (!Array.isArray(subjects)) return [];
+  const targetClass = student?.className || classNameFallback;
+  const classSubjects = getSubjectsForClass(subjects, targetClass);
+
+  let candidateSubjects: SubjectConfig[];
+
+  if (student && Array.isArray(student.assignedSubjectIds) && student.assignedSubjectIds.length > 0) {
+    const assignedSet = new Set(student.assignedSubjectIds);
+    candidateSubjects = subjects
+      .filter((s) => s.active && assignedSet.has(s.id))
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+  } else {
+    // If not explicitly assigned, only include compulsory subjects + any optional subjects where marks are recorded
+    candidateSubjects = classSubjects.filter((subj) => {
+      if (isUrduOrOptional(subj)) {
+        return studentHasEnteredMarks(student, subj.id);
+      }
+      return true;
+    });
+  }
+
+  // When querying for Admin Marks Entry input table:
+  if (options?.forMarksEntry) {
+    return candidateSubjects;
+  }
+
+  // For Marksheet and Result Calculation:
+  // Enforce rule: "agar urdu subject me koi mark nhi de rhe h to marksheet pr show hi n ho"
+  return candidateSubjects.filter((subj) => {
+    if (isUrduOrOptional(subj)) {
+      return studentHasEnteredMarks(student, subj.id, options?.examMode);
+    }
+    return true;
+  });
+}
+
 export function calculateStudentResult(
   student: Student,
   subjects: SubjectConfig[],
   rawSchool: SchoolSettings,
-  gradeRules: GradeRule[] = DEFAULT_GRADE_RULES
+  gradeRules: GradeRule[] = DEFAULT_GRADE_RULES,
+  examMode?: 'half_yearly_only' | 'combined' | 'annual_only'
 ): StudentResultData {
   const school = normalizeSchoolSettings(rawSchool);
   const classTeacher = findClassTeacher(student.className, school.classTeachers, {
     name: student.classTeacherName,
     signatureUrl: student.classTeacherSignatureUrl,
   });
-  // Class-wise subjects filtering: Only include subjects applicable to this student's class
-  const activeSubjects = getSubjectsForClass(subjects, student.className);
+
+  // Determine effective exam mode from school toggles or explicit arg
+  const allowHalfYearly = isSettingEnabled(school.showHalfYearlyExam, true);
+  const allowAnnual = isSettingEnabled(school.showAnnualExam, true);
+  let effectiveMode: 'half_yearly_only' | 'annual_only' | 'combined' = examMode || 'combined';
+  if (allowHalfYearly && !allowAnnual) {
+    effectiveMode = 'half_yearly_only';
+  } else if (!allowHalfYearly && allowAnnual) {
+    effectiveMode = 'annual_only';
+  }
+
+  // Student-specific subjects filtering: Only include subjects assigned to this student
+  // and strictly exclude Urdu/optional if no marks are given in the active exam mode
+  const activeSubjects = getSubjectsForStudent(subjects, student, undefined, { examMode: effectiveMode });
 
   const processedRows: ProcessedSubjectRow[] = [];
   const validationIssues: string[] = [];

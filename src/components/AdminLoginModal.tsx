@@ -56,13 +56,12 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   const [viewMode, setViewMode] = useState<'login' | 'forgot_password'>('login');
 
   // Admin Login Form States
-  const targetEmail = (adminEmail || DEFAULT_ADMIN_EMAIL).trim();
-  const [emailInput, setEmailInput] = useState(targetEmail);
+  const [emailInput, setEmailInput] = useState('');
   const [adminPassInput, setAdminPassInput] = useState('');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   // Staff Login Form States
-  const [staffUsernameInput, setStaffUsernameInput] = useState('staff1');
+  const [staffUsernameInput, setStaffUsernameInput] = useState('');
   const [staffPasswordInput, setStaffPasswordInput] = useState('');
   const [showStaffPassword, setShowStaffPassword] = useState(false);
 
@@ -572,6 +571,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                       <input
                         type={showAdminPassword ? 'text' : 'password'}
                         required
+                        autoComplete="current-password"
                         value={adminPassInput}
                         onChange={(e) => setAdminPassInput(e.target.value)}
                         placeholder="एडमिन पासवर्ड दर्ज करें"
@@ -658,6 +658,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                     <input
                       type={showStaffPassword ? 'text' : 'password'}
                       required
+                      autoComplete="current-password"
                       value={staffPasswordInput}
                       onChange={(e) => setStaffPasswordInput(e.target.value)}
                       placeholder="सहायक पासवर्ड दर्ज करें"

@@ -7,6 +7,7 @@ export interface SubjectConfig {
   passingMarks: number;
   active: boolean;
   applicableClasses?: string[]; // Classes this subject applies to, e.g. ['5th', '6th', '7th', '8th']. If omitted or contains 'ALL', applies to all classes.
+  isOptional?: boolean; // If true, subject is optional (e.g. Urdu, Sanskrit, Computer, Drawing) and only applies to students who explicitly study it.
 }
 
 export interface StudentMarkItem {
@@ -48,6 +49,7 @@ export interface Student {
   classTeacherName?: string;
   classTeacherSignatureUrl?: string;
   deletedAt?: string;
+  assignedSubjectIds?: string[]; // Specific subject IDs assigned to this student. If undefined or empty, uses all class subjects (excluding optional ones unless marks exist).
   marks: Record<string, {
     halfObtained: number;
     annualObtained: number;
