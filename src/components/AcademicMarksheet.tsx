@@ -562,7 +562,7 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                   {isHalfOnly ? 'HALF-YEARLY EXAMINATION MARKS' : isAnnualOnly ? 'ANNUAL EXAMINATION MARKS' : 'ACADEMIC MARKS DETAILS'}
                 </span>
                 <span className={`${isXtraLarge ? 'text-[11px]' : isLarge ? 'text-[10px]' : 'text-[9px]'} font-bold text-slate-200`}>
-                  {isHalfOnly ? 'TERM I EVALUATION (MAX MARKS • PASS CRITERIA: 33%)' : isAnnualOnly ? 'TERM II EVALUATION (MAX MARKS • PASS CRITERIA: 33%)' : 'MAX MARKS (M.M.) • PASS CRITERIA: 33%'}
+                  {isHalfOnly ? 'TERM I EVALUATION (MAX MARKS • PASS CRITERIA: 50%)' : isAnnualOnly ? 'TERM II EVALUATION (MAX MARKS • PASS CRITERIA: 50%)' : 'MAX MARKS (M.M.) • PASS CRITERIA: 50%'}
                 </span>
               </div>
 
@@ -753,10 +753,10 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                       )}
                       <div className="w-1/4 shrink-0">
                         <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>
-                          {showGrade ? 'GRADE / STATUS' : 'STATUS'}
+                          STATUS
                         </span>
-                        <span className={`font-black ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#ffd54f' }}>
-                          {showGrade ? `${halfYearly.grade} (${halfYearly.status})` : halfYearly.status}
+                        <span className={`font-black ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: halfYearly.status === 'PASS' ? '#4ade80' : '#f87171' }}>
+                          {halfYearly.status}
                         </span>
                       </div>
                     </div>
@@ -794,10 +794,10 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                       )}
                       <div className="w-1/4 shrink-0">
                         <span className={`font-extrabold ${isXtraLarge ? 'text-[9.5px]' : 'text-[9px]'} block`} style={{ color: '#cbd5e1' }}>
-                          {showGrade ? 'GRADE / STATUS' : 'STATUS'}
+                          STATUS
                         </span>
-                        <span className={`font-black ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: '#ffd54f' }}>
-                          {showGrade ? `${annual.grade} (${annual.status})` : annual.status}
+                        <span className={`font-black ${isXtraLarge ? 'text-[14px]' : isLarge ? 'text-[13px]' : 'text-[12px]'}`} style={{ color: annual.status === 'PASS' ? '#4ade80' : '#f87171' }}>
+                          {annual.status}
                         </span>
                       </div>
                     </div>
@@ -815,11 +815,10 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                         <span className="text-[9px] font-bold" style={{ color: '#1e3a8a' }}>EVALUATION</span>
                       </div>
                       <div className="flex-1 flex text-center items-center py-0.5">
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>M.M.</span><span className={`font-bold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f172a' }}>{halfYearly.maximum}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>RESULT</span><span className={`font-black ${isXtraLarge ? 'text-[14.5px]' : isLarge ? 'text-[13.5px]' : 'text-[12.5px]'}`} style={{ color: '#0f2b48' }}>{halfYearly.obtained}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>PERCENTAGE</span><span className={`font-extrabold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f2b48' }}>{showPercentage ? `${halfYearly.percentage.toFixed(2)}%` : '—'}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>GRADE</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#b8860b' }}>{showGrade ? halfYearly.grade : '—'}</span></div>
-                        <div className="w-1/5 shrink-0"><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>STATUS</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: halfYearly.status === 'PASS' ? '#047857' : '#be123c' }}>{halfYearly.status}</span></div>
+                        <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>M.M.</span><span className={`font-bold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f172a' }}>{halfYearly.maximum}</span></div>
+                        <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>RESULT</span><span className={`font-black ${isXtraLarge ? 'text-[14.5px]' : isLarge ? 'text-[13.5px]' : 'text-[12.5px]'}`} style={{ color: '#0f2b48' }}>{halfYearly.obtained}</span></div>
+                        <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>PERCENTAGE</span><span className={`font-extrabold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f2b48' }}>{showPercentage ? `${halfYearly.percentage.toFixed(2)}%` : '—'}</span></div>
+                        <div className="w-1/4 shrink-0"><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>STATUS</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: halfYearly.status === 'PASS' ? '#047857' : '#be123c' }}>{halfYearly.status}</span></div>
                       </div>
                     </div>
 
@@ -833,11 +832,10 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                         <span className="text-[9px] font-bold" style={{ color: '#166534' }}>EVALUATION</span>
                       </div>
                       <div className="flex-1 flex text-center items-center py-0.5">
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>M.M.</span><span className={`font-bold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f172a' }}>{annual.maximum}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>RESULT</span><span className={`font-black ${isXtraLarge ? 'text-[14.5px]' : isLarge ? 'text-[13.5px]' : 'text-[12.5px]'}`} style={{ color: '#0f2b48' }}>{annual.obtained}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>PERCENTAGE</span><span className={`font-extrabold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f2b48' }}>{showPercentage ? `${annual.percentage.toFixed(2)}%` : '—'}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>GRADE</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#b8860b' }}>{showGrade ? annual.grade : '—'}</span></div>
-                        <div className="w-1/5 shrink-0"><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>STATUS</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: annual.status === 'PASS' ? '#047857' : '#be123c' }}>{annual.status}</span></div>
+                        <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>M.M.</span><span className={`font-bold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f172a' }}>{annual.maximum}</span></div>
+                        <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>RESULT</span><span className={`font-black ${isXtraLarge ? 'text-[14.5px]' : isLarge ? 'text-[13.5px]' : 'text-[12.5px]'}`} style={{ color: '#0f2b48' }}>{annual.obtained}</span></div>
+                        <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid #0f2b48' }}><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>PERCENTAGE</span><span className={`font-extrabold ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: '#0f2b48' }}>{showPercentage ? `${annual.percentage.toFixed(2)}%` : '—'}</span></div>
+                        <div className="w-1/4 shrink-0"><span className="font-extrabold text-[9px] block" style={{ color: '#475569' }}>STATUS</span><span className={`font-black ${isXtraLarge ? 'text-[13px]' : isLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: annual.status === 'PASS' ? '#047857' : '#be123c' }}>{annual.status}</span></div>
                       </div>
                     </div>
 
@@ -851,19 +849,14 @@ export const AcademicMarksheet: React.FC<AcademicMarksheetProps> = ({
                         <span className={`${isXtraLarge ? 'text-[10px]' : isLarge ? 'text-[9.5px]' : 'text-[9px]'} font-bold`} style={{ color: '#ffd54f' }}>FINAL RESULT</span>
                       </div>
                       <div className="flex-1 flex text-center items-center py-0.5" style={{ color: '#ffffff' }}>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>TOTAL M.M.</span><span className={`text-[13px] font-extrabold ${isXtraLarge ? 'text-[14px]' : 'text-[13px]'}`} style={{ color: '#ffffff' }}>{combined.maximum}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>TOTAL RESULT</span><span className={`font-black ${isXtraLarge ? 'text-[17px]' : isLarge ? 'text-[15.5px]' : 'text-[14px]'}`} style={{ color: '#ffd54f' }}>{combined.obtained}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>COMBINED %</span><span className={`text-[13px] font-black ${isXtraLarge ? 'text-[14.5px]' : 'text-[13px]'}`} style={{ color: '#ffffff' }}>{showPercentage ? `${combined.percentage.toFixed(2)}%` : '—'}</span></div>
-                        <div className="w-1/5 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>FINAL GRADE</span><span className={`font-black ${isXtraLarge ? 'text-[14px]' : 'text-[13px]'}`} style={{ color: '#ffd54f' }}>{showGrade ? combined.grade : '—'}</span></div>
-                        <div className="w-1/5 shrink-0">
-                          <span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>PROGRESS</span>
-                          {showProgress ? (
-                            <span className={`font-black ${isXtraLarge ? 'text-[12px]' : 'text-[11px]'}`} style={{ color: progress >= 0 ? '#6ee7b7' : '#fda4af' }}>
-                              {progress > 0 ? `+${progress.toFixed(2)}%` : `${progress.toFixed(2)}%`}
-                            </span>
-                          ) : (
-                            <span className="text-[10px]" style={{ color: '#cbd5e1' }}>—</span>
-                          )}
+                        <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>TOTAL M.M.</span><span className={`text-[13px] font-extrabold ${isXtraLarge ? 'text-[14px]' : 'text-[13px]'}`} style={{ color: '#ffffff' }}>{combined.maximum}</span></div>
+                        <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>TOTAL RESULT</span><span className={`font-black ${isXtraLarge ? 'text-[17px]' : isLarge ? 'text-[15.5px]' : 'text-[14px]'}`} style={{ color: '#ffd54f' }}>{combined.obtained}</span></div>
+                        <div className="w-1/4 shrink-0" style={{ borderRight: '1px solid rgba(255,255,255,0.2)' }}><span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>COMBINED %</span><span className={`text-[13px] font-black ${isXtraLarge ? 'text-[14.5px]' : 'text-[13px]'}`} style={{ color: '#ffffff' }}>{showPercentage ? `${combined.percentage.toFixed(2)}%` : '—'}</span></div>
+                        <div className="w-1/4 shrink-0">
+                          <span className="font-extrabold text-[9px] block" style={{ color: '#cbd5e1' }}>FINAL STATUS</span>
+                          <span className={`font-black ${isXtraLarge ? 'text-[14px]' : 'text-[13px]'}`} style={{ color: combined.status === 'PASS' ? '#4ade80' : '#f87171' }}>
+                            {combined.status}
+                          </span>
                         </div>
                       </div>
                     </div>

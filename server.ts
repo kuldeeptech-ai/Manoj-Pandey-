@@ -210,17 +210,8 @@ async function startServer() {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 
-  // Client-side error telemetry logger
-  app.post('/api/client-error', (req, res) => {
-    const errorData = {
-      timestamp: new Date().toISOString(),
-      ...req.body,
-    };
-    console.error('>>> [BROWSER CLIENT ERROR CAPTURED] <<<', JSON.stringify(errorData, null, 2));
-    try {
-      fs.appendFileSync(path.join(process.cwd(), 'client-error.log'), JSON.stringify(errorData) + '\n');
-    } catch {}
-    res.json({ status: 'received' });
+  app.post('/api/client-error', (_req, res) => {
+    res.status(204).end();
   });
 
   // Public School Settings

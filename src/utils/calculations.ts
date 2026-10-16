@@ -11,13 +11,8 @@ export const DEFAULT_GRADE_RULES: GradeRule[] = [
 ];
 
 export function getGradeForPercentage(percentage: number, rules: GradeRule[] = DEFAULT_GRADE_RULES): string {
-  const cleanPercentage = Math.min(100, Math.max(0, percentage));
-  for (const rule of rules) {
-    if (cleanPercentage >= rule.minPercentage && cleanPercentage <= rule.maxPercentage) {
-      return rule.grade;
-    }
-  }
-  return percentage >= 40 ? 'C' : 'D';
+  // Per user instruction: "grade nhi rakho bas"
+  return '';
 }
 
 export function validateMark(obtained: number, max: number): { isValid: boolean; error?: string } {
@@ -318,6 +313,162 @@ export function getSubjectsForClass(subjects: SubjectConfig[], className?: strin
 /**
  * Checks if a subject is Urdu or marked as optional (e.g. Urdu, Sanskrit, Drawing)
  */
+/**
+ * Extracts a clean alphanumeric English column prefix for Excel / CSV headers.
+ * Strips parentheses, Devanagari text, and repeated underscores.
+ * E.g., "Urdu (उर्दू)" -> "Urdu"
+ * E.g., "Social Science" -> "Social_Science"
+ * E.g., "Hindi ii" -> "Hindi_ii"
+ */
+export function getCleanSubjectHeader(sub: SubjectConfig): string {
+  if (!sub || !sub.name) return 'Subject';
+  // Remove parenthesized content like (उर्दू)
+  const noParens = sub.name.replace(/\([^)]*\)/g, '').trim();
+  const enOnly = noParens.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+  const cleaned = (enOnly || sub.name.replace(/[^a-zA-Z0-9]/g, '_'))
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+  return cleaned || sub.id.replace(/^sub-?/, '') || 'Subject';
+}
+
+/**
+ * Returns a rich set of matching aliases and tokens for any subject.
+ * Guarantees that bulk import matches every subject regardless of:
+ * - English names / abbreviations (e.g. "Urdu", "Math", "Maths", "Eng", "SST", "Comp", "GK")
+ * - Devanagari names (e.g. "उर्दू", "गणित", "विज्ञान", "सामाजिक", "संस्कृत", "कंप्यूटर", "हिंदी")
+ * - Substring tokens with or without underscores, hyphens, parentheses, etc.
+ */
+export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
+  if (!sub) return [];
+  const tokens = new Set<string>();
+
+  // 1. Raw ID and ID without prefix
+  const rawId = (sub.id || '').toLowerCase();
+  tokens.add(rawId);
+  tokens.add(rawId.replace(/[^a-z0-9]/g, ''));
+  const idWithoutPrefix = rawId.replace(/^sub-?/, '').replace(/[^a-z0-9]/g, '');
+  if (idWithoutPrefix) tokens.add(idWithoutPrefix);
+
+  // 2. Full raw name cleaned
+  const rawName = (sub.name || '').toLowerCase();
+  tokens.add(rawName.replace(/[^a-z0-9\u0900-\u097F]/g, ''));
+
+  // 3. Extract English-only and Devanagari-only parts
+  const words = rawName.replace(/[\(\)\[\]\{\}_,\-]/g, ' ').split(/\s+/).filter(Boolean);
+  const englishWords = words.filter((w) => /^[a-z0-9]+$/i.test(w));
+  const hindiWords = words.filter((w) => /^[\u0900-\u097F]+$/.test(w));
+
+  if (englishWords.length > 0) {
+    tokens.add(englishWords.join(''));
+    englishWords.forEach((w) => {
+      if (w.length >= 3) tokens.add(w);
+    });
+  }
+  if (hindiWords.length > 0) {
+    tokens.add(hindiWords.join(''));
+    hindiWords.forEach((w) => {
+      if (w.length >= 2) tokens.add(w);
+    });
+  }
+
+  // 4. Domain-specific subject synonyms & aliases
+  const combined = (rawName + ' ' + rawId).toLowerCase();
+
+  if (combined.includes('urdu') || combined.includes('उर्दू')) {
+    tokens.add('urdu');
+    tokens.add('उर्दू');
+  }
+  if (
+    combined.includes('hindiii') ||
+    combined.includes('hindi 2') ||
+    combined.includes('hindi ii') ||
+    combined.includes('hindi_2') ||
+    combined.includes('hindi-2') ||
+    combined.includes('द्वितीय')
+  ) {
+    tokens.add('hindiii');
+    tokens.add('hindi2');
+    tokens.add('hindi_2');
+    tokens.add('hindi2nd');
+    tokens.add('hindisecond');
+    tokens.add('द्वितीय');
+  } else if (combined.includes('hindi') || combined.includes('हिंदी') || combined.includes('हिन्दी')) {
+    tokens.add('hindi');
+    tokens.add('हिंदी');
+    tokens.add('हिन्दी');
+    tokens.add('hindi1');
+    tokens.add('hindi_1');
+    tokens.add('hindi1st');
+    tokens.add('hindifirst');
+  }
+  if (combined.includes('math') || combined.includes('ganit') || combined.includes('गणित')) {
+    tokens.add('math');
+    tokens.add('maths');
+    tokens.add('mathematics');
+    tokens.add('ganit');
+    tokens.add('गणित');
+  }
+  if (combined.includes('english') || combined.includes('अंग्रेजी') || combined.includes('अंग्रेज़ी')) {
+    tokens.add('english');
+    tokens.add('eng');
+    tokens.add('अंग्रेजी');
+    tokens.add('अंग्रेज़ी');
+  }
+  if (combined.includes('social') || combined.includes('sst') || combined.includes('सामाजिक')) {
+    tokens.add('social');
+    tokens.add('socialscience');
+    tokens.add('sst');
+    tokens.add('samajik');
+    tokens.add('सामाजिक');
+    tokens.add('सामाजिकविज्ञान');
+  } else if (combined.includes('science') || combined.includes('vigyan') || combined.includes('विज्ञान')) {
+    tokens.add('science');
+    tokens.add('sci');
+    tokens.add('vigyan');
+    tokens.add('विज्ञान');
+  }
+  if (combined.includes('sanskrit') || combined.includes('संस्कृत')) {
+    tokens.add('sanskrit');
+    tokens.add('sans');
+    tokens.add('संस्कृत');
+  }
+  if (combined.includes('computer') || combined.includes('comp') || combined.includes('कंप्यूटर')) {
+    tokens.add('computer');
+    tokens.add('comp');
+    tokens.add('it');
+    tokens.add('ict');
+    tokens.add('कंप्यूटर');
+  }
+  if (combined.includes('gk') || combined.includes('general') || combined.includes('ज्ञान')) {
+    tokens.add('gk');
+    tokens.add('generalknowledge');
+    tokens.add('general');
+    tokens.add('samanyagyan');
+    tokens.add('सामान्यज्ञान');
+  }
+  if (combined.includes('moral') || combined.includes('naitik') || combined.includes('नैतिक')) {
+    tokens.add('moral');
+    tokens.add('moralscience');
+    tokens.add('naitik');
+    tokens.add('नैतिक');
+  }
+  if (combined.includes('draw') || combined.includes('art') || combined.includes('kala') || combined.includes('कला')) {
+    tokens.add('drawing');
+    tokens.add('art');
+    tokens.add('draw');
+    tokens.add('kala');
+    tokens.add('कला');
+    tokens.add('चित्रकला');
+  }
+
+  return Array.from(tokens).filter(Boolean);
+}
+
+/**
+ * Checks if a subject is Urdu or marked as optional (e.g. Urdu, Sanskrit, Drawing)
+ */
 export function isUrduOrOptional(subject: SubjectConfig): boolean {
   if (!subject) return false;
   if (subject.isOptional) return true;
@@ -381,7 +532,7 @@ export function getSubjectsForStudent(
   if (student && Array.isArray(student.assignedSubjectIds) && student.assignedSubjectIds.length > 0) {
     const assignedSet = new Set(student.assignedSubjectIds);
     candidateSubjects = subjects
-      .filter((s) => s.active && assignedSet.has(s.id))
+      .filter((s) => s.active && (assignedSet.has(s.id) || studentHasEnteredMarks(student, s.id)))
       .sort((a, b) => a.displayOrder - b.displayOrder);
   } else {
     // If not explicitly assigned, only include compulsory subjects + any optional subjects where marks are recorded
@@ -443,9 +594,6 @@ export function calculateStudentResult(
   let annualMaxSum = 0;
   let annualObtSum = 0;
 
-  let anyHalfFailed = false;
-  let anyAnnualFailed = false;
-
   activeSubjects.forEach((subj, index) => {
     const studentMark = student.marks?.[subj.id] || { halfObtained: 0, annualObtained: 0 };
     const halfObt = Number(studentMark.halfObtained) || 0;
@@ -470,13 +618,6 @@ export function calculateStudentResult(
       validationIssues.push(`${subj.name} (Annual): ${annualValidation.error}`);
     }
 
-    if (halfObt < subj.passingMarks) {
-      anyHalfFailed = true;
-    }
-    if (annualObt < subj.passingMarks) {
-      anyAnnualFailed = true;
-    }
-
     halfMaxSum += halfMax;
     halfObtSum += halfObt;
     annualMaxSum += annualMax;
@@ -495,41 +636,64 @@ export function calculateStudentResult(
     });
   });
 
-  // Calculate Half-Yearly
+  // Has Annual exam or Half-Yearly exam been taken?
+  const hasHalfMarks = halfObtSum > 0;
+  const hasAnnualMarks = annualObtSum > 0;
+
+  // Calculate Half-Yearly (Passing criteria: 50% or obtained >= 50% of maximum marks)
   const halfPctRaw = halfMaxSum > 0 ? (halfObtSum / halfMaxSum) * 100 : 0;
   const halfPct = Math.min(100, Math.max(0, Number(halfPctRaw.toFixed(2))));
-  const halfGrade = getGradeForPercentage(halfPct, gradeRules);
-  const halfStatus: 'PASS' | 'FAIL' = halfPct >= 33 && !anyHalfFailed ? 'PASS' : 'FAIL';
+  const halfStatus: 'PASS' | 'FAIL' = halfObtSum >= (halfMaxSum * 0.5) ? 'PASS' : 'FAIL';
 
   const halfYearly: ExamSummary = {
     maximum: halfMaxSum,
     obtained: halfObtSum,
     percentage: halfPct,
-    grade: halfGrade,
+    grade: '',
     status: halfStatus,
   };
 
-  // Calculate Annual
+  // Calculate Annual (Passing criteria: 50% or obtained >= 50% of maximum marks)
   const annualPctRaw = annualMaxSum > 0 ? (annualObtSum / annualMaxSum) * 100 : 0;
   const annualPct = Math.min(100, Math.max(0, Number(annualPctRaw.toFixed(2))));
-  const annualGrade = getGradeForPercentage(annualPct, gradeRules);
-  const annualStatus: 'PASS' | 'FAIL' = annualPct >= 33 && !anyAnnualFailed ? 'PASS' : 'FAIL';
+  const annualStatus: 'PASS' | 'FAIL' = annualObtSum >= (annualMaxSum * 0.5) ? 'PASS' : 'FAIL';
 
   const annual: ExamSummary = {
     maximum: annualMaxSum,
     obtained: annualObtSum,
     percentage: annualPct,
-    grade: annualGrade,
+    grade: '',
     status: annualStatus,
   };
 
-  // Combined calculations
-  const combinedMax = halfMaxSum + annualMaxSum;
-  const combinedObt = halfObtSum + annualObtSum;
-  const combinedPctRaw = combinedMax > 0 ? (combinedObt / combinedMax) * 100 : 0;
-  const combinedPct = Math.min(100, Math.max(0, Number(combinedPctRaw.toFixed(2))));
-  const combinedGrade = getGradeForPercentage(combinedPct, gradeRules);
-  const combinedStatus: 'PASS' | 'FAIL' = annualStatus === 'PASS' && combinedPct >= 33 ? 'PASS' : 'FAIL';
+  // Combined calculations per user rule:
+  // "jaise 1000 maximum marks h aur bacha usme se 500 marks obtain kiya to pass hoga aur niche gya to fail yhi procisure har subject har class me lage"
+  // If only Half-Yearly exam was conducted (annual marks not yet entered / 0), do not fail the student against double maximum
+  let combinedMax: number;
+  let combinedObt: number;
+  let combinedPct: number;
+  let combinedStatus: 'PASS' | 'FAIL';
+
+  if (hasHalfMarks && !hasAnnualMarks) {
+    // Only Half-Yearly conducted
+    combinedMax = halfMaxSum;
+    combinedObt = halfObtSum;
+    combinedPct = halfPct;
+    combinedStatus = halfStatus;
+  } else if (!hasHalfMarks && hasAnnualMarks) {
+    // Only Annual conducted
+    combinedMax = annualMaxSum;
+    combinedObt = annualObtSum;
+    combinedPct = annualPct;
+    combinedStatus = annualStatus;
+  } else {
+    // Both exams conducted (or both 0)
+    combinedMax = halfMaxSum + annualMaxSum;
+    combinedObt = halfObtSum + annualObtSum;
+    const combinedPctRaw = combinedMax > 0 ? (combinedObt / combinedMax) * 100 : 0;
+    combinedPct = Math.min(100, Math.max(0, Number(combinedPctRaw.toFixed(2))));
+    combinedStatus = combinedObt >= (combinedMax * 0.5) ? 'PASS' : 'FAIL';
+  }
 
   // Progress = Annual Percentage - Half-Yearly Percentage points
   const progressPoints = Number((annualPct - halfPct).toFixed(2));
@@ -538,7 +702,7 @@ export function calculateStudentResult(
     maximum: combinedMax,
     obtained: combinedObt,
     percentage: combinedPct,
-    grade: combinedGrade,
+    grade: '',
     status: combinedStatus,
     progressPoints,
   };

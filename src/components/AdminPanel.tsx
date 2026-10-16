@@ -1023,7 +1023,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       displayOrder: editingSubjects.length + 1,
       halfMax: Number(newSubjectHalfMax) || 100,
       annualMax: Number(newSubjectAnnualMax) || 100,
-      passingMarks: Number(newSubjectPassingMarks) || 33,
+      passingMarks: Number(newSubjectPassingMarks) || Math.round((Number(newSubjectHalfMax) || 100) * 0.5),
       active: true,
       applicableClasses: finalClasses,
     };
@@ -1793,17 +1793,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           <span>Class Teachers & Signatures ({settingsForm.classTeachers?.length || 0})</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('grades')}
-          className={`px-3 sm:px-4 py-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
-            activeTab === 'grades'
-              ? 'border-[#0f2b48] text-[#0f2b48]'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Award className="w-4 h-4" />
-          <span>Grade Rules</span>
-        </button>
+        {/* Grade tab hidden per user instruction: "grade nhi rakho bas" */}
 
         <button
           onClick={() => setActiveTab('sheets')}
@@ -1925,14 +1915,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <th className="py-2.5 px-4">Father Name</th>
                       <th className="py-2.5 px-4">Half %</th>
                       <th className="py-2.5 px-4">Annual %</th>
-                      <th className="py-2.5 px-4">Final Grade</th>
+                      <th className="py-2.5 px-4 text-center">कुल अंक (Total)</th>
                       <th className="py-2.5 px-4">Result</th>
                       <th className="py-2.5 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
                     {sortStudentsByRoll(students).map((st) => {
-                      const res = calculateStudentResult(st, subjects, schoolSettings, gradeRules);
+                      const res = calculateStudentResult(st, subjects, schoolSettings, gradeRules, schoolSettings.defaultExamMode);
                       return (
                         <tr key={st.id} className="hover:bg-slate-50 transition-colors">
                           <td className="py-2.5 px-4 font-bold text-[#0f2b48]">{st.rollNo}</td>
@@ -1941,7 +1931,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           <td className="py-2.5 px-4 uppercase text-slate-600">{st.fatherName}</td>
                           <td className="py-2.5 px-4 font-bold">{res.halfYearly.percentage.toFixed(2)}%</td>
                           <td className="py-2.5 px-4 font-bold text-blue-900">{res.annual.percentage.toFixed(2)}%</td>
-                          <td className="py-2.5 px-4 font-bold text-[#b8860b]">{res.combined.grade}</td>
+                          <td className="py-2.5 px-4 text-center font-bold font-mono text-slate-900">{res.combined.obtained} / {res.combined.maximum}</td>
                           <td className="py-2.5 px-4">
                             <span
                               className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -3660,7 +3650,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         <th className="py-2.5 px-3 text-center bg-emerald-50/60">वार्षिक (Annual)</th>
                         <th className="py-2.5 px-3 text-center bg-amber-50/60">कुल अंक (Total)</th>
                         <th className="py-2.5 px-3 text-center">प्रतिशत (%)</th>
-                        <th className="py-2.5 px-3 text-center">ग्रेड</th>
+                        <th className="py-2.5 px-3 text-center">स्थिति (Status)</th>
                         <th className="py-2.5 px-3 text-center">कार्रवाई (Action)</th>
                       </tr>
                     </thead>
@@ -3742,12 +3732,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               <td className="py-2 px-3 text-center font-bold">
                                 {hasMarks ? (
                                   <span
-                                    className={`px-2 py-0.5 rounded text-[11px] ${
-                                      res.combined.percentage >= 60
+                                    className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                                      res.combined.percentage >= 50
                                         ? 'bg-emerald-100 text-emerald-800'
-                                        : res.combined.percentage >= 40
-                                        ? 'bg-amber-100 text-amber-800'
-                                        : 'bg-red-100 text-red-800'
+                                        : 'bg-rose-100 text-rose-800'
                                     }`}
                                   >
                                     {res.combined.percentage.toFixed(1)}%
@@ -3758,8 +3746,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               </td>
                               <td className="py-2 px-3 text-center font-bold">
                                 {hasMarks ? (
-                                  <span className="px-2 py-0.5 bg-slate-100 text-slate-800 rounded font-mono text-xs">
-                                    {res.combined.grade}
+                                  <span
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                      res.combined.status === 'PASS'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : 'bg-rose-100 text-rose-800'
+                                    }`}
+                                  >
+                                    {res.combined.status}
                                   </span>
                                 ) : (
                                   '—'
@@ -4217,7 +4211,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           Percentage: <strong>{liveResult.halfYearly.percentage.toFixed(2)}%</strong>
                         </p>
                         <p className="text-slate-700">
-                          Grade: <strong className="text-[#b8860b]">{liveResult.halfYearly.grade}</strong> ({liveResult.halfYearly.status})
+                          Status: <strong className={liveResult.halfYearly.status === 'PASS' ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold'}>{liveResult.halfYearly.status}</strong>
                         </p>
                       </div>
 
@@ -4230,7 +4224,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           Percentage: <strong>{liveResult.annual.percentage.toFixed(2)}%</strong>
                         </p>
                         <p className="text-slate-700">
-                          Grade: <strong className="text-[#b8860b]">{liveResult.annual.grade}</strong> ({liveResult.annual.status})
+                          Status: <strong className={liveResult.annual.status === 'PASS' ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold'}>{liveResult.annual.status}</strong>
                         </p>
                       </div>
 
@@ -4240,10 +4234,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           Grand Total: <strong className="text-[#0f2b48]">{liveResult.combined.obtained}</strong> / {liveResult.combined.maximum}
                         </p>
                         <p className="text-slate-700">
-                          Combined %: <strong className="text-amber-700">{liveResult.combined.percentage.toFixed(2)}%</strong>
+                          Combined %: <strong className={liveResult.combined.status === 'PASS' ? 'text-emerald-700' : 'text-rose-700'}>{liveResult.combined.percentage.toFixed(2)}%</strong>
                         </p>
                         <p className="text-slate-700">
-                          Progress: <strong>{liveResult.progress > 0 ? `+${liveResult.progress.toFixed(2)}%` : `${liveResult.progress.toFixed(2)}%`}</strong>
+                          Final Status: <strong className={liveResult.combined.status === 'PASS' ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold'}>{liveResult.combined.status}</strong>
                         </p>
                       </div>
                     </div>

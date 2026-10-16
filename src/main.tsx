@@ -4,36 +4,19 @@ import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import './index.css';
 
+// Suppress harmless Vite HMR WebSocket disconnection errors in iframe environment
 if (typeof window !== 'undefined') {
-  window.addEventListener('error', (e) => {
-    try {
-      fetch('/api/client-error', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source: 'window.onerror',
-          message: e.message,
-          stack: e.error?.stack,
-          filename: e.filename,
-          lineno: e.lineno,
-          colno: e.colno,
-        }),
-      }).catch(() => {});
-    } catch {}
-  });
-
   window.addEventListener('unhandledrejection', (e) => {
-    try {
-      fetch('/api/client-error', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source: 'unhandledrejection',
-          reason: String(e.reason?.message || e.reason),
-          stack: e.reason?.stack,
-        }),
-      }).catch(() => {});
-    } catch {}
+    const reason = String(e.reason?.message || e.reason || '');
+    if (
+      reason.includes('WebSocket') ||
+      reason.includes('ws://') ||
+      reason.includes('wss://') ||
+      reason.includes('@vite/client')
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   });
 }
 

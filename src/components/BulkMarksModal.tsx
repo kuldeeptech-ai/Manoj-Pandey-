@@ -15,7 +15,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { Student, SubjectConfig } from '../types';
-import { canonicalClassName, isSameClass, sortStudentsByRoll, getSubjectsForClass } from '../utils/calculations';
+import { canonicalClassName, isSameClass, sortStudentsByRoll, getSubjectsForClass, getCleanSubjectHeader, getSubjectMatchTokens } from '../utils/calculations';
 import { DEFAULT_STUDENT_PHOTO_FALLBACK } from '../data/defaultData';
 
 interface BulkMarksModalProps {
@@ -100,7 +100,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
   const getHeaderColumns = () => {
     const cols = ['Roll_No', 'Student_Name', 'Class'];
     activeSubjects.forEach((sub) => {
-      const cleanSub = sub.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const cleanSub = getCleanSubjectHeader(sub);
       cols.push(`${cleanSub}_Half`);
       cols.push(`${cleanSub}_Annual`);
     });
@@ -283,12 +283,16 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
         const st = studentMap.get(stId);
         if (!st) continue;
 
-        const targetSub = subjects.find(
-          (s) =>
+        const targetSub = subjects.find((s) => {
+          const tokens = getSubjectMatchTokens(s);
+          const cleanSub = subName.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+          return (
             s.id.toLowerCase() === subName ||
             s.name.toLowerCase() === subName ||
-            subName.includes(s.name.toLowerCase())
-        );
+            subName.includes(s.name.toLowerCase()) ||
+            tokens.some((t) => t.toLowerCase() === subName || cleanSub === t.toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, ''))
+          );
+        });
 
         if (targetSub) {
           st.marks = st.marks || {};
@@ -296,6 +300,10 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
             halfObtained: isNaN(half) ? 0 : half,
             annualObtained: isNaN(annual) ? 0 : annual,
           };
+          // Ensure assignedSubjectIds includes imported subject
+          if (Array.isArray(st.assignedSubjectIds) && !st.assignedSubjectIds.includes(targetSub.id)) {
+            st.assignedSubjectIds.push(targetSub.id);
+          }
           matchedCount++;
         }
       }
@@ -332,34 +340,46 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
       // Map subject columns intelligently
       const subColMap: { subjectId: string; colIdx: number; type: 'half' | 'annual' }[] = [];
 
-      // Sort subjects by name length descending so specific subjects (e.g. 'Hindi ii') match BEFORE substring parents ('Hindi')
-      const sortedSubjects = [...subjects].sort((a, b) => b.name.length - a.name.length);
+      // Sort subjects so specific subjects (e.g. 'Hindi ii' before 'Hindi', 'Social Science' before 'Science') match first
+      const sortedSubjects = [...subjects].sort((a, b) => {
+        const aIsSpecific = a.name.toLowerCase().includes('ii') || a.name.includes('2') || a.name.toLowerCase().includes('social') || a.name.toLowerCase().includes('moral');
+        const bIsSpecific = b.name.toLowerCase().includes('ii') || b.name.includes('2') || b.name.toLowerCase().includes('social') || b.name.toLowerCase().includes('moral');
+        if (aIsSpecific && !bIsSpecific) return -1;
+        if (!aIsSpecific && bIsSpecific) return 1;
+        return b.name.length - a.name.length;
+      });
 
       const isSubMatch = (h: string, sub: SubjectConfig) => {
-        const cleanSub = sub.name.toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, '');
-        if (!cleanSub) return false;
-        const idMatch = sub.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanH = h.toLowerCase().trim();
+        const normH = cleanH.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+        if (!normH) return false;
 
-        if (h.includes(cleanSub) || (idMatch && h.includes(idMatch))) return true;
+        // Isolate subject token by stripping term keywords
+        const subToken = normH.replace(/(halfyearly|half|ardhvarshik|ardh|arw|term1|t1|annual|varshik|final|term2|t2|marks|mark|obt|obtained|[ha])$/g, '');
 
-        if (cleanSub.includes('moral') && (h.includes('moral') || h.includes('naitik'))) return true;
-        if (cleanSub.includes('social') && (h.includes('social') || h.includes('sst'))) return true;
-        if (cleanSub.includes('general') && (h.includes('gk') || h.includes('general'))) return true;
-        if (cleanSub.includes('math') && (h.includes('math') || h.includes('ganit'))) return true;
-        if (cleanSub.includes('science') && !cleanSub.includes('social') && !cleanSub.includes('moral') && h.includes('science')) return true;
-        if (cleanSub.includes('computer') && h.includes('comp')) return true;
-        if (cleanSub.includes('hindiii') && (h.includes('hindi2') || h.includes('hindiii') || h.includes('hindi_2'))) return true;
+        const tokens = getSubjectMatchTokens(sub);
+        for (const token of tokens) {
+          const cleanToken = token.toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, '');
+          if (!cleanToken) continue;
+
+          if (subToken === cleanToken || normH === cleanToken) return true;
+          if (subToken.length >= 3 && cleanToken.length >= 3) {
+            if (subToken.startsWith(cleanToken) || cleanToken.startsWith(subToken)) return true;
+          }
+          if (normH.includes(cleanToken) || cleanToken.includes(subToken && subToken.length >= 3 ? subToken : '_____')) return true;
+        }
         return false;
       };
 
       headers.forEach((h, colIdx) => {
         if (colIdx === idxId || colIdx === idxRoll || colIdx === idxClass || colIdx === idxName) return;
 
+        const cleanH = h.toLowerCase().trim();
+        const isHalf = cleanH.includes('half') || cleanH.includes('ardh') || cleanH.includes('arw') || cleanH.includes('term1') || cleanH.includes('t1') || cleanH.endsWith('_h') || cleanH.endsWith('h');
+        const isAnnual = cleanH.includes('annual') || cleanH.includes('varshik') || cleanH.includes('final') || cleanH.includes('term2') || cleanH.includes('t2') || cleanH.endsWith('_a') || cleanH.endsWith('a');
+
         for (const sub of sortedSubjects) {
           if (isSubMatch(h, sub)) {
-            const isHalf = h.includes('half') || h.includes('arw') || h.includes('hyearly') || h.endsWith('half') || h.endsWith('h');
-            const isAnnual = h.includes('annual') || h.includes('varshik') || h.includes('final') || h.endsWith('annual') || h.endsWith('a');
-
             if (isHalf) {
               subColMap.push({ subjectId: sub.id, colIdx, type: 'half' });
               break;
@@ -444,15 +464,22 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
           let rowAnnual = 0;
 
           subColMap.forEach(({ subjectId, colIdx, type }) => {
-            const val = Number(row[colIdx]);
-            if (!isNaN(val)) {
-              if (!targetStudent!.marks[subjectId]) {
-                targetStudent!.marks[subjectId] = { halfObtained: 0, annualObtained: 0 };
-              }
-              if (type === 'half') {
-                targetStudent!.marks[subjectId].halfObtained = val;
-              } else {
-                targetStudent!.marks[subjectId].annualObtained = val;
+            const rawCell = row[colIdx];
+            if (rawCell !== undefined && rawCell !== null && String(rawCell).trim() !== '') {
+              const val = Number(rawCell);
+              if (!isNaN(val)) {
+                if (!targetStudent!.marks[subjectId]) {
+                  targetStudent!.marks[subjectId] = { halfObtained: 0, annualObtained: 0 };
+                }
+                if (type === 'half') {
+                  targetStudent!.marks[subjectId].halfObtained = val;
+                } else {
+                  targetStudent!.marks[subjectId].annualObtained = val;
+                }
+                // Ensure assignedSubjectIds includes imported subject
+                if (Array.isArray(targetStudent!.assignedSubjectIds) && !targetStudent!.assignedSubjectIds.includes(subjectId)) {
+                  targetStudent!.assignedSubjectIds.push(subjectId);
+                }
               }
             }
           });
@@ -879,23 +906,30 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                         </td>
                         <td className="py-2 px-3">
                           <div className="flex flex-wrap gap-1 max-w-sm">
-                            {activeSubjects.map((sub) => {
-                              const m = st.marks[sub.id];
-                              const hasM = m && ((m.halfObtained || 0) > 0 || (m.annualObtained || 0) > 0);
-                              return (
-                                <span
-                                  key={sub.id}
-                                  className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                                    hasM
-                                      ? 'bg-slate-100 text-slate-800 border border-slate-200'
-                                      : 'bg-slate-50 text-slate-400'
-                                  }`}
-                                  title={`${sub.name}: Half=${m?.halfObtained || 0}, Annual=${m?.annualObtained || 0}`}
-                                >
-                                  <strong>{sub.name.slice(0, 4)}:</strong> {m?.halfObtained || 0}/{m?.annualObtained || 0}
-                                </span>
-                              );
-                            })}
+                            {(() => {
+                              const studentSubIds = new Set([
+                                ...activeSubjects.map((s) => s.id),
+                                ...Object.keys(st.marks || {}),
+                              ]);
+                              const displaySubs = subjects.filter((s) => studentSubIds.has(s.id));
+                              return displaySubs.map((sub) => {
+                                const m = st.marks[sub.id];
+                                const hasM = m && ((m.halfObtained || 0) > 0 || (m.annualObtained || 0) > 0);
+                                return (
+                                  <span
+                                    key={sub.id}
+                                    className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                                      hasM
+                                        ? 'bg-slate-100 text-slate-800 border border-slate-200'
+                                        : 'bg-slate-50 text-slate-400'
+                                    }`}
+                                    title={`${sub.name}: Half=${m?.halfObtained || 0}, Annual=${m?.annualObtained || 0}`}
+                                  >
+                                    <strong>{getCleanSubjectHeader(sub).slice(0, 5)}:</strong> {m?.halfObtained || 0}/{m?.annualObtained || 0}
+                                  </span>
+                                );
+                              });
+                            })()}
                           </div>
                         </td>
                         <td className="py-2 px-3 text-center font-bold text-blue-900 bg-blue-50/30">

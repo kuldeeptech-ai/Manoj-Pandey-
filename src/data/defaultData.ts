@@ -233,7 +233,7 @@ export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
   showStudentPhoto: true,
   showSignatures: true,
   showPercentage: true,
-  showGrade: true,
+  showGrade: false,
   showProgressGraph: true,
   allowPublicSearch: true,
   enableCaptcha: true,
@@ -255,17 +255,16 @@ export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
 };
 
 export const DEFAULT_SUBJECTS: SubjectConfig[] = [
-  { id: 'sub-hindi', name: 'Hindi', displayOrder: 1, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-english', name: 'English', displayOrder: 2, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-maths', name: 'Mathematics', displayOrder: 3, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-science', name: 'Science', displayOrder: 4, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-social', name: 'Social Science', displayOrder: 5, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-sanskrit', name: 'Sanskrit', displayOrder: 6, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-computer', name: 'Computer', displayOrder: 7, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-gk', name: 'General Knowledge', displayOrder: 8, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-1789291043759', name: 'Hindi ii', displayOrder: 10, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['6th', '7th', '8th'] },
-  { id: 'sub-1789291370377', name: 'dgg', displayOrder: 11, halfMax: 100, annualMax: 100, passingMarks: 33, active: false, applicableClasses: ['8th'] },
-  { id: 'sub-urdu', name: 'Urdu (उर्दू)', displayOrder: 12, halfMax: 100, annualMax: 100, passingMarks: 33, active: true, applicableClasses: ['5th', '6th', '7th', '8th'], isOptional: true },
+  { id: 'sub-hindi', name: 'Hindi', displayOrder: 1, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
+  { id: 'sub-english', name: 'English', displayOrder: 2, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
+  { id: 'sub-maths', name: 'Mathematics', displayOrder: 3, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
+  { id: 'sub-science', name: 'Science', displayOrder: 4, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
+  { id: 'sub-social', name: 'Social Science', displayOrder: 5, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
+  { id: 'sub-sanskrit', name: 'Sanskrit', displayOrder: 6, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
+  { id: 'sub-computer', name: 'Computer', displayOrder: 7, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
+  { id: 'sub-gk', name: 'General Knowledge', displayOrder: 8, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
+  { id: 'sub-1789291043759', name: 'Hindi ii', displayOrder: 10, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['6th', '7th', '8th'] },
+  { id: 'sub-urdu', name: 'Urdu (उर्दू)', displayOrder: 12, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'], isOptional: true },
 ];
 
 export const DEFAULT_STUDENTS: Student[] = [
