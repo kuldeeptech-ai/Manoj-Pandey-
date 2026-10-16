@@ -806,7 +806,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             {authRoleTab === 'staff' ? (
               <span>सहायक स्टाफ केवल छात्र व अंक प्रबंधन कर सकते हैं</span>
             ) : (
-              <span>प्रशासनिक नियंत्रण केवल <strong>{AUTHORIZED_ADMIN_EMAIL}</strong> के अधीन है</span>
+              <span>प्रशासनिक नियंत्रण केवल कुलदीप राय के अधीन है</span>
             )}
           </p>
         </div>
