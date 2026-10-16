@@ -322,21 +322,58 @@ export function getSubjectsForClass(subjects: SubjectConfig[], className?: strin
  */
 export function getCleanSubjectHeader(sub: SubjectConfig): string {
   if (!sub || !sub.name) return 'Subject';
-  // Remove parenthesized content like (उर्दू)
-  const noParens = sub.name.replace(/\([^)]*\)/g, '').trim();
+  const name = sub.name.trim();
+
+  // 1. If name contains English characters: extract the clean English portion (e.g. "Hindi ii", "Social Science", "dd", "Computer")
+  const noParens = name.replace(/\([^)]*\)/g, '').trim();
   const enOnly = noParens.replace(/[^a-zA-Z0-9\s]/g, '').trim();
-  const cleaned = (enOnly || sub.name.replace(/[^a-zA-Z0-9]/g, '_'))
+  if (enOnly) {
+    const cleaned = enOnly
+      .replace(/\s+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+    if (cleaned) return cleaned;
+  }
+
+  // 2. Hindi / Devanagari common subject translations to clean headers
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('संस्कृत')) return 'Sanskrit';
+  if (lowerName.includes('चित्रकला') || lowerName.includes('कला') || lowerName.includes('आर्ट') || lowerName.includes('ड्राइंग')) return 'Drawing';
+  if (lowerName.includes('गृह विज्ञान') || lowerName.includes('गृहविज्ञान')) return 'Home_Science';
+  if (lowerName.includes('कंप्यूटर') || lowerName.includes('कम्प्यूटर')) return 'Computer';
+  if (lowerName.includes('विज्ञान') && !lowerName.includes('सामाजिक')) return 'Science';
+  if (lowerName.includes('सामाजिक') || lowerName.includes('भूगोल') || lowerName.includes('इतिहास')) return 'Social_Science';
+  if (lowerName.includes('गणित')) return 'Maths';
+  if (lowerName.includes('अंग्रेजी') || lowerName.includes('अंग्रेज़ी')) return 'English';
+  if (lowerName.includes('हिंदी') || lowerName.includes('हिन्दी')) {
+    if (lowerName.includes('द्वितीय') || lowerName.includes('2') || lowerName.includes('ii')) return 'Hindi_ii';
+    return 'Hindi';
+  }
+  if (lowerName.includes('उर्दू')) return 'Urdu';
+  if (lowerName.includes('नैतिक')) return 'Moral_Science';
+  if (lowerName.includes('शारीरिक') || lowerName.includes('खेल') || lowerName.includes('व्यायाम')) return 'Physical_Education';
+  if (lowerName.includes('पर्यावरण') || lowerName.includes('ईवीएस')) return 'EVS';
+  if (lowerName.includes('दीनियात')) return 'Deeniyat';
+
+  // 3. Fallback: sanitize original Devanagari or other script name with underscores
+  const cleanOther = name
+    .replace(/[\(\)\[\]\{\}\/\\,;:\.]/g, '')
     .trim()
     .replace(/\s+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '');
-  return cleaned || sub.id.replace(/^sub-?/, '') || 'Subject';
+    .replace(/_+/g, '_');
+  if (cleanOther) return cleanOther;
+
+  // 4. Last fallback to subject ID without prefix if not purely numbers
+  const idClean = (sub.id || '').replace(/^sub-?/, '');
+  if (idClean && isNaN(Number(idClean))) return idClean;
+
+  return 'Subject';
 }
 
 /**
  * Returns a rich set of matching aliases and tokens for any subject.
  * Guarantees that bulk import matches every subject regardless of:
- * - English names / abbreviations (e.g. "Urdu", "Math", "Maths", "Eng", "SST", "Comp", "GK")
+ * - English names / abbreviations (e.g. "Urdu", "Math", "Maths", "Eng", "SST", "Comp", "GK", "dd")
  * - Devanagari names (e.g. "उर्दू", "गणित", "विज्ञान", "सामाजिक", "संस्कृत", "कंप्यूटर", "हिंदी")
  * - Substring tokens with or without underscores, hyphens, parentheses, etc.
  */
@@ -351,11 +388,16 @@ export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
   const idWithoutPrefix = rawId.replace(/^sub-?/, '').replace(/[^a-z0-9]/g, '');
   if (idWithoutPrefix) tokens.add(idWithoutPrefix);
 
-  // 2. Full raw name cleaned
+  // 2. Clean header name (e.g. "dd", "Sanskrit", "Social_Science")
+  const cleanHeader = getCleanSubjectHeader(sub).toLowerCase();
+  tokens.add(cleanHeader);
+  tokens.add(cleanHeader.replace(/[^a-z0-9\u0900-\u097F]/g, ''));
+
+  // 3. Full raw name cleaned
   const rawName = (sub.name || '').toLowerCase();
   tokens.add(rawName.replace(/[^a-z0-9\u0900-\u097F]/g, ''));
 
-  // 3. Extract English-only and Devanagari-only parts
+  // 4. Extract English-only and Devanagari-only parts
   const words = rawName.replace(/[\(\)\[\]\{\}_,\-]/g, ' ').split(/\s+/).filter(Boolean);
   const englishWords = words.filter((w) => /^[a-z0-9]+$/i.test(w));
   const hindiWords = words.filter((w) => /^[\u0900-\u097F]+$/.test(w));
@@ -363,7 +405,7 @@ export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
   if (englishWords.length > 0) {
     tokens.add(englishWords.join(''));
     englishWords.forEach((w) => {
-      if (w.length >= 3) tokens.add(w);
+      if (w.length >= 2) tokens.add(w);
     });
   }
   if (hindiWords.length > 0) {
@@ -535,13 +577,19 @@ export function getSubjectsForStudent(
       .filter((s) => s.active && (assignedSet.has(s.id) || studentHasEnteredMarks(student, s.id)))
       .sort((a, b) => a.displayOrder - b.displayOrder);
   } else {
-    // If not explicitly assigned, only include compulsory subjects + any optional subjects where marks are recorded
-    candidateSubjects = classSubjects.filter((subj) => {
-      if (isUrduOrOptional(subj)) {
-        return studentHasEnteredMarks(student, subj.id);
-      }
-      return true;
-    });
+    // If not explicitly assigned, include all class subjects, PLUS any active subject where student has entered marks (> 0)
+    const marksEnteredSubIds = new Set(
+      Object.keys(student?.marks || {}).filter((subId) => studentHasEnteredMarks(student, subId))
+    );
+    candidateSubjects = subjects
+      .filter((s) => s.active && (isSubjectApplicableToClass(s, targetClass) || marksEnteredSubIds.has(s.id)))
+      .filter((subj) => {
+        if (isUrduOrOptional(subj)) {
+          return studentHasEnteredMarks(student, subj.id);
+        }
+        return true;
+      })
+      .sort((a, b) => a.displayOrder - b.displayOrder);
   }
 
   // When querying for Admin Marks Entry input table:

@@ -10,12 +10,20 @@ import {
   Copy,
   CheckCheck,
   Table as TableIcon,
-  Sparkles,
   HelpCircle,
   Filter,
+  Layers,
+  Settings2,
 } from 'lucide-react';
 import { Student, SubjectConfig } from '../types';
-import { canonicalClassName, isSameClass, sortStudentsByRoll, getSubjectsForClass, getCleanSubjectHeader, getSubjectMatchTokens } from '../utils/calculations';
+import {
+  canonicalClassName,
+  isSameClass,
+  sortStudentsByRoll,
+  getSubjectsForClass,
+  getCleanSubjectHeader,
+  getSubjectMatchTokens,
+} from '../utils/calculations';
 import { DEFAULT_STUDENT_PHOTO_FALLBACK } from '../data/defaultData';
 
 interface BulkMarksModalProps {
@@ -44,6 +52,7 @@ export interface ParsedMarksPreviewRow {
   halfTotal: number;
   annualTotal: number;
   grandTotal: number;
+  status: 'PASS' | 'FAIL';
 }
 
 export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
@@ -81,6 +90,16 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
+  // User controls for template customization:
+  // 1. Scope: 'class' (only subjects applicable to selected class) or 'all' (all school subjects)
+  const [templateSubjectScope, setTemplateSubjectScope] = useState<'class' | 'all'>('class');
+
+  // 2. Format: 'both' (Subject_Half + Subject_Annual) or 'single' (Subject only)
+  const [templateFormat, setTemplateFormat] = useState<'both' | 'single'>('both');
+
+  // 3. Single column import target: where to apply marks when only 1 column per subject is pasted
+  const [singleColumnTarget, setSingleColumnTarget] = useState<'both' | 'half' | 'annual'>('half');
+
   const saveFn = onSaveBulkMarks || onSaveMarks;
 
   const filteredStudents = useMemo(() => {
@@ -91,25 +110,36 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
     return sortStudentsByRoll(list);
   }, [students, selectedClass]);
 
-  // Active subjects filtered by selected class
+  // Active subjects for headers and template:
+  // Dynamically reacts whenever a new subject is added (e.g. 'dd') or modified
   const activeSubjects = useMemo(() => {
-    return getSubjectsForClass(subjects, selectedClass === 'ALL' ? undefined : selectedClass);
-  }, [subjects, selectedClass]);
+    if (selectedClass === 'ALL' || templateSubjectScope === 'all') {
+      return [...subjects].filter((s) => s.active).sort((a, b) => a.displayOrder - b.displayOrder);
+    }
+    const classSubs = getSubjectsForClass(subjects, selectedClass);
+    return classSubs.length > 0
+      ? classSubs
+      : [...subjects].filter((s) => s.active).sort((a, b) => a.displayOrder - b.displayOrder);
+  }, [subjects, selectedClass, templateSubjectScope]);
 
   // Helper to construct header column names
-  const getHeaderColumns = () => {
+  const getHeaderColumns = (format: 'both' | 'single' = templateFormat) => {
     const cols = ['Roll_No', 'Student_Name', 'Class'];
     activeSubjects.forEach((sub) => {
       const cleanSub = getCleanSubjectHeader(sub);
-      cols.push(`${cleanSub}_Half`);
-      cols.push(`${cleanSub}_Annual`);
+      if (format === 'both') {
+        cols.push(`${cleanSub}_Half`);
+        cols.push(`${cleanSub}_Annual`);
+      } else {
+        cols.push(cleanSub);
+      }
     });
     return cols;
   };
 
   // 1. COPY HEADERS BUTTON
-  const handleCopyHeadersOnly = async () => {
-    const headers = getHeaderColumns();
+  const handleCopyHeadersOnly = async (format: 'both' | 'single' = templateFormat) => {
+    const headers = getHeaderColumns(format);
     const tabHeaders = headers.join('\t');
 
     try {
@@ -123,7 +153,9 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
         document.execCommand('copy');
         document.body.removeChild(tempTextArea);
       }
-      setCopyFeedback('✅ Excel हेडर क्लिपबोर्ड में कॉपी हो गए! अब Excel की पंक्ति 1 (Row 1) में पेस्ट करें।');
+      setCopyFeedback(
+        `✅ Excel हेडर (${headers.length} कॉलम, ${activeSubjects.length} विषय) क्लिपबोर्ड में कॉपी हो गए! अब Excel की पंक्ति 1 में पेस्ट करें।`
+      );
       setTimeout(() => setCopyFeedback(null), 5000);
     } catch {
       setCopyFeedback('⚠️ क्लिपबोर्ड कॉपी में समस्या आई। नीचे दिए गए टेक्स्ट बॉक्स से हेडर कॉपी करें।');
@@ -132,8 +164,8 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
   };
 
   // 2. COPY FULL TEMPLATE WITH FILTERED STUDENTS
-  const handleCopyFullTemplate = async () => {
-    const headers = getHeaderColumns();
+  const handleCopyFullTemplate = async (format: 'both' | 'single' = templateFormat) => {
+    const headers = getHeaderColumns(format);
     const rows: string[] = [headers.join('\t')];
 
     filteredStudents.forEach((st) => {
@@ -141,8 +173,12 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
       const row = [st.rollNo, st.name, st.className];
       activeSubjects.forEach((sub) => {
         const m = marksMap[sub.id] || { halfObtained: 0, annualObtained: 0 };
-        row.push(String(m.halfObtained ?? 0));
-        row.push(String(m.annualObtained ?? 0));
+        if (format === 'both') {
+          row.push(String(m.halfObtained ?? 0));
+          row.push(String(m.annualObtained ?? 0));
+        } else {
+          row.push(String(m.halfObtained || m.annualObtained || 0));
+        }
       });
       rows.push(row.join('\t'));
     });
@@ -160,7 +196,9 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
         document.execCommand('copy');
         document.body.removeChild(tempTextArea);
       }
-      setCopyFeedback(`✅ ${filteredStudents.length} छात्रों सहित पूरा फॉर्मेट कॉपी हो गया! इसे सीधे Excel में पेस्ट कर नंबर भरें।`);
+      setCopyFeedback(
+        `✅ ${filteredStudents.length} छात्रों व ${activeSubjects.length} विषयों सहित पूरा टेम्पलेट कॉपी हो गया! इसे सीधे Excel में पेस्ट कर नंबर भरें।`
+      );
       setTimeout(() => setCopyFeedback(null), 5000);
     } catch {
       setPasteContent(fullTsv);
@@ -168,8 +206,8 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
   };
 
   // 3. Generate and download class marks CSV template
-  const handleDownloadMarksTemplate = () => {
-    const headers = ['Student_ID', ...getHeaderColumns()];
+  const handleDownloadMarksTemplate = (format: 'both' | 'single' = templateFormat) => {
+    const headers = ['Student_ID', ...getHeaderColumns(format)];
     const headerLine = headers.join(',') + '\n';
 
     const rowLines = filteredStudents.map((st) => {
@@ -177,8 +215,12 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
       const marksMap = st.marks || {};
       activeSubjects.forEach((sub) => {
         const m = (marksMap && marksMap[sub.id]) || { halfObtained: 0, annualObtained: 0 };
-        row.push(String(m.halfObtained ?? 0));
-        row.push(String(m.annualObtained ?? 0));
+        if (format === 'both') {
+          row.push(String(m.halfObtained ?? 0));
+          row.push(String(m.annualObtained ?? 0));
+        } else {
+          row.push(String(m.halfObtained || m.annualObtained || 0));
+        }
       });
       return row.join(',');
     });
@@ -188,7 +230,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Marks_Template_Class_${selectedClass}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `Marks_Template_Class_${selectedClass}_${format}_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -242,8 +284,9 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
       return result;
     };
 
-    const headers = parseLine(lines[0]).map((h) =>
-      h.toLowerCase().replace(/[^a-z0-9]/g, '')
+    const rawHeaders = parseLine(lines[0]);
+    const normHeaders = rawHeaders.map((h) =>
+      h.toLowerCase().trim().replace(/[^a-z0-9\u0900-\u097F]/g, '')
     );
 
     const studentMap = new Map<string, Student>();
@@ -251,6 +294,9 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
       studentMap.set(s.id, {
         ...s,
         marks: { ...(s.marks || {}) },
+        assignedSubjectIds: Array.isArray(s.assignedSubjectIds)
+          ? [...s.assignedSubjectIds]
+          : [],
       });
     });
 
@@ -259,24 +305,24 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
 
     // Check if wide table or row-per-subject format
     const isRowPerSubject =
-      headers.includes('subject') &&
-      (headers.includes('halfobtained') || headers.includes('half_obtained') || headers.includes('half'));
+      normHeaders.includes('subject') &&
+      (normHeaders.includes('halfobtained') || normHeaders.includes('half_obtained') || normHeaders.includes('half'));
 
     if (isRowPerSubject) {
       // Row-per-subject format
-      const idxId = headers.findIndex((h) => h.includes('studentid') || h.includes('id'));
-      const idxSub = headers.findIndex((h) => h.includes('subject'));
-      const idxHalf = headers.findIndex((h) => h.includes('halfobtained') || h.includes('half'));
-      const idxAnnual = headers.findIndex((h) => h.includes('annualobtained') || h.includes('annual'));
+      const idxId = normHeaders.findIndex((h) => h === 'studentid' || h === 'id');
+      const idxSub = normHeaders.findIndex((h) => h.includes('subject'));
+      const idxHalf = normHeaders.findIndex((h) => h.includes('halfobtained') || h.includes('half'));
+      const idxAnnual = normHeaders.findIndex((h) => h.includes('annualobtained') || h.includes('annual'));
 
       for (let i = 1; i < lines.length; i++) {
         const row = parseLine(lines[i]);
         if (row.length < 2) continue;
 
-        const stId = row[idxId]?.trim();
-        const subName = row[idxSub]?.trim().toLowerCase();
-        const half = Number(row[idxHalf] || 0);
-        const annual = Number(row[idxAnnual] || 0);
+        const stId = idxId >= 0 ? row[idxId]?.trim() : '';
+        const subName = idxSub >= 0 ? row[idxSub]?.trim().toLowerCase() : '';
+        const half = Number(idxHalf >= 0 ? row[idxHalf] : 0);
+        const annual = Number(idxAnnual >= 0 ? row[idxAnnual] : 0);
 
         if (!stId || !subName) continue;
 
@@ -286,11 +332,17 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
         const targetSub = subjects.find((s) => {
           const tokens = getSubjectMatchTokens(s);
           const cleanSub = subName.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+          const cleanHeaderName = getCleanSubjectHeader(s).toLowerCase();
           return (
             s.id.toLowerCase() === subName ||
             s.name.toLowerCase() === subName ||
+            cleanHeaderName === subName ||
             subName.includes(s.name.toLowerCase()) ||
-            tokens.some((t) => t.toLowerCase() === subName || cleanSub === t.toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, ''))
+            tokens.some(
+              (t) =>
+                t.toLowerCase() === subName ||
+                cleanSub === t.toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, '')
+            )
           );
         });
 
@@ -301,7 +353,10 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
             annualObtained: isNaN(annual) ? 0 : annual,
           };
           // Ensure assignedSubjectIds includes imported subject
-          if (Array.isArray(st.assignedSubjectIds) && !st.assignedSubjectIds.includes(targetSub.id)) {
+          if (!Array.isArray(st.assignedSubjectIds)) {
+            st.assignedSubjectIds = [];
+          }
+          if (!st.assignedSubjectIds.includes(targetSub.id)) {
             st.assignedSubjectIds.push(targetSub.id);
           }
           matchedCount++;
@@ -315,6 +370,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
           halfTot += Number(m.halfObtained || 0);
           annualTot += Number(m.annualObtained || 0);
         });
+        const gTot = halfTot + annualTot;
         previewRows.push({
           studentId: st.id,
           rollNo: st.rollNo,
@@ -327,88 +383,246 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
           marks: st.marks,
           halfTotal: halfTot,
           annualTotal: annualTot,
-          grandTotal: halfTot + annualTot,
+          grandTotal: gTot,
+          status: 'PASS',
         });
       });
     } else {
-      // Standard Wide Table (Roll_No, Student_Name, Class, Hindi_Half, Hindi_Annual, etc.)
-      const idxId = headers.findIndex((h) => h === 'studentid' || h === 'id');
-      const idxRoll = headers.findIndex((h) => h.includes('roll') || h.includes('kramank'));
-      const idxClass = headers.findIndex((h) => h.includes('class') || h.includes('kaksha'));
-      const idxName = headers.findIndex((h) => h.includes('name') || h.includes('chhatra') || h.includes('naam'));
+      // Standard Wide Table (Roll_No, Student_Name, Class, Hindi_Half, Hindi_Annual, dd_Half, dd_Annual, etc.)
+      const idxId = normHeaders.findIndex((h) => h === 'studentid' || h === 'id' || h === 'stid');
+      const idxRoll = normHeaders.findIndex(
+        (h) =>
+          h.includes('roll') ||
+          h.includes('kramank') ||
+          h.includes('अनुक्रमांक') ||
+          h.includes('रोल') ||
+          h === 'rno'
+      );
+      const idxClass = normHeaders.findIndex(
+        (h) =>
+          h.includes('class') ||
+          h.includes('kaksha') ||
+          h.includes('कक्षा') ||
+          h === 'cls'
+      );
+      const idxName = normHeaders.findIndex(
+        (h, i) =>
+          i !== idxId &&
+          (h.includes('studentname') ||
+            h.includes('student_name') ||
+            (h.includes('name') && !h.includes('father') && !h.includes('mother')) ||
+            h.includes('chhatra') ||
+            h.includes('naam') ||
+            h.includes('विद्यार्थी') ||
+            h.includes('नाम'))
+      );
 
       // Map subject columns intelligently
       const subColMap: { subjectId: string; colIdx: number; type: 'half' | 'annual' }[] = [];
 
       // Sort subjects so specific subjects (e.g. 'Hindi ii' before 'Hindi', 'Social Science' before 'Science') match first
-      const sortedSubjects = [...subjects].sort((a, b) => {
-        const aIsSpecific = a.name.toLowerCase().includes('ii') || a.name.includes('2') || a.name.toLowerCase().includes('social') || a.name.toLowerCase().includes('moral');
-        const bIsSpecific = b.name.toLowerCase().includes('ii') || b.name.includes('2') || b.name.toLowerCase().includes('social') || b.name.toLowerCase().includes('moral');
+      const sortedSubjects = [...subjects].filter((s) => s.active).sort((a, b) => {
+        const aIsSpecific =
+          a.name.toLowerCase().includes('ii') ||
+          a.name.includes('2') ||
+          a.name.toLowerCase().includes('social') ||
+          a.name.toLowerCase().includes('moral');
+        const bIsSpecific =
+          b.name.toLowerCase().includes('ii') ||
+          b.name.includes('2') ||
+          b.name.toLowerCase().includes('social') ||
+          b.name.toLowerCase().includes('moral');
         if (aIsSpecific && !bIsSpecific) return -1;
         if (!aIsSpecific && bIsSpecific) return 1;
         return b.name.length - a.name.length;
       });
 
-      const isSubMatch = (h: string, sub: SubjectConfig) => {
-        const cleanH = h.toLowerCase().trim();
-        const normH = cleanH.replace(/[^a-z0-9\u0900-\u097F]/g, '');
-        if (!normH) return false;
-
-        // Isolate subject token by stripping term keywords
-        const subToken = normH.replace(/(halfyearly|half|ardhvarshik|ardh|arw|term1|t1|annual|varshik|final|term2|t2|marks|mark|obt|obtained|[ha])$/g, '');
-
-        const tokens = getSubjectMatchTokens(sub);
-        for (const token of tokens) {
-          const cleanToken = token.toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, '');
-          if (!cleanToken) continue;
-
-          if (subToken === cleanToken || normH === cleanToken) return true;
-          if (subToken.length >= 3 && cleanToken.length >= 3) {
-            if (subToken.startsWith(cleanToken) || cleanToken.startsWith(subToken)) return true;
-          }
-          if (normH.includes(cleanToken) || cleanToken.includes(subToken && subToken.length >= 3 ? subToken : '_____')) return true;
-        }
-        return false;
-      };
-
-      headers.forEach((h, colIdx) => {
+      rawHeaders.forEach((rawCol, colIdx) => {
         if (colIdx === idxId || colIdx === idxRoll || colIdx === idxClass || colIdx === idxName) return;
 
-        const cleanH = h.toLowerCase().trim();
-        const isHalf = cleanH.includes('half') || cleanH.includes('ardh') || cleanH.includes('arw') || cleanH.includes('term1') || cleanH.includes('t1') || cleanH.endsWith('_h') || cleanH.endsWith('h');
-        const isAnnual = cleanH.includes('annual') || cleanH.includes('varshik') || cleanH.includes('final') || cleanH.includes('term2') || cleanH.includes('t2') || cleanH.endsWith('_a') || cleanH.endsWith('a');
+        const trimmedCol = rawCol.trim();
+        if (!trimmedCol) return;
+        const lowerCol = trimmedCol.toLowerCase();
+        const normCol = lowerCol.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+        if (!normCol) return;
+
+        // Check if this column explicitly specifies Half or Annual
+        const isExplicitHalf =
+          lowerCol.includes('half') ||
+          lowerCol.includes('ardh') ||
+          lowerCol.includes('arw') ||
+          lowerCol.includes('term1') ||
+          lowerCol.includes('term 1') ||
+          lowerCol.includes('t1') ||
+          lowerCol.includes('अर्ध') ||
+          lowerCol.includes('अर्द्ध') ||
+          lowerCol.includes('छमाही') ||
+          lowerCol.endsWith('_h') ||
+          lowerCol.endsWith('-h') ||
+          lowerCol.endsWith(' h') ||
+          lowerCol.endsWith('(h)');
+
+        const isExplicitAnnual =
+          lowerCol.includes('annual') ||
+          lowerCol.includes('varshik') ||
+          lowerCol.includes('final') ||
+          lowerCol.includes('term2') ||
+          lowerCol.includes('term 2') ||
+          lowerCol.includes('t2') ||
+          lowerCol.includes('वार्षिक') ||
+          lowerCol.includes('सालाना') ||
+          lowerCol.endsWith('_a') ||
+          lowerCol.endsWith('-a') ||
+          lowerCol.endsWith(' a') ||
+          lowerCol.endsWith('(a)');
+
+        // Safely strip exam terms from end to isolate subject name without mutilating words like "math"
+        const cleanSubjectName = lowerCol
+          .replace(
+            /[\(\[\{]?(halfyearly|half|annual|ardhvarshik|ardh|arw|वार्षिक|सालाना|अर्ध|अर्द्ध|छमाही|term1|term2|term 1|term 2|t1|t2|final|marks|mark|obt|obtained)[\)\]\}]?/gi,
+            ''
+          )
+          .replace(/[_\-\s]+(half|annual|h|a|obt|marks|mark)$/gi, '')
+          .replace(/\([ha]\)$/gi, '')
+          .trim();
+        const subToken = cleanSubjectName.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+
+        let columnMatched = false;
 
         for (const sub of sortedSubjects) {
-          if (isSubMatch(h, sub)) {
-            if (isHalf) {
+          const cleanHeaderName = getCleanSubjectHeader(sub).toLowerCase();
+          const rawSubName = sub.name.toLowerCase().trim();
+          const rawSubId = sub.id.toLowerCase().trim();
+
+          // Priority 1: Exact match with template-generated header names
+          // E.g. "dd_Half" or "dd_Annual"
+          const isDirectTemplateHalf =
+            lowerCol === `${cleanHeaderName}_half` ||
+            lowerCol === `${cleanHeaderName} half` ||
+            lowerCol === `${cleanHeaderName}-half` ||
+            lowerCol === `${cleanHeaderName}_h` ||
+            lowerCol === `${cleanHeaderName}(half)` ||
+            lowerCol === `${rawSubName}_half` ||
+            lowerCol === `${rawSubId}_half` ||
+            normCol === `${cleanHeaderName}half` ||
+            normCol === `${rawSubName.replace(/[^a-z0-9\u0900-\u097F]/g, '')}half`;
+
+          const isDirectTemplateAnnual =
+            lowerCol === `${cleanHeaderName}_annual` ||
+            lowerCol === `${cleanHeaderName} annual` ||
+            lowerCol === `${cleanHeaderName}-annual` ||
+            lowerCol === `${cleanHeaderName}_a` ||
+            lowerCol === `${cleanHeaderName}(annual)` ||
+            lowerCol === `${rawSubName}_annual` ||
+            lowerCol === `${rawSubId}_annual` ||
+            normCol === `${cleanHeaderName}annual` ||
+            normCol === `${rawSubName.replace(/[^a-z0-9\u0900-\u097F]/g, '')}annual`;
+
+          if (isDirectTemplateHalf) {
+            subColMap.push({ subjectId: sub.id, colIdx, type: 'half' });
+            columnMatched = true;
+            break;
+          }
+          if (isDirectTemplateAnnual) {
+            subColMap.push({ subjectId: sub.id, colIdx, type: 'annual' });
+            columnMatched = true;
+            break;
+          }
+
+          // Priority 2: Direct match with single subject name (e.g. "dd", "Hindi", "Maths")
+          const isDirectSingleSub =
+            lowerCol === cleanHeaderName ||
+            lowerCol === rawSubName ||
+            cleanSubjectName === cleanHeaderName ||
+            cleanSubjectName === rawSubName ||
+            subToken === cleanHeaderName.replace(/[^a-z0-9\u0900-\u097F]/g, '') ||
+            subToken === rawSubName.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+
+          // Priority 3: Token / Alias matching
+          const cleanHeaderNorm = cleanHeaderName.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+          let tokenMatched = isDirectSingleSub;
+
+          if (!tokenMatched) {
+            if (
+              subToken &&
+              cleanHeaderNorm &&
+              (subToken === cleanHeaderNorm ||
+                subToken.startsWith(cleanHeaderNorm) ||
+                cleanHeaderNorm.startsWith(subToken))
+            ) {
+              tokenMatched = true;
+            } else {
+              const tokens = getSubjectMatchTokens(sub);
+              for (const token of tokens) {
+                const cleanToken = token.toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, '');
+                if (!cleanToken) continue;
+
+                if (subToken === cleanToken || normCol === cleanToken) {
+                  tokenMatched = true;
+                  break;
+                }
+                if (subToken.length >= 2 && cleanToken.length >= 2) {
+                  if (subToken === cleanToken) {
+                    tokenMatched = true;
+                    break;
+                  }
+                  if (subToken.length >= 3 && cleanToken.length >= 3) {
+                    if (subToken.startsWith(cleanToken) || cleanToken.startsWith(subToken)) {
+                      tokenMatched = true;
+                      break;
+                    }
+                  }
+                }
+                if (normCol.includes(cleanToken) || cleanToken.includes(subToken && subToken.length >= 3 ? subToken : '_____')) {
+                  tokenMatched = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (tokenMatched) {
+            if (isExplicitHalf) {
               subColMap.push({ subjectId: sub.id, colIdx, type: 'half' });
+              columnMatched = true;
               break;
-            } else if (isAnnual) {
+            } else if (isExplicitAnnual) {
               subColMap.push({ subjectId: sub.id, colIdx, type: 'annual' });
+              columnMatched = true;
               break;
             } else {
-              const existingHalf = subColMap.find((m) => m.subjectId === sub.id && m.type === 'half');
-              if (!existingHalf) {
-                subColMap.push({ subjectId: sub.id, colIdx, type: 'half' });
-              } else {
+              // Column has only subject name without explicit _Half or _Annual
+              const existingForSub = subColMap.filter((m) => m.subjectId === sub.id);
+              if (existingForSub.length === 0) {
+                if (singleColumnTarget === 'annual') {
+                  subColMap.push({ subjectId: sub.id, colIdx, type: 'annual' });
+                } else if (singleColumnTarget === 'both') {
+                  subColMap.push({ subjectId: sub.id, colIdx, type: 'half' });
+                  subColMap.push({ subjectId: sub.id, colIdx, type: 'annual' });
+                } else {
+                  subColMap.push({ subjectId: sub.id, colIdx, type: 'half' });
+                }
+              } else if (existingForSub.length === 1 && singleColumnTarget !== 'both') {
+                // Second column of the same subject becomes Annual
                 subColMap.push({ subjectId: sub.id, colIdx, type: 'annual' });
               }
+              columnMatched = true;
               break;
             }
           }
         }
       });
 
-      // Positional fallback: if no columns matched by name, check if columns follow activeSubjects order
+      // Priority 4: Positional fallback if no columns matched by name
       if (subColMap.length === 0 && activeSubjects.length > 0) {
         const startIdx = Math.max(idxName, idxRoll, idxClass) + 1;
         let cIdx = startIdx > 0 ? startIdx : 3;
         activeSubjects.forEach((sub) => {
-          if (cIdx < headers.length) {
+          if (cIdx < rawHeaders.length) {
             subColMap.push({ subjectId: sub.id, colIdx: cIdx, type: 'half' });
             cIdx++;
           }
-          if (cIdx < headers.length) {
+          if (cIdx < rawHeaders.length) {
             subColMap.push({ subjectId: sub.id, colIdx: cIdx, type: 'annual' });
             cIdx++;
           }
@@ -417,7 +631,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
 
       if (subColMap.length === 0) {
         setParseError(
-          'किसी भी विषय के अंक कॉलम (जैसे Hindi_Half, Hindi_Annual) नहीं पहचाने जा सके। कृपया ऊपर "एक्सेल हेडर कॉपी करें" बटन दबाकर उसी प्रारूप में कॉलम हेडर रखें।'
+          'किसी भी विषय के अंक कॉलम (जैसे Hindi_Half, Hindi_Annual, dd_Half, dd_Annual) नहीं पहचाने जा सके। कृपया ऊपर "एक्सेल हेडर कॉपी करें" बटन दबाकर उसी प्रारूप में कॉलम हेडर रखें।'
         );
         setUpdatedStudentsPreview([]);
         setParsedPreviewRows([]);
@@ -431,28 +645,78 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
 
         const stId = idxId >= 0 ? row[idxId]?.trim() : '';
         const rawRoll = idxRoll >= 0 ? row[idxRoll]?.trim() : '';
-        const rawClass = idxClass >= 0 ? row[idxClass]?.trim() : (selectedClass !== 'ALL' ? selectedClass : '');
+        const rawClass =
+          idxClass >= 0
+            ? row[idxClass]?.trim()
+            : selectedClass !== 'ALL'
+            ? selectedClass
+            : '';
         const rawName = idxName >= 0 ? row[idxName]?.trim().toLowerCase() : '';
 
-        // Find target student
+        // Comprehensive Student Matching:
         let targetStudent: Student | undefined;
+
+        // 1. Direct ID Match
         if (stId && studentMap.has(stId)) {
           targetStudent = studentMap.get(stId);
         } else if (rawRoll) {
+          // 2. Match by Roll No and Class
           targetStudent = Array.from(studentMap.values()).find((s) => {
             const rollClean = s.rollNo.trim();
             const rollMatch =
               rollClean === rawRoll.trim() ||
               (Number(rollClean) === Number(rawRoll) && !isNaN(Number(rawRoll)));
-            const classMatch = rawClass ? isSameClass(s.className, rawClass) : (selectedClass !== 'ALL' ? isSameClass(s.className, selectedClass) : true);
+            const classMatch = rawClass ? isSameClass(s.className, rawClass) : true;
             return rollMatch && classMatch;
           });
+
+          // 3. Match by Roll No and Name (in case Class column is omitted or modified)
+          if (!targetStudent && rawName) {
+            targetStudent = Array.from(studentMap.values()).find((s) => {
+              const rollClean = s.rollNo.trim();
+              const rollMatch =
+                rollClean === rawRoll.trim() ||
+                (Number(rollClean) === Number(rawRoll) && !isNaN(Number(rawRoll)));
+              const nameMatch = s.name.trim().toLowerCase() === rawName;
+              return rollMatch && nameMatch;
+            });
+          }
+
+          // 4. Match within selectedClass if specific class selected
+          if (!targetStudent && selectedClass !== 'ALL') {
+            targetStudent = Array.from(studentMap.values()).find((s) => {
+              const rollClean = s.rollNo.trim();
+              const rollMatch =
+                rollClean === rawRoll.trim() ||
+                (Number(rollClean) === Number(rawRoll) && !isNaN(Number(rawRoll)));
+              return rollMatch && isSameClass(s.className, selectedClass);
+            });
+          }
+
+          // 5. Match unique roll number across whole school
+          if (!targetStudent) {
+            const rollMatches = Array.from(studentMap.values()).filter((s) => {
+              const rollClean = s.rollNo.trim();
+              return (
+                rollClean === rawRoll.trim() ||
+                (Number(rollClean) === Number(rawRoll) && !isNaN(Number(rawRoll)))
+              );
+            });
+            if (rollMatches.length === 1) {
+              targetStudent = rollMatches[0];
+            }
+          }
         }
 
+        // 6. Match by Name + Class
         if (!targetStudent && rawName) {
           targetStudent = Array.from(studentMap.values()).find((s) => {
             const nameMatch = s.name.trim().toLowerCase() === rawName;
-            const classMatch = rawClass ? isSameClass(s.className, rawClass) : true;
+            const classMatch = rawClass
+              ? isSameClass(s.className, rawClass)
+              : selectedClass !== 'ALL'
+              ? isSameClass(s.className, selectedClass)
+              : true;
             return nameMatch && classMatch;
           });
         }
@@ -462,6 +726,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
           targetStudent.marks = targetStudent.marks || {};
           let rowHalf = 0;
           let rowAnnual = 0;
+          let totalMaxMarks = 0;
 
           subColMap.forEach(({ subjectId, colIdx, type }) => {
             const rawCell = row[colIdx];
@@ -476,18 +741,33 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                 } else {
                   targetStudent!.marks[subjectId].annualObtained = val;
                 }
-                // Ensure assignedSubjectIds includes imported subject
-                if (Array.isArray(targetStudent!.assignedSubjectIds) && !targetStudent!.assignedSubjectIds.includes(subjectId)) {
+
+                // CRUCIAL: ALWAYS ensure assignedSubjectIds includes imported subject
+                // so newly added subjects (like 'dd') appear on marksheet and results!
+                if (!Array.isArray(targetStudent!.assignedSubjectIds)) {
+                  targetStudent!.assignedSubjectIds = [];
+                }
+                if (!targetStudent!.assignedSubjectIds.includes(subjectId)) {
                   targetStudent!.assignedSubjectIds.push(subjectId);
                 }
               }
             }
           });
 
-          Object.values(targetStudent.marks).forEach((m: any) => {
+          // Calculate preview totals
+          Object.entries(targetStudent.marks).forEach(([subId, m]: [string, any]) => {
             rowHalf += Number(m.halfObtained || 0);
             rowAnnual += Number(m.annualObtained || 0);
+            const foundSub = subjects.find((s) => s.id === subId);
+            if (foundSub) {
+              totalMaxMarks += (foundSub.halfMax || 100) + (foundSub.annualMax || 100);
+            }
           });
+
+          const gTot = rowHalf + rowAnnual;
+          // 50% pass threshold per user request: >= 50% obtained is PASS
+          const effectiveMax = totalMaxMarks > 0 ? totalMaxMarks : 1000;
+          const status: 'PASS' | 'FAIL' = gTot >= (effectiveMax * 0.5) ? 'PASS' : 'FAIL';
 
           previewRows.push({
             studentId: targetStudent.id,
@@ -505,7 +785,8 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
             marks: { ...targetStudent.marks },
             halfTotal: rowHalf,
             annualTotal: rowAnnual,
-            grandTotal: rowHalf + rowAnnual,
+            grandTotal: gTot,
+            status,
           });
         } else {
           previewRows.push({
@@ -522,6 +803,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
             halfTotal: 0,
             annualTotal: 0,
             grandTotal: 0,
+            status: 'FAIL',
           });
         }
       }
@@ -607,7 +889,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                 बल्क अंक प्रविष्टि (Bulk Import Marks — Excel / CSV)
               </h3>
               <p className="text-[11px] text-slate-300">
-                Excel से पूरी कक्षा के अर्द्धवार्षिक व वार्षिक अंक सीधे कॉपी-पेस्ट करके तुरंत अपडेट करें
+                विषय जोड़ें या बदलें, हेडर तुरंत अपडेट होगा और सभी अंक एक क्लिक में लोड होंगे
               </p>
             </div>
           </div>
@@ -629,53 +911,169 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
             </div>
           )}
 
-          {/* Class Filter & Template Actions Bar */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold text-slate-700 flex items-center gap-1 text-xs">
-                <Filter className="w-3.5 h-3.5 text-blue-700" />
-                <span>कक्षा चुनें (Select Class):</span>
-              </span>
+          {/* Controls Bar: Class Selection, Subject Scope & Column Format */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 space-y-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Class Selection */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-slate-700 flex items-center gap-1 text-xs">
+                  <Filter className="w-3.5 h-3.5 text-blue-700" />
+                  <span>कक्षा चुनें:</span>
+                </span>
 
-              <select
-                value={selectedClass}
-                onChange={(e) => {
-                  setSelectedClass(e.target.value);
-                  if (pasteContent.trim()) {
-                    setTimeout(() => parseMarksData(pasteContent), 50);
-                  }
-                }}
-                className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-[#0f2b48] shadow-2xs focus:ring-2 focus:ring-blue-600 cursor-pointer"
-              >
-                <option value="ALL">सभी कक्षाएं (All Classes)</option>
-                {detectedClasses.map((cls) => (
-                  <option key={cls} value={cls}>
-                    कक्षा {cls} ({students.filter((s) => isSameClass(s.className, cls)).length} छात्र, {getSubjectsForClass(subjects, cls).length} विषय)
-                  </option>
-                ))}
-              </select>
+                <select
+                  value={selectedClass}
+                  onChange={(e) => {
+                    setSelectedClass(e.target.value);
+                    if (pasteContent.trim()) {
+                      setTimeout(() => parseMarksData(pasteContent), 50);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-[#0f2b48] shadow-2xs focus:ring-2 focus:ring-blue-600 cursor-pointer"
+                >
+                  <option value="ALL">सभी कक्षाएं (All Classes)</option>
+                  {detectedClasses.map((cls) => (
+                    <option key={cls} value={cls}>
+                      कक्षा {cls} ({students.filter((s) => isSameClass(s.className, cls)).length} छात्र,{' '}
+                      {getSubjectsForClass(subjects, cls).length} विषय)
+                    </option>
+                  ))}
+                </select>
 
-              <span className="text-[11px] text-slate-500 font-medium">
-                ({filteredStudents.length} छात्र पंजीकृत • {activeSubjects.length} विषय सक्रिय)
-              </span>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  ({filteredStudents.length} छात्र पंजीकृत • {activeSubjects.length} विषय शामिल)
+                </span>
+              </div>
+
+              {/* Scope & Format Options */}
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                {/* Subject Scope */}
+                <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                  <Layers className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="font-semibold text-slate-600 text-[11px]">विषय:</span>
+                  <button
+                    type="button"
+                    onClick={() => setTemplateSubjectScope('class')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                      templateSubjectScope === 'class'
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    कक्षा के ({selectedClass !== 'ALL' ? getSubjectsForClass(subjects, selectedClass).length : activeSubjects.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTemplateSubjectScope('all')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                      templateSubjectScope === 'all'
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    सभी ({subjects.filter((s) => s.active).length})
+                  </button>
+                </div>
+
+                {/* Column Format */}
+                <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                  <Settings2 className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="font-semibold text-slate-600 text-[11px]">कॉलम प्रारूप:</span>
+                  <button
+                    type="button"
+                    onClick={() => setTemplateFormat('both')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                      templateFormat === 'both'
+                        ? 'bg-emerald-700 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                    title="प्रत्येक विषय के दो कॉलम: _Half और _Annual"
+                  >
+                    Half + Annual
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTemplateFormat('single')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                      templateFormat === 'single'
+                        ? 'bg-emerald-700 text-white shadow-2xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                    title="प्रत्येक विषय का एक कॉलम"
+                  >
+                    सिंगल मार्क्स
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Template Copy/Download Actions */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Dynamic Subjects Pill Display */}
+            <div className="pt-2 border-t border-slate-200/80">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                  <span>शामिल विषय ({activeSubjects.length}):</span>
+                  <span className="font-normal text-slate-500">(कोई भी विषय जोड़ने या बदलने पर यह तुरंत अपडेट होता है)</span>
+                </span>
+                {templateFormat === 'single' && (
+                  <div className="flex items-center gap-1 text-[10px] text-slate-600">
+                    <span>सिंगल अंक लागू करें:</span>
+                    <select
+                      value={singleColumnTarget}
+                      onChange={(e) => setSingleColumnTarget(e.target.value as any)}
+                      className="bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-800 cursor-pointer"
+                    >
+                      <option value="half">अर्द्धवार्षिक (Half-Yearly)</option>
+                      <option value="annual">वार्षिक (Annual)</option>
+                      <option value="both">दोनों में समान (Both)</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto">
+                {activeSubjects.map((sub) => {
+                  const clean = getCleanSubjectHeader(sub);
+                  return (
+                    <span
+                      key={sub.id}
+                      className="bg-white border border-slate-300 text-slate-800 px-2 py-0.5 rounded-md font-mono text-[10.5px] font-medium shadow-2xs flex items-center gap-1"
+                      title={`Subject: ${sub.name} (Code: ${clean})`}
+                    >
+                      <span className="font-bold text-[#0f2b48]">{clean}</span>
+                      {templateFormat === 'both' ? (
+                        <span className="text-[9px] text-emerald-700 font-sans font-bold">(_Half, _Annual)</span>
+                      ) : null}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Template Copy/Download Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/80">
               <button
                 type="button"
-                onClick={handleCopyHeadersOnly}
-                className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
-                title="Excel कॉलम हेडर कॉपी करें"
+                onClick={() => handleCopyHeadersOnly('both')}
+                className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all active:scale-98"
+                title="Excel कॉलम हेडर (Half + Annual) कॉपी करें"
               >
                 <Copy className="w-3.5 h-3.5 text-emerald-600" />
-                <span>1. एक्सेल हेडर कॉपी करें</span>
+                <span>1. हेडर कॉपी करें (Half+Annual)</span>
               </button>
 
               <button
                 type="button"
-                onClick={handleCopyFullTemplate}
-                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+                onClick={() => handleCopyHeadersOnly('single')}
+                className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all active:scale-98"
+                title="Excel कॉलम हेडर (Single Column) कॉपी करें"
+              >
+                <Copy className="w-3.5 h-3.5 text-blue-600" />
+                <span>1B. हेडर कॉपी करें (Single)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleCopyFullTemplate(templateFormat)}
+                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all active:scale-98"
                 title="छात्रों के नाम सहित पूरा TSV फॉर्मेट कॉपी करें"
               >
                 <TableIcon className="w-3.5 h-3.5 text-emerald-700" />
@@ -684,8 +1082,8 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
 
               <button
                 type="button"
-                onClick={handleDownloadMarksTemplate}
-                className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+                onClick={() => handleDownloadMarksTemplate(templateFormat)}
+                className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all active:scale-98"
                 title="CSV फ़ाइल डाउनलोड करें"
               >
                 <Download className="w-3.5 h-3.5 text-blue-700" />
@@ -703,13 +1101,13 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                 1. ऊपर <strong>"पूरा टेम्पलेट कॉपी करें"</strong> बटन दबाकर Excel में पेस्ट करें — इसमें छात्र नाम व अनुक्रमांक पहले से भरे होंगे।
               </p>
               <p>
-                2. Excel में प्रत्येक विषय के <strong>_Half</strong> और <strong>_Annual</strong> अंक भरें।
+                2. Excel में प्रत्येक विषय के <strong>_Half</strong> और <strong>_Annual</strong> अंक भरें (या सिंगल कॉलम में अंक भरें)।
               </p>
               <p>
                 3. Excel के सभी सेल सेलेक्ट व कॉपी (Ctrl+C) करके नीचे दिए गए बॉक्स में पेस्ट (Ctrl+V) करें। नीचे तुरंत छात्र विवरण और अंकों का प्रीव्यू दिख जाएगा!
               </p>
               <p className="text-amber-900 font-bold bg-amber-100/70 p-1.5 rounded border border-amber-300">
-                📗 <strong>उर्दू / ऐच्छिक विषय नियम:</strong> जिन छात्रों का उर्दू विषय नहीं है, उनके उर्दू कॉलम में 0 या खाली छोड़ दें। 0 या खाली रहने पर उनकी मार्कशीट पर उर्दू विषय बिल्कुल नहीं दिखेगा!
+                📗 <strong>उर्दू / ऐच्छिक विषय नियम:</strong> जिन छात्रों का उर्दू या ऐच्छिक विषय नहीं है, उनके कॉलम में 0 या खाली छोड़ दें। 0 रहने पर उनकी मार्कशीट पर वह विषय शामिल नहीं होगा।
               </p>
             </div>
           </div>
@@ -821,7 +1219,7 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                 </div>
 
                 <div className="text-[11px] text-emerald-800 font-bold">
-                  ✓ नीचे दिए गए विवरण को जांचें और नीचे "सुरक्षित करें" बटन दबाएं
+                  ✓ नीचे दिए गए विवरण को जांचें और नीचे "हाँ, सभी अंक तुरंत सुरक्षित करें" बटन दबाएं
                 </div>
               </div>
 
@@ -925,7 +1323,8 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                                     }`}
                                     title={`${sub.name}: Half=${m?.halfObtained || 0}, Annual=${m?.annualObtained || 0}`}
                                   >
-                                    <strong>{getCleanSubjectHeader(sub).slice(0, 5)}:</strong> {m?.halfObtained || 0}/{m?.annualObtained || 0}
+                                    <strong>{getCleanSubjectHeader(sub).slice(0, 6)}:</strong>{' '}
+                                    {m?.halfObtained || 0}/{m?.annualObtained || 0}
                                   </span>
                                 );
                               });
@@ -943,9 +1342,17 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                         </td>
                         <td className="py-2 px-3 text-center">
                           {st.isMatched ? (
-                            <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                              <Check className="w-3 h-3 text-emerald-600" />
-                              <span>पहचाना गया</span>
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                st.status === 'PASS'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}
+                            >
+                              {st.status === 'PASS' ? (
+                                <Check className="w-3 h-3 text-emerald-600" />
+                              ) : null}
+                              <span>{st.status}</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">

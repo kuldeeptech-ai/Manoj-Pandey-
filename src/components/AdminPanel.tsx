@@ -452,7 +452,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     syncAllDataToFirebase({
       schoolSettings,
       students: updatedStudents,
-      subjects,
+      subjects: editingSubjects.length > 0 ? editingSubjects : subjects,
       gradeRules,
     }).catch((err) => console.warn('[Firebase Bulk Marks Sync] Error:', err));
   };
@@ -1012,10 +1012,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
 
-    let finalClasses = newSubjectClasses && newSubjectClasses.length > 0 ? newSubjectClasses : ['ALL'];
-    if (subjectClassFilter !== 'ALL' && (!newSubjectClasses || newSubjectClasses.length === 0)) {
-      finalClasses = [subjectClassFilter];
-    }
+    const finalClasses = newSubjectClasses && newSubjectClasses.length > 0 ? newSubjectClasses : ['ALL'];
 
     const newSubj: SubjectConfig = {
       id: `sub-${Date.now()}`,
@@ -7250,7 +7247,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           isOpen={showBulkMarksModal}
           onClose={() => setShowBulkMarksModal(false)}
           students={students}
-          subjects={subjects}
+          subjects={editingSubjects.length > 0 ? editingSubjects : subjects}
           onSaveMarks={handleSaveBulkMarks}
           onSaveBulkMarks={handleSaveBulkMarks}
         />
