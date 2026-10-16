@@ -52,7 +52,11 @@ try {
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
     if (parsed.schoolSettings) store.schoolSettings = normalizeSchoolSettings(parsed.schoolSettings);
-    if (parsed.subjects) store.subjects = parsed.subjects;
+    if (parsed.subjects && Array.isArray(parsed.subjects) && parsed.subjects.length >= DEFAULT_SUBJECTS.length) {
+      store.subjects = parsed.subjects;
+    } else {
+      store.subjects = [...DEFAULT_SUBJECTS];
+    }
     if (parsed.students) store.students = parsed.students;
     if (parsed.gradeRules) store.gradeRules = parsed.gradeRules;
     if (Array.isArray(parsed.staffUsers) && parsed.staffUsers.length > 0) {
@@ -160,7 +164,12 @@ async function syncFromFirebaseOnStart() {
 
     const rawSubs = await subRes.json();
     const subs = toList(rawSubs);
-    if (subs.length > 0) store.subjects = subs;
+    if (subs.length >= DEFAULT_SUBJECTS.length) {
+      store.subjects = subs;
+    } else {
+      store.subjects = [...DEFAULT_SUBJECTS];
+      syncToFirebaseInBackground();
+    }
 
     const rawGrades = await gRes.json();
     const grades = toList(rawGrades);

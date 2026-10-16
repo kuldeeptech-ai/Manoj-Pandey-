@@ -324,7 +324,30 @@ export function getCleanSubjectHeader(sub: SubjectConfig): string {
   if (!sub || !sub.name) return 'Subject';
   const name = sub.name.trim();
 
-  // 1. If name contains English characters: extract the clean English portion (e.g. "Hindi ii", "Social Science", "dd", "Computer")
+  // 1. Direct handling for standard subjects to produce clean, consistent Excel headers
+  const lower = name.toLowerCase();
+  if (lower.startsWith('hindi writing') || lower.startsWith('hindi_writing')) return 'Hindi_Writing';
+  if (lower.startsWith('hindi oral') || lower.startsWith('hindi_oral')) return 'Hindi_Oral';
+  if (lower.startsWith('english writing') || lower.startsWith('english_writing')) return 'English_Writing';
+  if (lower.startsWith('english oral') || lower.startsWith('english_oral')) return 'English_Oral';
+  if (lower.startsWith('mathematics writing') || lower.startsWith('maths writing')) return 'Mathematics_Writing';
+  if (lower.startsWith('mathematics oral') || lower.startsWith('maths oral')) return 'Mathematics_Oral';
+
+  if (lower === 'hindi 1' || lower === 'hindi 1st' || lower === 'hindi1' || lower === 'hindi_1') return 'Hindi_1';
+  if (lower === 'hindi 2' || lower === 'hindi 2nd' || lower === 'hindi2' || lower === 'hindi_2' || lower === 'hindi ii') return 'Hindi_2';
+  if (lower === 'english 1' || lower === 'english 1st' || lower === 'english1' || lower === 'english_1') return 'English_1';
+  if (lower === 'english 2' || lower === 'english 2nd' || lower === 'english2' || lower === 'english_2' || lower === 'english ii') return 'English_2';
+  if (lower === 'mathematics' || lower === 'maths' || lower === 'math') return 'Mathematics';
+  if (lower === 'computer') return 'Computer';
+  if (lower === 'science') return 'Science';
+  if (lower.includes('social studies') || lower.includes('sst') || lower === 'social science') return 'Social_Studies_SST';
+  if (lower.includes('drawing') || lower === 'art' || lower === 'kala') return 'Drawing';
+  if (lower.includes('physical training') || lower.includes('pt') || lower === 'physical') return 'Physical_Training_PT';
+  if (lower.includes('general knowledge') || lower.includes('gk') || lower === 'general') return 'General_Knowledge_GK';
+  if (lower.includes('sanskrit') || lower.includes('संस्कृत')) return 'Sanskrit';
+  if (lower.includes('urdu') || lower.includes('उर्दू')) return 'Urdu';
+
+  // 2. If name contains English characters: extract the clean English portion (e.g. "dd", "Hindi ii")
   const noParens = name.replace(/\([^)]*\)/g, '').trim();
   const enOnly = noParens.replace(/[^a-zA-Z0-9\s]/g, '').trim();
   if (enOnly) {
@@ -335,27 +358,23 @@ export function getCleanSubjectHeader(sub: SubjectConfig): string {
     if (cleaned) return cleaned;
   }
 
-  // 2. Hindi / Devanagari common subject translations to clean headers
-  const lowerName = name.toLowerCase();
-  if (lowerName.includes('संस्कृत')) return 'Sanskrit';
-  if (lowerName.includes('चित्रकला') || lowerName.includes('कला') || lowerName.includes('आर्ट') || lowerName.includes('ड्राइंग')) return 'Drawing';
-  if (lowerName.includes('गृह विज्ञान') || lowerName.includes('गृहविज्ञान')) return 'Home_Science';
-  if (lowerName.includes('कंप्यूटर') || lowerName.includes('कम्प्यूटर')) return 'Computer';
-  if (lowerName.includes('विज्ञान') && !lowerName.includes('सामाजिक')) return 'Science';
-  if (lowerName.includes('सामाजिक') || lowerName.includes('भूगोल') || lowerName.includes('इतिहास')) return 'Social_Science';
-  if (lowerName.includes('गणित')) return 'Maths';
-  if (lowerName.includes('अंग्रेजी') || lowerName.includes('अंग्रेज़ी')) return 'English';
-  if (lowerName.includes('हिंदी') || lowerName.includes('हिन्दी')) {
-    if (lowerName.includes('द्वितीय') || lowerName.includes('2') || lowerName.includes('ii')) return 'Hindi_ii';
-    return 'Hindi';
+  // 3. Hindi / Devanagari common subject translations to clean headers
+  if (lower.includes('चित्रकला') || lower.includes('कला') || lower.includes('आर्ट') || lower.includes('ड्राइंग')) return 'Drawing';
+  if (lower.includes('गृह विज्ञान') || lower.includes('गृहविज्ञान')) return 'Home_Science';
+  if (lower.includes('कंप्यूटर') || lower.includes('कम्प्यूटर')) return 'Computer';
+  if (lower.includes('विज्ञान') && !lower.includes('सामाजिक')) return 'Science';
+  if (lower.includes('सामाजिक') || lower.includes('भूगोल') || lower.includes('इतिहास')) return 'Social_Studies_SST';
+  if (lower.includes('गणित')) return 'Mathematics';
+  if (lower.includes('अंग्रेजी') || lower.includes('अंग्रेज़ी')) return 'English_1';
+  if (lower.includes('हिंदी') || lower.includes('हिन्दी')) {
+    if (lower.includes('द्वितीय') || lower.includes('2') || lower.includes('ii')) return 'Hindi_2';
+    return 'Hindi_1';
   }
-  if (lowerName.includes('उर्दू')) return 'Urdu';
-  if (lowerName.includes('नैतिक')) return 'Moral_Science';
-  if (lowerName.includes('शारीरिक') || lowerName.includes('खेल') || lowerName.includes('व्यायाम')) return 'Physical_Education';
-  if (lowerName.includes('पर्यावरण') || lowerName.includes('ईवीएस')) return 'EVS';
-  if (lowerName.includes('दीनियात')) return 'Deeniyat';
+  if (lower.includes('नैतिक')) return 'Moral_Science';
+  if (lower.includes('शारीरिक') || lower.includes('खेल') || lower.includes('व्यायाम')) return 'Physical_Training_PT';
+  if (lower.includes('सामान्य') && lower.includes('ज्ञान')) return 'General_Knowledge_GK';
 
-  // 3. Fallback: sanitize original Devanagari or other script name with underscores
+  // 4. Fallback: sanitize original Devanagari or other script name with underscores
   const cleanOther = name
     .replace(/[\(\)\[\]\{\}\/\\,;:\.]/g, '')
     .trim()
@@ -363,7 +382,7 @@ export function getCleanSubjectHeader(sub: SubjectConfig): string {
     .replace(/_+/g, '_');
   if (cleanOther) return cleanOther;
 
-  // 4. Last fallback to subject ID without prefix if not purely numbers
+  // 5. Last fallback to subject ID without prefix if not purely numbers
   const idClean = (sub.id || '').replace(/^sub-?/, '');
   if (idClean && isNaN(Number(idClean))) return idClean;
 
@@ -373,7 +392,7 @@ export function getCleanSubjectHeader(sub: SubjectConfig): string {
 /**
  * Returns a rich set of matching aliases and tokens for any subject.
  * Guarantees that bulk import matches every subject regardless of:
- * - English names / abbreviations (e.g. "Urdu", "Math", "Maths", "Eng", "SST", "Comp", "GK", "dd")
+ * - English names / abbreviations (e.g. "Urdu", "Math", "Maths", "Eng", "SST", "Comp", "GK", "PT", "dd")
  * - Devanagari names (e.g. "उर्दू", "गणित", "विज्ञान", "सामाजिक", "संस्कृत", "कंप्यूटर", "हिंदी")
  * - Substring tokens with or without underscores, hyphens, parentheses, etc.
  */
@@ -388,7 +407,7 @@ export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
   const idWithoutPrefix = rawId.replace(/^sub-?/, '').replace(/[^a-z0-9]/g, '');
   if (idWithoutPrefix) tokens.add(idWithoutPrefix);
 
-  // 2. Clean header name (e.g. "dd", "Sanskrit", "Social_Science")
+  // 2. Clean header name (e.g. "dd", "Sanskrit", "Social_Studies_SST", "Hindi_1")
   const cleanHeader = getCleanSubjectHeader(sub).toLowerCase();
   tokens.add(cleanHeader);
   tokens.add(cleanHeader.replace(/[^a-z0-9\u0900-\u097F]/g, ''));
@@ -415,36 +434,101 @@ export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
     });
   }
 
-  // 4. Domain-specific subject synonyms & aliases
-  const combined = (rawName + ' ' + rawId).toLowerCase();
+  // 5. Domain-specific subject synonyms & aliases
+  const combined = (rawName + ' ' + rawId + ' ' + cleanHeader).toLowerCase();
 
+  // Nursery/LKG/UKG writing vs oral
+  if (combined.includes('writing') || combined.includes('likhit') || combined.includes('लिखित')) {
+    tokens.add('writing');
+    tokens.add('likhit');
+    tokens.add('लिखित');
+    if (combined.includes('hindi')) tokens.add('hindiwriting');
+    if (combined.includes('eng')) tokens.add('englishwriting');
+    if (combined.includes('math')) tokens.add('mathswriting');
+  }
+  if (combined.includes('oral') || combined.includes('moukhik') || combined.includes('मौखिक')) {
+    tokens.add('oral');
+    tokens.add('moukhik');
+    tokens.add('मौखिक');
+    if (combined.includes('hindi')) tokens.add('hindioral');
+    if (combined.includes('eng')) tokens.add('englishoral');
+    if (combined.includes('math')) tokens.add('mathsoral');
+  }
+
+  // Urdu
   if (combined.includes('urdu') || combined.includes('उर्दू')) {
     tokens.add('urdu');
     tokens.add('उर्दू');
   }
+
+  // Hindi 1 vs Hindi 2
   if (
-    combined.includes('hindiii') ||
     combined.includes('hindi 2') ||
-    combined.includes('hindi ii') ||
+    combined.includes('hindi2') ||
     combined.includes('hindi_2') ||
-    combined.includes('hindi-2') ||
+    combined.includes('hindi ii') ||
+    combined.includes('hindiii') ||
     combined.includes('द्वितीय')
   ) {
-    tokens.add('hindiii');
     tokens.add('hindi2');
     tokens.add('hindi_2');
     tokens.add('hindi2nd');
-    tokens.add('hindisecond');
+    tokens.add('hindiii');
     tokens.add('द्वितीय');
+  } else if (
+    combined.includes('hindi 1') ||
+    combined.includes('hindi1') ||
+    combined.includes('hindi_1') ||
+    combined.includes('hindi i') ||
+    combined.includes('hindii') ||
+    combined.includes('प्रथम')
+  ) {
+    tokens.add('hindi1');
+    tokens.add('hindi_1');
+    tokens.add('hindi1st');
+    tokens.add('hindii');
+    tokens.add('प्रथम');
   } else if (combined.includes('hindi') || combined.includes('हिंदी') || combined.includes('हिन्दी')) {
     tokens.add('hindi');
     tokens.add('हिंदी');
     tokens.add('हिन्दी');
-    tokens.add('hindi1');
-    tokens.add('hindi_1');
-    tokens.add('hindi1st');
-    tokens.add('hindifirst');
   }
+
+  // English 1 vs English 2
+  if (
+    combined.includes('english 2') ||
+    combined.includes('english2') ||
+    combined.includes('english_2') ||
+    combined.includes('english ii') ||
+    combined.includes('eng2') ||
+    combined.includes('eng_2')
+  ) {
+    tokens.add('english2');
+    tokens.add('english_2');
+    tokens.add('eng2');
+    tokens.add('eng_2');
+    tokens.add('englishii');
+  } else if (
+    combined.includes('english 1') ||
+    combined.includes('english1') ||
+    combined.includes('english_1') ||
+    combined.includes('english i') ||
+    combined.includes('eng1') ||
+    combined.includes('eng_1')
+  ) {
+    tokens.add('english1');
+    tokens.add('english_1');
+    tokens.add('eng1');
+    tokens.add('eng_1');
+    tokens.add('englishi');
+  } else if (combined.includes('english') || combined.includes('अंग्रेजी') || combined.includes('अंग्रेज़ी')) {
+    tokens.add('english');
+    tokens.add('eng');
+    tokens.add('अंग्रेजी');
+    tokens.add('अंग्रेज़ी');
+  }
+
+  // Mathematics
   if (combined.includes('math') || combined.includes('ganit') || combined.includes('गणित')) {
     tokens.add('math');
     tokens.add('maths');
@@ -452,51 +536,63 @@ export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
     tokens.add('ganit');
     tokens.add('गणित');
   }
-  if (combined.includes('english') || combined.includes('अंग्रेजी') || combined.includes('अंग्रेज़ी')) {
-    tokens.add('english');
-    tokens.add('eng');
-    tokens.add('अंग्रेजी');
-    tokens.add('अंग्रेज़ी');
-  }
+
+  // Social Studies (SST)
   if (combined.includes('social') || combined.includes('sst') || combined.includes('सामाजिक')) {
     tokens.add('social');
-    tokens.add('socialscience');
     tokens.add('sst');
+    tokens.add('socialstudies');
+    tokens.add('socialstudiessst');
+    tokens.add('socialscience');
     tokens.add('samajik');
     tokens.add('सामाजिक');
-    tokens.add('सामाजिकविज्ञान');
-  } else if (combined.includes('science') || combined.includes('vigyan') || combined.includes('विज्ञान')) {
+    tokens.add('सामाजिकअध्ययन');
+  }
+
+  // Science (without Social)
+  if ((combined.includes('science') || combined.includes('vigyan') || combined.includes('विज्ञान')) && !combined.includes('social') && !combined.includes('सामाजिक')) {
     tokens.add('science');
     tokens.add('sci');
     tokens.add('vigyan');
     tokens.add('विज्ञान');
   }
+
+  // Sanskrit
   if (combined.includes('sanskrit') || combined.includes('संस्कृत')) {
     tokens.add('sanskrit');
     tokens.add('sans');
     tokens.add('संस्कृत');
   }
+
+  // Computer
   if (combined.includes('computer') || combined.includes('comp') || combined.includes('कंप्यूटर')) {
     tokens.add('computer');
     tokens.add('comp');
-    tokens.add('it');
-    tokens.add('ict');
     tokens.add('कंप्यूटर');
   }
-  if (combined.includes('gk') || combined.includes('general') || combined.includes('ज्ञान')) {
+
+  // PT / Physical Training
+  if (combined.includes('pt') || combined.includes('physical') || combined.includes('training') || combined.includes('शारीरिक') || combined.includes('व्यायाम')) {
+    tokens.add('pt');
+    tokens.add('physical');
+    tokens.add('physicaltraining');
+    tokens.add('physicaltrainingpt');
+    tokens.add('शारीरिक');
+    tokens.add('व्यायाम');
+  }
+
+  // GK / General Knowledge
+  if (combined.includes('gk') || combined.includes('general') || combined.includes('ज्ञान') || combined.includes('सामान्य')) {
     tokens.add('gk');
     tokens.add('generalknowledge');
+    tokens.add('generalknowledgegk');
     tokens.add('general');
     tokens.add('samanyagyan');
     tokens.add('सामान्यज्ञान');
   }
-  if (combined.includes('moral') || combined.includes('naitik') || combined.includes('नैतिक')) {
-    tokens.add('moral');
-    tokens.add('moralscience');
-    tokens.add('naitik');
-    tokens.add('नैतिक');
-  }
-  if (combined.includes('draw') || combined.includes('art') || combined.includes('kala') || combined.includes('कला')) {
+
+  // Drawing
+  if (combined.includes('draw') || combined.includes('art') || combined.includes('kala') || combined.includes('कला') || combined.includes('चित्रकला')) {
     tokens.add('drawing');
     tokens.add('art');
     tokens.add('draw');
@@ -509,7 +605,7 @@ export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
 }
 
 /**
- * Checks if a subject is Urdu or marked as optional (e.g. Urdu, Sanskrit, Drawing)
+ * Checks if a subject is Urdu or marked as optional (e.g. Urdu)
  */
 export function isUrduOrOptional(subject: SubjectConfig): boolean {
   if (!subject) return false;
@@ -517,6 +613,7 @@ export function isUrduOrOptional(subject: SubjectConfig): boolean {
   const name = (subject.name || '').toLowerCase();
   return (
     subject.id === 'sub-urdu' ||
+    name === 'urdu' ||
     name.includes('urdu') ||
     name.includes('उर्दू')
   );
@@ -546,15 +643,24 @@ export function studentHasEnteredMarks(
 }
 
 /**
- * Returns all active subjects specifically assigned to a student.
- * 1. If student.assignedSubjectIds is explicitly provided with subject IDs:
- *    Returns only those assigned subjects that are active.
- * 2. If student.assignedSubjectIds is not specified (undefined or empty):
- *    Returns all compulsory class subjects (excluding Urdu/optional unless marks already exist).
- * 3. Crucial User Rule for Marksheet:
- *    "aur aisa kr do ki agar urdu subject me koi mark nhi de rhe h to marksheet pr show hi n ho"
- *    For marksheet generation and result totals, any Urdu or optional subject with 0 or empty
- *    marks is strictly excluded from marksheet table, maximum marks, and percentage!
+ * Returns all active subjects specifically applicable to a student.
+ * 
+ * CORE ARCHITECTURAL RULES (User Brief Compliance):
+ * 1. "alag koi subject nhu aana cghaiye kisis class mew":
+ *    A subject that is NOT applicable to the student's class (via isSubjectApplicableToClass)
+ *    MUST NEVER be returned for this student, under ANY condition.
+ * 2. "aur subject me pure class ke liye 10 subject h lekin har bachhe ko seperate selection karna pad rha h subject fix problem":
+ *    All COMPULSORY subjects of the class automatically apply to every child of the class!
+ *    Teachers DO NOT have to manually configure or select subjects for each student.
+ * 3. "aur urdu aiss kro ki subject ka me do lekin har class ke bachho ke liye lagu n ho kyoki har class me 1 2 bachhe hi h":
+ *    Urdu is optional in classes 1st to 8th. It is ONLY included for a student if:
+ *    - The student has entered marks (> 0) in Urdu, OR
+ *    - The student was explicitly assigned Urdu.
+ *    For all other students in the class, Urdu is NOT included.
+ * 4. "aur sanskrti 6 7 8 bas h to wo bhi wiase hi rhega":
+ *    Sanskrit is strictly for 6th, 7th, 8th.
+ *    In 6th-8th, Sanskrit is the standard 12th subject for regular students.
+ *    If an Urdu student takes Urdu, Urdu is their 12th subject (or replaces Sanskrit).
  */
 export function getSubjectsForStudent(
   subjects: SubjectConfig[],
@@ -569,42 +675,45 @@ export function getSubjectsForStudent(
   const targetClass = student?.className || classNameFallback;
   const classSubjects = getSubjectsForClass(subjects, targetClass);
 
-  let candidateSubjects: SubjectConfig[];
+  if (classSubjects.length === 0) return [];
 
-  if (student && Array.isArray(student.assignedSubjectIds) && student.assignedSubjectIds.length > 0) {
-    const assignedSet = new Set(student.assignedSubjectIds);
-    candidateSubjects = subjects
-      .filter((s) => s.active && (assignedSet.has(s.id) || studentHasEnteredMarks(student, s.id)))
-      .sort((a, b) => a.displayOrder - b.displayOrder);
-  } else {
-    // If not explicitly assigned, include all class subjects, PLUS any active subject where student has entered marks (> 0)
-    const marksEnteredSubIds = new Set(
-      Object.keys(student?.marks || {}).filter((subId) => studentHasEnteredMarks(student, subId))
-    );
-    candidateSubjects = subjects
-      .filter((s) => s.active && (isSubjectApplicableToClass(s, targetClass) || marksEnteredSubIds.has(s.id)))
-      .filter((subj) => {
-        if (isUrduOrOptional(subj)) {
-          return studentHasEnteredMarks(student, subj.id);
-        }
-        return true;
-      })
-      .sort((a, b) => a.displayOrder - b.displayOrder);
+  // Check if student takes Urdu
+  const urduSubject = classSubjects.find((s) => isUrduOrOptional(s));
+  let studentTakesUrdu = false;
+  if (urduSubject) {
+    const hasUrduMarks = studentHasEnteredMarks(student, urduSubject.id, options?.examMode);
+    const hasUrduAssigned =
+      Array.isArray(student?.assignedSubjectIds) && student.assignedSubjectIds.includes(urduSubject.id);
+    studentTakesUrdu = hasUrduMarks || hasUrduAssigned;
   }
 
-  // When querying for Admin Marks Entry input table:
-  if (options?.forMarksEntry) {
-    return candidateSubjects;
-  }
-
-  // For Marksheet and Result Calculation:
-  // Enforce rule: "agar urdu subject me koi mark nhi de rhe h to marksheet pr show hi n ho"
-  return candidateSubjects.filter((subj) => {
+  // Filter strictly within class subjects
+  const resultSubs = classSubjects.filter((subj) => {
+    // A. Urdu handling: only include if this student studies Urdu
     if (isUrduOrOptional(subj)) {
-      return studentHasEnteredMarks(student, subj.id, options?.examMode);
+      return studentTakesUrdu;
     }
+
+    // B. Sanskrit in 6th, 7th, 8th:
+    // If student takes Urdu, check whether they also study Sanskrit.
+    // If they only study Urdu and have no Sanskrit marks or assignment, Sanskrit is omitted (Urdu is their 12th subject).
+    if (subj.id === 'sub-sanskrit' || subj.name.toLowerCase().includes('sanskrit')) {
+      if (studentTakesUrdu) {
+        const hasSanskritMarks = studentHasEnteredMarks(student, subj.id, options?.examMode);
+        const hasSanskritAssigned =
+          Array.isArray(student?.assignedSubjectIds) && student.assignedSubjectIds.includes(subj.id);
+        if (!hasSanskritMarks && !hasSanskritAssigned) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // C. All other subjects are compulsory for the whole class!
     return true;
   });
+
+  return resultSubs.sort((a, b) => a.displayOrder - b.displayOrder);
 }
 
 export function calculateStudentResult(

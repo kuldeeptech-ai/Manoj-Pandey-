@@ -290,8 +290,10 @@ export default function App() {
             const normalizedStudents = sortStudentsByRoll(data.students.map(normalizeStudentRecord));
             setStudents(normalizedStudents);
           }
-          if (Array.isArray(data.subjects) && data.subjects.length > 0) {
+          if (Array.isArray(data.subjects) && data.subjects.length >= DEFAULT_SUBJECTS.length) {
             setSubjects(data.subjects);
+          } else {
+            setSubjects(DEFAULT_SUBJECTS);
           }
           if (Array.isArray(data.gradeRules) && data.gradeRules.length > 0) {
             setGradeRules(data.gradeRules);
@@ -330,8 +332,10 @@ export default function App() {
             const normalizedStudents = sortStudentsByRoll(fbData.students.map(normalizeStudentRecord));
             setStudents(normalizedStudents);
           }
-          if (fbData.subjects && fbData.subjects.length > 0) {
+          if (fbData.subjects && fbData.subjects.length >= DEFAULT_SUBJECTS.length) {
             setSubjects(fbData.subjects);
+          } else {
+            setSubjects(DEFAULT_SUBJECTS);
           }
           if (fbData.settings) {
             const norm = normalizeSchoolSettings({ ...currentSettings, ...fbData.settings });

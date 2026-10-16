@@ -248,23 +248,35 @@ export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
   maintenanceNotice: '',
   maintenanceMessage: 'पोर्टल पर वर्तमान में मेंटेनेंस एवं अंकपत्र अपडेट का कार्य चल रहा है। कृपया कुछ समय बाद पुनः प्रयास करें।',
   liveBannerText: 'सत्र 2026–2027 की सभी कक्षाओं की मार्कशीट लाइव हो चुकी हैं! आप नीचे अपना रोल नंबर व कक्षा दर्ज करके रिजल्ट देख सकते हैं।',
-  activeClasses: ['5th', '6th', '7th', '8th'],
+  activeClasses: ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'],
   marksheetSchoolNameSize: 28,
   publicPortalSchoolNameSize: 24,
   marksheetTextScale: 'large',
 };
 
 export const DEFAULT_SUBJECTS: SubjectConfig[] = [
-  { id: 'sub-hindi', name: 'Hindi', displayOrder: 1, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-english', name: 'English', displayOrder: 2, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-maths', name: 'Mathematics', displayOrder: 3, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-science', name: 'Science', displayOrder: 4, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-social', name: 'Social Science', displayOrder: 5, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-sanskrit', name: 'Sanskrit', displayOrder: 6, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-computer', name: 'Computer', displayOrder: 7, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-gk', name: 'General Knowledge', displayOrder: 8, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'] },
-  { id: 'sub-1789291043759', name: 'Hindi ii', displayOrder: 10, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['6th', '7th', '8th'] },
-  { id: 'sub-urdu', name: 'Urdu (उर्दू)', displayOrder: 12, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['5th', '6th', '7th', '8th'], isOptional: true },
+  // Pre-primary (Nursery, LKG, UKG)
+  { id: 'sub-hindi-writing', name: 'Hindi Writing', displayOrder: 1, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['Nursery', 'LKG', 'UKG'] },
+  { id: 'sub-hindi-oral', name: 'Hindi Oral', displayOrder: 2, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['Nursery', 'LKG', 'UKG'] },
+  { id: 'sub-english-writing', name: 'English Writing', displayOrder: 3, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['Nursery', 'LKG', 'UKG'] },
+  { id: 'sub-english-oral', name: 'English Oral', displayOrder: 4, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['Nursery', 'LKG', 'UKG'] },
+  { id: 'sub-maths-writing', name: 'Mathematics Writing', displayOrder: 5, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['Nursery', 'LKG', 'UKG'] },
+  { id: 'sub-maths-oral', name: 'Mathematics Oral', displayOrder: 6, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['Nursery', 'LKG', 'UKG'] },
+
+  // Primary & Upper Primary Core (1st to 8th)
+  { id: 'sub-hindi-1', name: 'Hindi 1', displayOrder: 7, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-hindi-2', name: 'Hindi 2', displayOrder: 8, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-english-1', name: 'English 1', displayOrder: 9, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-english-2', name: 'English 2', displayOrder: 10, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-maths', name: 'Mathematics', displayOrder: 11, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-computer', name: 'Computer', displayOrder: 12, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-science', name: 'Science', displayOrder: 13, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-drawing', name: 'Drawing', displayOrder: 14, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-pt', name: 'Physical Training (PT)', displayOrder: 15, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-gk', name: 'General Knowledge (GK)', displayOrder: 16, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'] },
+  { id: 'sub-sst', name: 'Social Studies (SST)', displayOrder: 17, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['UKG', '1st', '2nd', '6th', '7th', '8th'] },
+  { id: 'sub-sanskrit', name: 'Sanskrit', displayOrder: 18, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['6th', '7th', '8th'] },
+  { id: 'sub-urdu', name: 'Urdu', displayOrder: 19, halfMax: 100, annualMax: 100, passingMarks: 50, active: true, applicableClasses: ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'], isOptional: true },
 ];
 
 export const DEFAULT_STUDENTS: Student[] = [

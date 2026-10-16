@@ -166,124 +166,328 @@
   },
   "subjects": [
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-hindi-writing",
+      "name": "Hindi Writing",
       "displayOrder": 1,
       "halfMax": 100,
-      "id": "sub-1790585888144",
-      "name": "Hindi",
-      "passingMarks": 33
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "Nursery",
+        "LKG",
+        "UKG"
+      ]
     },
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-hindi-oral",
+      "name": "Hindi Oral",
       "displayOrder": 2,
       "halfMax": 100,
-      "id": "sub-1790585900385",
-      "name": "Hindi Grammer",
-      "passingMarks": 33
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "Nursery",
+        "LKG",
+        "UKG"
+      ]
     },
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-english-writing",
+      "name": "English Writing",
       "displayOrder": 3,
       "halfMax": 100,
-      "id": "sub-1790585905102",
-      "name": "english",
-      "passingMarks": 33
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "Nursery",
+        "LKG",
+        "UKG"
+      ]
     },
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-english-oral",
+      "name": "English Oral",
       "displayOrder": 4,
       "halfMax": 100,
-      "id": "sub-1790586220351",
-      "name": "English Grammer",
-      "passingMarks": 33
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "Nursery",
+        "LKG",
+        "UKG"
+      ]
     },
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-maths-writing",
+      "name": "Mathematics Writing",
       "displayOrder": 5,
       "halfMax": 100,
-      "id": "sub-1790586231218",
-      "name": "Computer",
-      "passingMarks": 33
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "Nursery",
+        "LKG",
+        "UKG"
+      ]
     },
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-maths-oral",
+      "name": "Mathematics Oral",
       "displayOrder": 6,
       "halfMax": 100,
-      "id": "sub-1790587622733",
-      "name": "Science",
-      "passingMarks": 33
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "Nursery",
+        "LKG",
+        "UKG"
+      ]
     },
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-hindi-1",
+      "name": "Hindi 1",
       "displayOrder": 7,
       "halfMax": 100,
-      "id": "sub-1790587625487",
-      "name": "Social Science",
-      "passingMarks": 33
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
     },
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-hindi-2",
+      "name": "Hindi 2",
       "displayOrder": 8,
       "halfMax": 100,
-      "id": "sub-1790587636066",
-      "name": "Mathematics",
-      "passingMarks": 33
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
     },
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-english-1",
+      "name": "English 1",
       "displayOrder": 9,
       "halfMax": 100,
-      "id": "sub-1790587653251",
-      "name": "Sanskrit / Urdu",
-      "passingMarks": 33
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
     },
     {
-      "active": true,
-      "annualMax": 100,
-      "applicableClasses": [
-        "ALL"
-      ],
+      "id": "sub-english-2",
+      "name": "English 2",
       "displayOrder": 10,
       "halfMax": 100,
-      "id": "sub-1790587677197",
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
+    },
+    {
+      "id": "sub-maths",
+      "name": "Mathematics",
+      "displayOrder": 11,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
+    },
+    {
+      "id": "sub-computer",
+      "name": "Computer",
+      "displayOrder": 12,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
+    },
+    {
+      "id": "sub-science",
+      "name": "Science",
+      "displayOrder": 13,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
+    },
+    {
+      "id": "sub-drawing",
       "name": "Drawing",
-      "passingMarks": 33
+      "displayOrder": 14,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "UKG",
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
+    },
+    {
+      "id": "sub-pt",
+      "name": "Physical Training (PT)",
+      "displayOrder": 15,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "UKG",
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
+    },
+    {
+      "id": "sub-gk",
+      "name": "General Knowledge (GK)",
+      "displayOrder": 16,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "UKG",
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ]
+    },
+    {
+      "id": "sub-sst",
+      "name": "Social Studies (SST)",
+      "displayOrder": 17,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "UKG",
+        "1st",
+        "2nd",
+        "6th",
+        "7th",
+        "8th"
+      ]
+    },
+    {
+      "id": "sub-sanskrit",
+      "name": "Sanskrit",
+      "displayOrder": 18,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "6th",
+        "7th",
+        "8th"
+      ]
+    },
+    {
+      "id": "sub-urdu",
+      "name": "Urdu",
+      "displayOrder": 19,
+      "halfMax": 100,
+      "annualMax": 100,
+      "passingMarks": 50,
+      "active": true,
+      "applicableClasses": [
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th"
+      ],
+      "isOptional": true
     }
   ],
   "students": [
@@ -301,6 +505,10 @@
         "sub-1790585888144": {
           "annualObtained": 0,
           "halfObtained": 86
+        },
+        "sub-hindi-1": {
+          "halfObtained": 86,
+          "annualObtained": 0
         }
       },
       "mobile": "8756415405",
@@ -1495,7 +1703,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-801",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "12/06/2013",
       "fatherName": "Ajay Pandey",
       "gender": "MALE",
@@ -1540,6 +1748,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9670228908",
@@ -1556,7 +1804,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-810",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "11/11/2010",
       "fatherName": "Dharmendra Rai",
       "gender": "MALE",
@@ -1601,6 +1849,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 77,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 84,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "989282202",
@@ -1617,7 +1905,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-811",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "04/02/2012",
       "fatherName": "Ram Rekh",
       "gender": "MALE",
@@ -1662,6 +1950,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 62,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8948962537",
@@ -1678,7 +2006,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-812",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "21/02/2013",
       "fatherName": "Radheshyam",
       "gender": "FEMALE",
@@ -1723,6 +2051,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 95,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 97,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9648694790",
@@ -1739,7 +2107,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-813",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "10/09/2012",
       "fatherName": "Brajchandra Shukla",
       "gender": "MALE",
@@ -1784,6 +2152,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 72,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9005384831",
@@ -1800,7 +2208,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-814",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "01/02/2010",
       "fatherName": "Hariom Gupta",
       "gender": "FEMALE",
@@ -1845,6 +2253,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 100,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9984406516",
@@ -1861,7 +2309,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-815",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "11/04/2014",
       "fatherName": "Ajay Mishra",
       "gender": "MALE",
@@ -1906,6 +2354,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 78,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9919193447",
@@ -1922,7 +2410,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-816",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "16/06/2010",
       "fatherName": "Shri Nivas",
       "gender": "FEMALE",
@@ -1967,6 +2455,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 95,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 86,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9919089694",
@@ -1983,7 +2511,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-817",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "23/11/2009",
       "fatherName": "Rameshwar",
       "gender": "FEMALE",
@@ -2028,6 +2556,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 89,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7715900682",
@@ -2044,7 +2612,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-818",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "10/03/2011",
       "fatherName": "Premchandra",
       "gender": "MALE",
@@ -2089,6 +2657,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 88,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9936494350",
@@ -2105,7 +2713,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-819",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "04/04/2010",
       "fatherName": "Sanjay",
       "gender": "FEMALE",
@@ -2150,6 +2758,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 82,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 65,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8090369979",
@@ -2166,7 +2814,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-802",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "14/10/2013",
       "fatherName": "Ranjan Shukla",
       "gender": "FEMALE",
@@ -2211,6 +2859,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 86,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9503074946",
@@ -2227,7 +2915,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-820",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "09/11/2011",
       "fatherName": "Mahesh Pandey",
       "gender": "MALE",
@@ -2272,6 +2960,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 80,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9599258359",
@@ -2288,7 +3016,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-821",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "10/04/2012",
       "fatherName": "Charel Khan",
       "gender": "FEMALE",
@@ -2333,6 +3061,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 74,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "808525",
@@ -2349,7 +3117,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-822",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "28/04/2012",
       "fatherName": "Vijay Sharma",
       "gender": "MALE",
@@ -2394,6 +3162,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 78,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9554802482",
@@ -2410,7 +3218,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-823",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "05/08/2011",
       "fatherName": "Vivek Kumar",
       "gender": "FEMALE",
@@ -2455,6 +3263,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 93,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 81,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9455546805",
@@ -2516,6 +3364,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9974792983",
@@ -2577,6 +3465,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 88,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 93,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7391995549",
@@ -2638,6 +3566,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 95,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 73,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9935432382",
@@ -2699,6 +3667,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 93,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 61,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9380258497",
@@ -2760,6 +3768,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 79,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9919538611",
@@ -2821,6 +3869,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 84,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8853106458",
@@ -2837,7 +3925,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-803",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "10/07/2011",
       "fatherName": "Arshad",
       "gender": "MALE",
@@ -2882,6 +3970,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 93,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 71,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7295851720",
@@ -2943,6 +4071,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 97,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 85,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7800471348",
@@ -3004,6 +4172,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 61
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 61,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 61,
+          "annualObtained": 0
         }
       },
       "mobile": "9022414528",
@@ -3020,7 +4228,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-804",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "14/04/2014",
       "fatherName": "Ramesh",
       "gender": "MALE",
@@ -3065,6 +4273,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 95,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9648703138",
@@ -3081,7 +4329,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-805",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "24/04/2011",
       "fatherName": "Pramod Sharma",
       "gender": "FEMALE",
@@ -3126,6 +4374,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 91,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 93,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "6307445330",
@@ -3142,7 +4430,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-806",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "15/03/2012",
       "fatherName": "Santruy Yadav",
       "gender": "MALE",
@@ -3187,6 +4475,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 73,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 62,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9879124613",
@@ -3203,7 +4531,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-807",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "14/12/2012",
       "fatherName": "Kamlush",
       "gender": "FEMALE",
@@ -3248,6 +4576,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9628770470",
@@ -3264,7 +4632,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-808",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "25/02/2013",
       "fatherName": "Ravindranath Pandey",
       "gender": "MALE",
@@ -3309,6 +4677,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 76,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 70,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7891641142",
@@ -3325,7 +4733,7 @@
       "address": "",
       "admissionNo": "HDPPC-2026-809",
       "aparId": "",
-      "className": "8",
+      "className": "8th",
       "dob": "18/05/2012",
       "fatherName": "Jaikash",
       "gender": "FEMALE",
@@ -3370,6 +4778,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 98,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 98,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7309923053",
@@ -3431,6 +4879,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 100,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 96,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7874475520",
@@ -3492,6 +4980,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 97,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 96,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 98,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 82,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9984909516",
@@ -3553,6 +5081,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 92,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9984906516",
@@ -3614,6 +5182,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 91,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 71,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 75,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 69,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "",
@@ -3675,6 +5283,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 61,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 35,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 62,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9838407194",
@@ -3736,6 +5384,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 72,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 38,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 74,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8009671192",
@@ -3797,6 +5485,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 70,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 35,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 64,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 63,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8858946756",
@@ -3858,6 +5586,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 33,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 64,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8858946756",
@@ -3919,6 +5687,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 86,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 68,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 67,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 81,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7715900682",
@@ -3980,6 +5788,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 61,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 33,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 61,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8090369979",
@@ -4041,6 +5889,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 65,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 68,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7355104658",
@@ -4102,6 +5990,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 97,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 96,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 84,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8795830624",
@@ -4163,6 +6091,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 62,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 33,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 65,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9919538611",
@@ -4224,6 +6192,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 54,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 64,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 66,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "6352273345",
@@ -4285,6 +6293,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 69,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 33,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 62,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 61,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "6392794218",
@@ -4346,6 +6394,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 80,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 66,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 67,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 68,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9839576002",
@@ -4407,6 +6495,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 71,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 34,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 65,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 65,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9327581952",
@@ -4468,6 +6596,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 72,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 33,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 63,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9214737343",
@@ -4529,6 +6697,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 33,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 62,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9648218754",
@@ -4590,6 +6798,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 65,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 33,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 61,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 64,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9022414528",
@@ -4651,6 +6899,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 75,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 34,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 63,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8085256061",
@@ -4712,6 +7000,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 78,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 64,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 64,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 62,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9839051603",
@@ -4773,6 +7101,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 92,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 67,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 72,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8127693830",
@@ -4834,6 +7202,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 35,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9665379827",
@@ -4895,6 +7303,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 90,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 67,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 69,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 76,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7800471348",
@@ -4956,6 +7404,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 92,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 85,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 70,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 80,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9580260818",
@@ -5017,6 +7505,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 60,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 37,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 64,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 65,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7317452428",
@@ -5078,6 +7606,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 94,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 54,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 76,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 82,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "8200770606",
@@ -5139,6 +7707,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 98,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 95,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "7571929150",
@@ -5200,6 +7808,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 87,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 67,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 70,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 61,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "9956776735",
@@ -6554,6 +9202,46 @@
         "sub-1790587677197": {
           "annualObtained": 0,
           "halfObtained": 0
+        },
+        "sub-hindi-1": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-hindi-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-english-1": {
+          "halfObtained": 99,
+          "annualObtained": 0
+        },
+        "sub-english-2": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-computer": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-science": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-sst": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-maths": {
+          "halfObtained": 81,
+          "annualObtained": 0
+        },
+        "sub-sanskrit": {
+          "halfObtained": 0,
+          "annualObtained": 0
+        },
+        "sub-drawing": {
+          "halfObtained": 0,
+          "annualObtained": 0
         }
       },
       "mobile": "",
@@ -12838,6 +15526,6 @@
       "teacherRemark": "Regular and disciplined student. Shows consistent academic progress."
     }
   ],
-  "lastUpdated": "2026-10-09T05:04:45.898Z",
+  "lastUpdated": "2026-10-16T08:48:29.149Z",
   "clearedMarksHistory": []
 }

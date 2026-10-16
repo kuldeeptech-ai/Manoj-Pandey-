@@ -20,6 +20,7 @@ import {
   DEFAULT_STUDENT_PHOTO_18,
   DEFAULT_STUDENT_PHOTO_FALLBACK,
   DEFAULT_SCHOOL_LOGO,
+  DEFAULT_SUBJECTS,
 } from '../data/defaultData';
 import {
   GOOGLE_APPS_SCRIPT_CODE,
@@ -977,24 +978,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
 
-    // Standard preset requested by user:
-    // Core 9 subjects -> 5th, 6th, 7th, 8th (so 5th has 9 subjects)
-    // 10th subject (Hindi ii) -> 6th, 7th, 8th (so 6th/7th have 10 subjects)
-    // 11th subject (dgg) -> 8th (so 8th has 11 subjects)
-    const sorted = [...editingSubjects].sort((a, b) => a.displayOrder - b.displayOrder);
-    const updated = sorted.map((s, idx) => {
-      if (idx < 9) {
-        return { ...s, applicableClasses: ['5th', '6th', '7th', '8th'] };
-      } else if (idx === 9) {
-        return { ...s, applicableClasses: ['6th', '7th', '8th'] };
-      } else {
-        return { ...s, applicableClasses: ['8th'] };
-      }
-    });
+    // Official standard curriculum requested by user:
+    // Nursery & LKG: 6 writing/oral subjects
+    // UKG: 10 subjects
+    // 1st & 2nd: 9 core + Urdu
+    // 3rd, 4th, 5th: 10 core + Urdu (NO SST!)
+    // 6th, 7th, 8th: 11 core + Sanskrit / Urdu
+    const updated = DEFAULT_SUBJECTS.map((s) => ({ ...s }));
     setEditingSubjects(updated);
     onSaveSubjects(updated);
-    setSubjectNotice('कक्षा-वार मानक विषय लागू: 5th में 9 विषय, 6th-7th में 10 विषय, 8th में 11 विषय सेट हो गए!');
-    setTimeout(() => setSubjectNotice(null), 5000);
+    setSubjectNotice(
+      '✓ आधिकारिक कक्षा-वार पाठ्यक्रम लागू हो गया! (Nursery/LKG: 6, UKG: 10, 1st-2nd: 9+उर्दू, 3rd-5th: 10+उर्दू, 6th-8th: 11+संस्कृत/उर्दू)'
+    );
+    setTimeout(() => setSubjectNotice(null), 6000);
   };
 
   const handleAddSubject = () => {
@@ -2687,6 +2683,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             <button
                               type="button"
                               onClick={() => {
+                                setEditingStudent({
+                                  ...editingStudent,
+                                  assignedSubjectIds: undefined,
+                                });
+                              }}
+                              className="text-[10px] px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded font-bold cursor-pointer transition-all shadow-2xs"
+                              title="पूरी कक्षा का मानक पाठ्यक्रम स्वतः लागू करें (कोई अलग चयन नहीं चाहिए)"
+                            >
+                              ✓ कक्षा डिफ़ॉल्ट (Auto)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
                                 const classSubs = getSubjectsForClass(subjects, editingStudent.className);
                                 setEditingStudent({
                                   ...editingStudent,
@@ -2695,7 +2704,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                               }}
                               className="text-[10px] px-2 py-1 bg-white hover:bg-indigo-100 text-indigo-900 border border-indigo-300 rounded font-bold cursor-pointer transition-all shadow-2xs"
                             >
-                              सभी विषय (All)
+                              सभी विषय (+उर्दू)
                             </button>
                             <button
                               type="button"
@@ -2867,22 +2876,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           type="button"
                           onClick={() => {
                             const classSubs = getSubjectsForClass(subjects, quickSubjectStudent.className);
-                            setQuickAssignedSubjectIds(classSubs.map((s) => s.id));
+                            const withoutUrdu = classSubs.filter((s) => !isUrduOrOptional(s)).map((s) => s.id);
+                            setQuickAssignedSubjectIds(withoutUrdu);
                           }}
-                          className="text-[11px] px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-bold cursor-pointer"
+                          className="text-[11px] px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded font-bold cursor-pointer transition-all"
+                          title="पूरी कक्षा का मानक पाठ्यक्रम स्वतः लागू करें"
                         >
-                          सभी चुनें (All)
+                          ✓ कक्षा डिफ़ॉल्ट (Standard)
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             const classSubs = getSubjectsForClass(subjects, quickSubjectStudent.className);
-                            const withoutUrdu = classSubs.filter((s) => !isUrduOrOptional(s)).map((s) => s.id);
-                            setQuickAssignedSubjectIds(withoutUrdu);
+                            setQuickAssignedSubjectIds(classSubs.map((s) => s.id));
                           }}
                           className="text-[11px] px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-bold cursor-pointer"
                         >
-                          बिना उर्दू (Standard)
+                          सभी चुनें (+उर्दू)
                         </button>
                       </div>
                     </div>
@@ -4348,7 +4358,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <span>कक्षा-वार विषय प्रबंधन (Class-Wise Subjects Management)</span>
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  प्रत्येक कक्षा के अनुसार विषय (जैसे 5वीं में 9, 6वीं/7वीं में 10, 8वीं में 11 विषय), पूर्णांक एवं उत्तीर्णांक निर्धारित करें।
+                  प्रत्येक कक्षा के अनुसार आधिकारिक विषय (Nursery/LKG: 6, UKG: 10, 1st-2nd: 9+उर्दू, 3rd-5th: 10+उर्दू, 6th-8th: 11+संस्कृत/उर्दू), पूर्णांक एवं उत्तीर्णांक।
                 </p>
               </div>
 
@@ -4356,11 +4366,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => handleApplyPreset('standard')}
-                  title="5वीं में 9 विषय, 6वीं-7वीं में 10 विषय, 8वीं में 11 विषय सेट करें"
+                  title="सभी कक्षाओं के लिए आधिकारिक मानक विषय लागू करें"
                   className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all shrink-0"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                  <span>मानक कक्षा-वार सेट करें (9/10/11 विषय)</span>
+                  <span>आधिकारिक पाठ्यक्रम लागू करें (Reset to Official Curriculum)</span>
                 </button>
 
                 <button

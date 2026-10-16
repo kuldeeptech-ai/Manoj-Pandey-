@@ -23,6 +23,7 @@ import {
   getSubjectsForClass,
   getCleanSubjectHeader,
   getSubjectMatchTokens,
+  isUrduOrOptional,
 } from '../utils/calculations';
 import { DEFAULT_STUDENT_PHOTO_FALLBACK } from '../data/defaultData';
 
@@ -743,9 +744,12 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                 }
 
                 // CRUCIAL: ALWAYS ensure assignedSubjectIds includes imported subject
-                // so newly added subjects (like 'dd') appear on marksheet and results!
+                // while preserving all compulsory subjects of the student's class!
                 if (!Array.isArray(targetStudent!.assignedSubjectIds)) {
-                  targetStudent!.assignedSubjectIds = [];
+                  const classCompulsoryIds = getSubjectsForClass(subjects, targetStudent!.className)
+                    .filter((s) => !isUrduOrOptional(s))
+                    .map((s) => s.id);
+                  targetStudent!.assignedSubjectIds = [...classCompulsoryIds];
                 }
                 if (!targetStudent!.assignedSubjectIds.includes(subjectId)) {
                   targetStudent!.assignedSubjectIds.push(subjectId);
