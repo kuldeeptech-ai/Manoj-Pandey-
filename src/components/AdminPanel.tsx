@@ -701,6 +701,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       if (s.id === selectedStudentIdForMarks) {
         return {
           ...s,
+          assignedSubjectIds: s.assignedSubjectIds,
           marks: currentMarks,
           teacherRemark: currentRemark,
         };
@@ -739,6 +740,73 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         handleSelectStudentForMarks(nextStudent.id);
       }, 150);
     }
+  };
+
+  // Toggle Urdu elective for any student directly with immediate persistence
+  const handleToggleUrduForStudent = (targetStudentId: string) => {
+    const std = students.find((s) => s.id === targetStudentId);
+    if (!std) return;
+
+    const urduSub = subjects.find((s) => isUrduOrOptional(s));
+    if (!urduSub) {
+      alert('उर्दू विषय उपलब्ध नहीं है। कृपया विषय प्रबंधन में "Urdu" विषय सक्रिय रखें।');
+      return;
+    }
+
+    const classSubs = getSubjectsForClass(subjects, std.className);
+    const compulsoryIds = classSubs.filter((s) => !isUrduOrOptional(s)).map((s) => s.id);
+
+    const hasUrduAssigned =
+      (Array.isArray(std.assignedSubjectIds) && std.assignedSubjectIds.includes(urduSub.id)) ||
+      studentHasEnteredMarks(std, urduSub.id) ||
+      (std.id === selectedStudentIdForMarks && currentMarks && currentMarks[urduSub.id] !== undefined);
+
+    let newAssigned: string[];
+    let newMarks = { ...(std.marks || {}) };
+
+    if (hasUrduAssigned) {
+      // Remove Urdu
+      newAssigned = compulsoryIds.filter((id) => id !== urduSub.id);
+      delete newMarks[urduSub.id];
+      delete newMarks['sub-urdu'];
+      if (std.id === selectedStudentIdForMarks) {
+        setCurrentMarks((prev) => {
+          const next = { ...prev };
+          delete next[urduSub.id];
+          delete next['sub-urdu'];
+          return next;
+        });
+      }
+    } else {
+      // Add Urdu
+      newAssigned = Array.from(new Set([...compulsoryIds, urduSub.id]));
+      newMarks[urduSub.id] = { halfObtained: 0, annualObtained: 0 };
+      if (std.id === selectedStudentIdForMarks) {
+        setCurrentMarks((prev) => ({
+          ...prev,
+          [urduSub.id]: { halfObtained: 0, annualObtained: 0 },
+        }));
+      }
+    }
+
+    const updated = students.map((s) => {
+      if (s.id === targetStudentId) {
+        return {
+          ...s,
+          assignedSubjectIds: newAssigned,
+          marks: newMarks,
+        };
+      }
+      return s;
+    });
+
+    onSaveStudents(updated);
+    setBulkNotice(
+      hasUrduAssigned
+        ? `✓ छात्र "${std.name}" से उर्दू विषय हटा दिया गया है!`
+        : `✓ छात्र "${std.name}" के लिए उर्दू विषय जोड़ दिया गया है! अब नीचे अंक भरें।`
+    );
+    setTimeout(() => setBulkNotice(null), 4000);
   };
 
   // Student CRUD
@@ -2664,130 +2732,71 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
                     </div>
 
-                    {/* 🎯 INDIVIDUAL STUDENT SUBJECT ASSIGNMENT (छात्र के विशेष विषय चयन - उर्दू केवल पढ़ने वाले छात्रों के लिए) */}
+                    {/* 🎯 AUTOMATIC CLASS CURRICULUM & URDU TOGGLE */}
                     <div className="pt-3 border-t border-slate-200">
-                      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-xl p-3.5 space-y-2.5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div>
-                            <label className="text-xs uppercase font-black text-indigo-950 flex items-center gap-1.5">
-                              <BookOpen className="w-4 h-4 text-indigo-700" />
-                              <span>इस छात्र के विषय (Choose Subjects for this Student)</span>
-                            </label>
-                            <p className="text-[11px] text-indigo-800 leading-snug mt-0.5">
-                              पूरी क्लास में जो छात्र उर्दू या कोई अतिरिक्त विषय पढ़ते हैं, केवल उनके लिए ही वह विषय टिक (✓) करें।
-                            </p>
-                          </div>
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                        {(() => {
+                          const classSubs = getSubjectsForClass(subjects, editingStudent.className);
+                          const urduSub = subjects.find((s) => isUrduOrOptional(s));
+                          const isUrduApplicable = urduSub && isSubjectApplicableToClass(urduSub, editingStudent.className);
+                          const compulsorySubs = classSubs.filter((s) => !isUrduOrOptional(s));
+                          const takesUrdu = Boolean(
+                            (Array.isArray(editingStudent.assignedSubjectIds) && urduSub && editingStudent.assignedSubjectIds.includes(urduSub.id)) ||
+                            (urduSub && studentHasEnteredMarks(editingStudent, urduSub.id))
+                          );
 
-                          {/* Quick Helper buttons */}
-                          <div className="flex items-center gap-1.5 flex-wrap shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingStudent({
-                                  ...editingStudent,
-                                  assignedSubjectIds: undefined,
-                                });
-                              }}
-                              className="text-[10px] px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded font-bold cursor-pointer transition-all shadow-2xs"
-                              title="पूरी कक्षा का मानक पाठ्यक्रम स्वतः लागू करें (कोई अलग चयन नहीं चाहिए)"
-                            >
-                              ✓ कक्षा डिफ़ॉल्ट (Auto)
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const classSubs = getSubjectsForClass(subjects, editingStudent.className);
-                                setEditingStudent({
-                                  ...editingStudent,
-                                  assignedSubjectIds: classSubs.map((s) => s.id),
-                                });
-                              }}
-                              className="text-[10px] px-2 py-1 bg-white hover:bg-indigo-100 text-indigo-900 border border-indigo-300 rounded font-bold cursor-pointer transition-all shadow-2xs"
-                            >
-                              सभी विषय (+उर्दू)
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const classSubs = getSubjectsForClass(subjects, editingStudent.className);
-                                const withoutUrdu = classSubs.filter((s) => !isUrduOrOptional(s)).map((s) => s.id);
-                                setEditingStudent({
-                                  ...editingStudent,
-                                  assignedSubjectIds: withoutUrdu,
-                                });
-                              }}
-                              className="text-[10px] px-2 py-1 bg-white hover:bg-indigo-100 text-indigo-900 border border-indigo-300 rounded font-bold cursor-pointer transition-all shadow-2xs"
-                            >
-                              अनिवार्य (बिना उर्दू)
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Subject Checkbox Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 max-h-56 overflow-y-auto pr-1">
-                          {getSubjectsForClass(subjects, editingStudent.className).map((subj) => {
-                            const isUrdu = isUrduOrOptional(subj);
-                            const isChecked = Array.isArray(editingStudent.assignedSubjectIds)
-                              ? editingStudent.assignedSubjectIds.includes(subj.id)
-                              : (!isUrdu || studentHasEnteredMarks(editingStudent, subj.id));
-
-                            return (
-                              <label
-                                key={subj.id}
-                                className={`flex items-center justify-between p-2 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
-                                  isChecked
-                                    ? isUrdu
-                                      ? 'bg-amber-50/90 border-amber-400 text-amber-950 shadow-xs ring-1 ring-amber-300'
-                                      : 'bg-indigo-100/70 border-indigo-400 text-indigo-950 shadow-xs'
-                                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 min-w-0 pr-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={(e) => {
-                                      const currentClassSubs = getSubjectsForClass(subjects, editingStudent.className);
-                                      const currentAssigned = Array.isArray(editingStudent.assignedSubjectIds)
-                                        ? [...editingStudent.assignedSubjectIds]
-                                        : currentClassSubs
-                                            .filter((s) => !isUrduOrOptional(s) || studentHasEnteredMarks(editingStudent, s.id))
-                                            .map((s) => s.id);
-
-                                      let newAssigned: string[];
-                                      if (e.target.checked) {
-                                        newAssigned = Array.from(new Set([...currentAssigned, subj.id]));
-                                      } else {
-                                        newAssigned = currentAssigned.filter((id) => id !== subj.id);
-                                      }
-                                      setEditingStudent({
-                                        ...editingStudent,
-                                        assignedSubjectIds: newAssigned,
-                                      });
-                                    }}
-                                    className="w-4 h-4 rounded text-[#0f2b48] focus:ring-[#0f2b48] cursor-pointer"
-                                  />
-                                  <span className="truncate">{subj.name}</span>
-                                </div>
-
-                                <div className="shrink-0 flex items-center gap-1">
-                                  {isUrdu && (
-                                    <span className="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-black border border-amber-300">
-                                      उर्दू / ऐच्छिक
+                          return (
+                            <>
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-black uppercase text-slate-800">
+                                      विषय निर्धारण (Class Subjects)
                                     </span>
-                                  )}
-                                  <span className="text-[10px] text-slate-500 font-mono">
-                                    {subj.halfMax + subj.annualMax}M
-                                  </span>
+                                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 font-bold rounded text-[11px]">
+                                      ✓ {compulsorySubs.length} अनिवार्य विषय स्वतः लागू
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-600 mt-1">
+                                    कक्षा <strong>{editingStudent.className}</strong> के सभी अनिवार्य विषय ({compulsorySubs.map((s) => s.name).join(', ')}) इस छात्र पर स्वतः लागू हैं। आपको अलग से कोई विषय चुनने की आवश्यकता नहीं है।
+                                  </p>
                                 </div>
-                              </label>
-                            );
-                          })}
-                        </div>
+                              </div>
 
-                        <div className="text-[10px] text-indigo-900/80 font-medium pt-1">
-                          💡 <strong>नियम:</strong> यदि किसी छात्र के लिए उर्दू में कोई अंक नहीं दिया गया है, तो मार्कशीट पर उर्दू का विषय व उसके अंक बिल्कुल नहीं दिखेंगे।
-                        </div>
+                              {isUrduApplicable && urduSub && (
+                                <div className="p-3 bg-white border-2 border-amber-300 rounded-lg flex items-center justify-between gap-3 shadow-2xs">
+                                  <div>
+                                    <span className="text-xs font-bold text-amber-950 block">
+                                      उर्दू विषय (Urdu Elective)
+                                    </span>
+                                    <span className="text-[11px] text-amber-800 block">
+                                      क्या यह छात्र उर्दू पढ़ता है? (कक्षा में केवल 1–2 छात्र ही उर्दू पढ़ते हैं)
+                                    </span>
+                                  </div>
+
+                                  <label className="flex items-center gap-2 cursor-pointer font-bold text-xs shrink-0 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-300 hover:bg-amber-100 transition-all">
+                                    <input
+                                      type="checkbox"
+                                      checked={takesUrdu}
+                                      onChange={(e) => {
+                                        const compIds = compulsorySubs.map((s) => s.id);
+                                        const newAssigned = e.target.checked
+                                          ? Array.from(new Set([...compIds, urduSub.id]))
+                                          : compIds;
+                                        setEditingStudent({
+                                          ...editingStudent,
+                                          assignedSubjectIds: newAssigned,
+                                        });
+                                      }}
+                                      className="w-4 h-4 text-[#0f2b48] rounded cursor-pointer"
+                                    />
+                                    <span>{takesUrdu ? 'उर्दू शामिल है ✓' : '+ उर्दू जोड़ें'}</span>
+                                  </label>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -3780,6 +3789,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     <Edit2 className="w-3 h-3" />
                                     <span>अंक भरें</span>
                                   </button>
+                                  {(() => {
+                                    const urduSub = subjects.find((s) => isUrduOrOptional(s));
+                                    if (!urduSub || !isSubjectApplicableToClass(urduSub, st.className)) return null;
+                                    const hasUrdu =
+                                      (Array.isArray(st.assignedSubjectIds) && st.assignedSubjectIds.includes(urduSub.id)) ||
+                                      studentHasEnteredMarks(st, urduSub.id);
+                                    return (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleUrduForStudent(st.id)}
+                                        className={`px-1.5 py-1 rounded text-[10px] font-bold border cursor-pointer transition-all ${
+                                          hasUrdu
+                                            ? 'bg-amber-100 text-amber-950 border-amber-300 hover:bg-amber-200 shadow-2xs'
+                                            : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                                        }`}
+                                        title={hasUrdu ? 'उर्दू सक्रिय है (हटाने के लिए क्लिक करें)' : 'इस छात्र के लिए उर्दू जोड़ें'}
+                                      >
+                                        {hasUrdu ? 'उर्दू ✓' : '+उर्दू'}
+                                      </button>
+                                    );
+                                  })()}
                                   <button
                                     type="button"
                                     onClick={() => onViewStudentResult(st.id)}
@@ -4074,62 +4104,50 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       <span className="px-2 py-0.5 bg-blue-100 text-blue-900 font-bold rounded text-[11px]">
                         कक्षा {currentStudent?.className || '8th'} ({getSubjectsForStudent(subjects, currentStudent, undefined, { forMarksEntry: true }).length} विषय)
                       </span>
-                      {currentStudent && (
-                        <button
-                          type="button"
-                          onClick={() => setQuickSubjectStudent(currentStudent)}
-                          className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-300 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
-                          title="इस छात्र के विषय बदलें (e.g. उर्दू जोड़ें / हटाएं)"
-                        >
-                          <BookOpen className="w-3.5 h-3.5 text-indigo-700" />
-                          <span>इस छात्र के विषय चुनें</span>
-                        </button>
-                      )}
                       {currentStudent && (() => {
-                        const studentSubs = getSubjectsForStudent(subjects, currentStudent, undefined, { forMarksEntry: true });
-                        const isUrduAssigned = studentSubs.some((s) => isUrduOrOptional(s));
                         const urduSubject = subjects.find((s) => isUrduOrOptional(s));
-
                         if (!urduSubject) return null;
+                        const isApplicable = isSubjectApplicableToClass(urduSubject, currentStudent.className);
+                        if (!isApplicable) return null;
+
+                        const studentWithMarks = {
+                          ...currentStudent,
+                          marks: { ...(currentStudent.marks || {}), ...(currentMarks || {}) },
+                        };
+                        const studentSubs = getSubjectsForStudent(subjects, studentWithMarks, undefined, { forMarksEntry: true });
+                        const isUrduAssigned =
+                          studentSubs.some((s) => isUrduOrOptional(s)) ||
+                          Boolean(currentMarks && currentMarks[urduSubject.id] !== undefined) ||
+                          studentHasEnteredMarks(currentStudent, urduSubject.id);
 
                         return (
                           <button
                             type="button"
-                            onClick={() => {
-                              const classSubs = getSubjectsForClass(subjects, currentStudent.className);
-                              let newAssigned: string[];
-                              if (isUrduAssigned) {
-                                const currentAssigned = Array.isArray(currentStudent.assignedSubjectIds)
-                                  ? currentStudent.assignedSubjectIds
-                                  : classSubs.map((s) => s.id);
-                                newAssigned = currentAssigned.filter((id) => id !== urduSubject.id);
-                                setCurrentMarks((prev) => {
-                                  const next = { ...prev };
-                                  delete next[urduSubject.id];
-                                  return next;
-                                });
-                              } else {
-                                const currentAssigned = Array.isArray(currentStudent.assignedSubjectIds)
-                                  ? currentStudent.assignedSubjectIds
-                                  : classSubs.filter((s) => !isUrduOrOptional(s)).map((s) => s.id);
-                                newAssigned = Array.from(new Set([...currentAssigned, urduSubject.id]));
-                              }
-                              handleSaveQuickSubjects(currentStudent.id, newAssigned);
-                            }}
-                            className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs border ${
+                            onClick={() => handleToggleUrduForStudent(currentStudent.id)}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs border ${
                               isUrduAssigned
-                                ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300'
-                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+                                ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300 ring-1 ring-amber-300'
+                                : 'bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-700'
                             }`}
                             title={isUrduAssigned ? 'क्लिक करके उर्दू विषय हटाएं' : 'क्लिक करके इस छात्र के लिए उर्दू विषय जोड़ें'}
                           >
-                            <span>{isUrduAssigned ? '✓ उर्दू सक्रिय (हटाएं ✕)' : '+ उर्दू विषय जोड़ें'}</span>
+                            {isUrduAssigned ? (
+                              <>
+                                <span className="font-mono text-sm leading-none text-amber-800">✕</span>
+                                <span>Remove Urdu (उर्दू हटाएं)</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-3.5 h-3.5 text-emerald-200" />
+                                <span>+ Add Urdu (उर्दू जोड़ें)</span>
+                              </>
+                            )}
                           </button>
                         );
                       })()}
                     </div>
                     <span className="text-slate-500 font-medium text-[11px]">
-                      Rule: Obtained Marks ≤ Maximum Marks (उर्दू खाली छोड़ने पर मार्कशीट पर नहीं दिखेगा)
+                      Rule: Obtained Marks ≤ Maximum Marks (उर्दू केवल उन्हीं छात्रों के लिए जोड़ें जो उर्दू पढ़ते हैं)
                     </span>
                   </div>
 
@@ -4146,7 +4164,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {getSubjectsForStudent(subjects, currentStudent, undefined, { forMarksEntry: true }).map((subj, idx) => {
+                        {getSubjectsForStudent(
+                          subjects,
+                          currentStudent ? { ...currentStudent, marks: { ...(currentStudent.marks || {}), ...(currentMarks || {}) } } : currentStudent,
+                          undefined,
+                          { forMarksEntry: true }
+                        ).map((subj, idx) => {
                           const studentMark = (currentMarks && currentMarks[subj.id]) || { halfObtained: 0, annualObtained: 0 };
                           const halfErr = marksValidationErrors[`${subj.id}_half`];
                           const annualErr = marksValidationErrors[`${subj.id}_annual`];

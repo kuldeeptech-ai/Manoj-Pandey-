@@ -582,6 +582,30 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
             }
           }
 
+          // Strict negative guards against cross-subject collisions:
+          const colHas2 = /\b(2|2nd|ii|second|द्वितीय)\b/i.test(lowerCol) || normCol.includes('2nd') || normCol.includes('hindi2') || normCol.includes('english2');
+          const colHas1 = /\b(1|1st|i|first|प्रथम)\b/i.test(lowerCol) || normCol.includes('1st') || normCol.includes('hindi1') || normCol.includes('english1');
+          const subHas2 = /\b(2|2nd|ii|second|द्वितीय)\b/i.test(sub.name) || sub.id.includes('2');
+          const subHas1 = /\b(1|1st|i|first|प्रथम)\b/i.test(sub.name) || sub.id.includes('1');
+
+          if (colHas2 && subHas1 && !subHas2) continue;
+          if (colHas1 && subHas2 && !subHas1) continue;
+
+          const colHasOral = lowerCol.includes('oral') || lowerCol.includes('moukhik') || lowerCol.includes('मौखिक');
+          const colHasWriting = lowerCol.includes('writing') || lowerCol.includes('likhit') || lowerCol.includes('लिखित');
+          const subHasOral = sub.name.toLowerCase().includes('oral') || sub.id.includes('oral');
+          const subHasWriting = sub.name.toLowerCase().includes('writing') || sub.id.includes('writing');
+
+          if (colHasOral && subHasWriting && !subHasOral) continue;
+          if (colHasWriting && subHasOral && !subHasWriting) continue;
+
+          const colHasSst = lowerCol.includes('sst') || lowerCol.includes('social') || lowerCol.includes('सामाजिक');
+          const subIsSst = sub.id === 'sub-sst' || sub.name.toLowerCase().includes('sst') || sub.name.toLowerCase().includes('social');
+          const subIsScience = (sub.id === 'sub-science' || sub.name.toLowerCase().includes('science') || sub.name.toLowerCase().includes('विज्ञान')) && !subIsSst;
+
+          if (colHasSst && subIsScience) continue;
+          if (!colHasSst && subIsSst && (lowerCol.includes('science') || lowerCol.includes('विज्ञान'))) continue;
+
           if (tokenMatched) {
             if (isExplicitHalf) {
               subColMap.push({ subjectId: sub.id, colIdx, type: 'half' });
@@ -603,12 +627,22 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                 } else {
                   subColMap.push({ subjectId: sub.id, colIdx, type: 'half' });
                 }
+                columnMatched = true;
+                break;
               } else if (existingForSub.length === 1 && singleColumnTarget !== 'both') {
-                // Second column of the same subject becomes Annual
-                subColMap.push({ subjectId: sub.id, colIdx, type: 'annual' });
+                // Second column of the same subject becomes Annual ONLY IF headers match identically
+                const prevColIdx = existingForSub[0].colIdx;
+                const prevHeader = (rawHeaders[prevColIdx] || '').trim().toLowerCase();
+                const curHeader = trimmedCol.toLowerCase();
+                if (
+                  prevHeader === curHeader ||
+                  prevHeader.replace(/[^a-z0-9]/g, '') === curHeader.replace(/[^a-z0-9]/g, '')
+                ) {
+                  subColMap.push({ subjectId: sub.id, colIdx, type: 'annual' });
+                  columnMatched = true;
+                  break;
+                }
               }
-              columnMatched = true;
-              break;
             }
           }
         }

@@ -421,16 +421,30 @@ export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
   const englishWords = words.filter((w) => /^[a-z0-9]+$/i.test(w));
   const hindiWords = words.filter((w) => /^[\u0900-\u097F]+$/.test(w));
 
+  const hasNumberVariant = words.some((w) => /^(1|2|i|ii|1st|2nd|first|second)$/i.test(w));
+  const hasWritingOrOral = words.some((w) => /^(writing|oral|likhit|moukhik|लिखित|मौखिक)$/i.test(w));
+
   if (englishWords.length > 0) {
     tokens.add(englishWords.join(''));
     englishWords.forEach((w) => {
-      if (w.length >= 2) tokens.add(w);
+      if (w.length >= 2) {
+        // If this subject is a specific variant (1/2, writing/oral), don't add the generic base word
+        if ((hasNumberVariant || hasWritingOrOral) && /^(hindi|english|math|maths|writing|oral)$/i.test(w)) {
+          return;
+        }
+        tokens.add(w);
+      }
     });
   }
   if (hindiWords.length > 0) {
     tokens.add(hindiWords.join(''));
     hindiWords.forEach((w) => {
-      if (w.length >= 2) tokens.add(w);
+      if (w.length >= 2) {
+        if ((hasNumberVariant || hasWritingOrOral) && /^(हिंदी|हिन्दी|अंग्रेजी|अंग्रेज़ी|गणित|लिखित|मौखिक)$/.test(w)) {
+          return;
+        }
+        tokens.add(w);
+      }
     });
   }
 
@@ -439,20 +453,40 @@ export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
 
   // Nursery/LKG/UKG writing vs oral
   if (combined.includes('writing') || combined.includes('likhit') || combined.includes('लिखित')) {
-    tokens.add('writing');
-    tokens.add('likhit');
-    tokens.add('लिखित');
-    if (combined.includes('hindi')) tokens.add('hindiwriting');
-    if (combined.includes('eng')) tokens.add('englishwriting');
-    if (combined.includes('math')) tokens.add('mathswriting');
+    if (combined.includes('hindi')) {
+      tokens.add('hindiwriting');
+      tokens.add('hindilikhit');
+      tokens.add('हिंदीलिखित');
+    }
+    if (combined.includes('eng')) {
+      tokens.add('englishwriting');
+      tokens.add('englishlikhit');
+      tokens.add('अंग्रेजीलिखित');
+    }
+    if (combined.includes('math')) {
+      tokens.add('mathswriting');
+      tokens.add('mathematicswriting');
+      tokens.add('ganitlikhit');
+      tokens.add('गणितलिखित');
+    }
   }
   if (combined.includes('oral') || combined.includes('moukhik') || combined.includes('मौखिक')) {
-    tokens.add('oral');
-    tokens.add('moukhik');
-    tokens.add('मौखिक');
-    if (combined.includes('hindi')) tokens.add('hindioral');
-    if (combined.includes('eng')) tokens.add('englishoral');
-    if (combined.includes('math')) tokens.add('mathsoral');
+    if (combined.includes('hindi')) {
+      tokens.add('hindioral');
+      tokens.add('hindimoukhik');
+      tokens.add('हिंदीमौखिक');
+    }
+    if (combined.includes('eng')) {
+      tokens.add('englishoral');
+      tokens.add('englishmoukhik');
+      tokens.add('अंग्रेजीमौखिक');
+    }
+    if (combined.includes('math')) {
+      tokens.add('mathsoral');
+      tokens.add('mathematicsoral');
+      tokens.add('ganitmoukhik');
+      tokens.add('गणितमौखिक');
+    }
   }
 
   // Urdu
@@ -669,6 +703,7 @@ export function getSubjectsForStudent(
   options?: {
     forMarksEntry?: boolean;
     examMode?: 'half_yearly_only' | 'annual_only' | 'combined';
+    includeUrdu?: boolean;
   }
 ): SubjectConfig[] {
   if (!Array.isArray(subjects)) return [];
@@ -682,9 +717,10 @@ export function getSubjectsForStudent(
   let studentTakesUrdu = false;
   if (urduSubject) {
     const hasUrduMarks = studentHasEnteredMarks(student, urduSubject.id, options?.examMode);
+    const hasUrduKey = Boolean(student?.marks && (urduSubject.id in student.marks || 'sub-urdu' in student.marks));
     const hasUrduAssigned =
       Array.isArray(student?.assignedSubjectIds) && student.assignedSubjectIds.includes(urduSubject.id);
-    studentTakesUrdu = hasUrduMarks || hasUrduAssigned;
+    studentTakesUrdu = hasUrduMarks || hasUrduKey || hasUrduAssigned || Boolean(options?.includeUrdu);
   }
 
   // Filter strictly within class subjects
