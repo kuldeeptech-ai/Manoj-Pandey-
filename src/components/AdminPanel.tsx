@@ -1528,28 +1528,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsTestingSheet(true);
     setSheetTestStatus(null);
     try {
-      if (isFirebaseConfigured()) {
-        await get(ref(db, 'school_settings'));
-        setSheetTestStatus({
-          success: true,
-          message: '✓ Firebase Realtime Database से लाइव कनेक्शन सक्रिय है! (Connected to Firebase Realtime Database)',
-        });
+      const url = getGoogleSheetUrl(settingsForm);
+      if (url) {
+        const result = await testGoogleSheetConnection(url);
+        setSheetTestStatus(result);
       } else {
-        const url = settingsForm.googleSheetWebAppUrl?.trim();
-        if (url) {
-          const result = await testGoogleSheetConnection(url);
-          setSheetTestStatus(result);
-        } else {
-          setSheetTestStatus({
-            success: true,
-            message: 'Firebase Realtime Database मोड तैयार है। (Firebase Realtime Database mode ready)',
-          });
-        }
+        setSheetTestStatus({
+          success: false,
+          message: 'कृपया पहले Google Sheet Web App URL दर्ज करें!',
+        });
       }
     } catch (err: any) {
       setSheetTestStatus({
         success: false,
-        message: 'Firebase कनेक्शन एरर: ' + (err.message || 'नेटवर्क त्रुटि'),
+        message: 'Google Sheet कनेक्शन एरर: ' + (err.message || 'नेटवर्क त्रुटि'),
       });
     }
     setIsTestingSheet(false);
@@ -1559,21 +1551,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsSyncingSheet(true);
     setSheetSyncSuccess(null);
     try {
-      const res = await syncAllDataToFirebase({
+      const url = getGoogleSheetUrl(settingsForm);
+
+      // 1. Direct client-side push to Google Sheet Web App
+      const res = await syncAllDataToGoogleSheet(url, {
         schoolSettings: settingsForm,
         students,
         subjects,
         gradeRules,
+        classTeachers: settingsForm.classTeachers,
       });
 
+      // 2. Also trigger server background sync
+      fetch('/api/admin/sync-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      }).catch(() => {});
+
+      // 3. Fallback sync to Firebase RTDB if configured
+      syncAllDataToFirebase({
+        schoolSettings: settingsForm,
+        students,
+        subjects,
+        gradeRules,
+      }).catch(() => {});
+
       if (res.success) {
-        setSheetSyncSuccess('✓ Firebase Realtime Database में सारा डाटा (छात्र, अंक, विषय, सेटिंग्स) सफलतापूर्वक सुरक्षित हो गया!');
-        setTimeout(() => setSheetSyncSuccess(null), 4000);
+        setSheetSyncSuccess(`✓ Google Sheet में सभी ${students.length} छात्र, अंक, विषय और सेटिंग्स सफलतापूर्वक सुरक्षित हो गए!`);
+        setTimeout(() => setSheetSyncSuccess(null), 5000);
       } else {
         setSheetTestStatus({ success: false, message: res.message });
       }
     } catch (err: any) {
-      setSheetTestStatus({ success: false, message: 'Firebase Sync Error: ' + err.message });
+      setSheetTestStatus({ success: false, message: 'Google Sheet Sync Error: ' + err.message });
     }
     setIsSyncingSheet(false);
   };
@@ -1582,11 +1593,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsFetchingSheet(true);
     setSheetFetchSuccess(null);
     try {
-      const liveData = await fetchAllFromFirebase();
-      if (liveData) {
-        if (liveData.students && liveData.students.length > 0) {
-          onSaveStudents(liveData.students);
-        }
+      const url = getGoogleSheetUrl(settingsForm);
+      const liveData = await fetchAllFromGoogleSheet(url);
+      if (liveData && liveData.students && liveData.students.length > 0) {
+        onSaveStudents(liveData.students);
         if (liveData.subjects && liveData.subjects.length > 0) {
           onSaveSubjects(liveData.subjects);
         }
@@ -1597,12 +1607,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         if (liveData.gradeRules && liveData.gradeRules.length > 0) {
           onSaveGradeRules(liveData.gradeRules);
         }
-        setSheetFetchSuccess('Firebase Realtime Database से सारा डाटा (छात्र, अंक, विषय, सेटिंग्स) सफलता के साथ लोड हो गया!');
-        setTimeout(() => setSheetFetchSuccess(null), 4500);
+        setSheetFetchSuccess(`✓ Google Sheet से सभी ${liveData.students.length} छात्र, अंक और सेटिंग्स सफलता के साथ लोड हो गए!`);
+        setTimeout(() => setSheetFetchSuccess(null), 5000);
       } else {
         setSheetTestStatus({
           success: false,
-          message: 'Firebase Realtime Database से डाटा लोड नहीं हो सका। कृपया अपनी Firebase config की पुष्टि करें।',
+          message: 'Google Sheet से डाटा लोड नहीं हो सका। कृपया URL और इंटरनेट कनेक्शन जांचें।',
         });
       }
     } catch (err: any) {

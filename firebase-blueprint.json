@@ -1,0 +1,218 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Student record with demographic details and academic examination marks",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique student identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Student full name"
+        },
+        "fatherName": {
+          "type": "string",
+          "description": "Father's name"
+        },
+        "motherName": {
+          "type": "string",
+          "description": "Mother's name"
+        },
+        "dob": {
+          "type": "string",
+          "description": "Date of birth"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Gender: MALE or FEMALE"
+        },
+        "className": {
+          "type": "string",
+          "description": "Academic class e.g. 8th, 7th, 6th"
+        },
+        "section": {
+          "type": "string",
+          "description": "Class section e.g. A"
+        },
+        "rollNo": {
+          "type": "string",
+          "description": "Roll number"
+        },
+        "admissionNo": {
+          "type": "string",
+          "description": "Admission / SR number"
+        },
+        "mobile": {
+          "type": "string",
+          "description": "Contact mobile number"
+        },
+        "address": {
+          "type": "string",
+          "description": "Residential address"
+        },
+        "aadharNo": {
+          "type": "string",
+          "description": "Aadhar number"
+        },
+        "aparId": {
+          "type": "string",
+          "description": "APAAR / DigiLocker ID"
+        },
+        "session": {
+          "type": "string",
+          "description": "Academic session e.g. 2026–2027"
+        },
+        "teacherRemark": {
+          "type": "string",
+          "description": "Class teacher remark"
+        },
+        "photoUrl": {
+          "type": "string",
+          "description": "Passport photo URL"
+        },
+        "marks": {
+          "type": "object",
+          "description": "Map of subject ID to halfObtained and annualObtained marks"
+        },
+        "assignedSubjectIds": {
+          "type": "array",
+          "description": "List of subject IDs explicitly assigned to the student"
+        }
+      },
+      "required": ["id", "name", "className", "rollNo"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Subject configuration including maximum marks and passing criteria",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Subject identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Subject display name"
+        },
+        "displayOrder": {
+          "type": "number",
+          "description": "Sort order"
+        },
+        "halfMax": {
+          "type": "number",
+          "description": "Half-yearly maximum marks"
+        },
+        "annualMax": {
+          "type": "number",
+          "description": "Annual maximum marks"
+        },
+        "passingMarks": {
+          "type": "number",
+          "description": "Minimum passing marks"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the subject is currently active"
+        },
+        "applicableClasses": {
+          "type": "array",
+          "description": "Classes where this subject applies"
+        },
+        "isOptional": {
+          "type": "boolean",
+          "description": "Optional subject flag (e.g. Urdu, Sanskrit)"
+        }
+      },
+      "required": ["id", "name", "active"]
+    },
+    "SchoolSettings": {
+      "title": "SchoolSettings",
+      "description": "School portal global configuration and toggle settings",
+      "type": "object",
+      "properties": {
+        "schoolName": {
+          "type": "string",
+          "description": "Official school name"
+        },
+        "address": {
+          "type": "string",
+          "description": "School physical address"
+        },
+        "managedBy": {
+          "type": "string",
+          "description": "Manager or Principal name"
+        },
+        "mobile": {
+          "type": "string",
+          "description": "School contact phone"
+        },
+        "tagline": {
+          "type": "string",
+          "description": "School motto or tagline"
+        },
+        "logoUrl": {
+          "type": "string",
+          "description": "School crest / logo URL"
+        },
+        "session": {
+          "type": "string",
+          "description": "Active academic session"
+        },
+        "classTeachers": {
+          "type": "array",
+          "description": "Class teacher assignments and signatures"
+        },
+        "toggles": {
+          "type": "object",
+          "description": "Visibility and feature toggles"
+        }
+      },
+      "required": ["schoolName"]
+    },
+    "GradeRule": {
+      "title": "GradeRule",
+      "description": "Grading scale rule mapping percentage ranges to grade labels",
+      "type": "object",
+      "properties": {
+        "grade": {
+          "type": "string",
+          "description": "Grade label (e.g. A+, A, B)"
+        },
+        "minPercentage": {
+          "type": "number",
+          "description": "Minimum percentage for grade"
+        },
+        "maxPercentage": {
+          "type": "number",
+          "description": "Maximum percentage for grade"
+        },
+        "description": {
+          "type": "string",
+          "description": "Performance remark"
+        }
+      },
+      "required": ["grade", "minPercentage", "maxPercentage"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student document containing academic result, marks, and personal profile"
+    },
+    "/subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "Subject configuration details"
+    },
+    "/settings/main": {
+      "schema": "SchoolSettings",
+      "description": "Global school portal configuration and display toggles"
+    },
+    "/grade_rules/{ruleId}": {
+      "schema": "GradeRule",
+      "description": "Academic grading scales"
+    }
+  }
+}

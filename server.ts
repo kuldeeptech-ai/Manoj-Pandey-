@@ -195,11 +195,75 @@ async function syncFromFirebaseOnStart() {
   }
 }
 
+let sheetSyncTimer: NodeJS.Timeout | null = null;
+
 function syncToGoogleSheetInBackground() {
+  // Attempt Firebase RTDB sync if configured
   syncToFirebaseInBackground();
+
+  // Debounced background push to Google Sheet Web App (2-second debounce for batch safety)
+  if (sheetSyncTimer) clearTimeout(sheetSyncTimer);
+  sheetSyncTimer = setTimeout(async () => {
+    try {
+      const sheetUrl =
+        store.schoolSettings?.googleSheetWebAppUrl?.trim() ||
+        process.env.VITE_GOOGLE_SHEET_URL ||
+        'https://script.google.com/macros/s/AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ/exec';
+      if (!sheetUrl || !sheetUrl.startsWith('http')) return;
+
+      console.log(`[Server] Syncing ${store.students.length} students to Google Sheet in background...`);
+      const response = await fetch(sheetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'syncAll',
+          schoolSettings: store.schoolSettings,
+          students: store.students,
+          subjects: store.subjects,
+          gradeRules: store.gradeRules,
+          classTeachers: store.schoolSettings?.classTeachers || [],
+          timestamp: new Date().toISOString(),
+        }),
+        signal: AbortSignal.timeout(35000),
+      });
+      const data = await response.json().catch(() => null);
+      console.log('[Server] Google Sheet background sync completed:', data?.status || 'ok');
+    } catch (err: any) {
+      console.warn('[Server] Google Sheet background sync error:', err.message);
+    }
+  }, 2000);
+}
+
+async function syncFromGoogleSheetOnStart() {
+  if (store.students.length > 0) return;
+  try {
+    const sheetUrl =
+      store.schoolSettings?.googleSheetWebAppUrl?.trim() ||
+      process.env.VITE_GOOGLE_SHEET_URL ||
+      'https://script.google.com/macros/s/AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ/exec';
+    if (!sheetUrl || !sheetUrl.startsWith('http')) return;
+
+    console.log('[Server] Attempting student recovery from Google Sheet...');
+    const res = await fetch(`${sheetUrl}?action=allData`, { signal: AbortSignal.timeout(15000) });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.students) && data.students.length > 0) {
+        store.students = data.students.map(normalizeStudent);
+        if (data.settings) store.schoolSettings = normalizeSchoolSettings({ ...store.schoolSettings, ...data.settings });
+        if (Array.isArray(data.subjects) && data.subjects.length > 0) store.subjects = data.subjects;
+        if (Array.isArray(data.gradeRules) && data.gradeRules.length > 0) store.gradeRules = data.gradeRules;
+        saveStore();
+        console.log(`[Server] Successfully recovered ${store.students.length} students from Google Sheet.`);
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Server] Google Sheet recovery error on start:', err.message);
+  }
 }
 
 async function startServer() {
+  syncFromGoogleSheetOnStart().catch(() => {});
+
   const app = express();
   const PORT = 3000;
 

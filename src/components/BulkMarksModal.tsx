@@ -477,6 +477,23 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
           lowerCol.endsWith(' a') ||
           lowerCol.endsWith('(a)');
 
+        const colHasOral = lowerCol.includes('oral') || lowerCol.includes('moukhik') || lowerCol.includes('मौखिक');
+        const colHasWriting = lowerCol.includes('writing') || lowerCol.includes('likhit') || lowerCol.includes('लिखित');
+        const colHas2 =
+          /\b(2|2nd|ii|second|द्वितीय)\b/i.test(lowerCol) ||
+          normCol.includes('2nd') ||
+          normCol.includes('hindi2') ||
+          normCol.includes('english2') ||
+          normCol.includes('hindi_2') ||
+          normCol.includes('english_2');
+        const colHas1 =
+          /\b(1|1st|i|first|प्रथम)\b/i.test(lowerCol) ||
+          normCol.includes('1st') ||
+          normCol.includes('hindi1') ||
+          normCol.includes('english1') ||
+          normCol.includes('hindi_1') ||
+          normCol.includes('english_1');
+
         // Safely strip exam terms from end to isolate subject name without mutilating words like "math"
         const cleanSubjectName = lowerCol
           .replace(
@@ -491,12 +508,40 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
         let columnMatched = false;
 
         for (const sub of sortedSubjects) {
-          const cleanHeaderName = getCleanSubjectHeader(sub).toLowerCase();
           const rawSubName = sub.name.toLowerCase().trim();
           const rawSubId = sub.id.toLowerCase().trim();
+          const cleanHeaderName = getCleanSubjectHeader(sub).toLowerCase();
+          const cleanHeaderNorm = cleanHeaderName.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+          const rawSubNorm = rawSubName.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+
+          const subHasOral = rawSubName.includes('oral') || rawSubId.includes('oral');
+          const subHasWriting = rawSubName.includes('writing') || rawSubId.includes('writing');
+          const subHas2 = /\b(2|2nd|ii|second|द्वितीय)\b/i.test(rawSubName) || rawSubId.includes('2');
+          const subHas1 = /\b(1|1st|i|first|प्रथम)\b/i.test(rawSubName) || rawSubId.includes('1');
+
+          // Strict negative guards against cross-subject collisions:
+          // 1. Writing vs Non-writing isolation (prevents Mathematics from matching Mathematics Writing, etc.)
+          if (subHasWriting && !colHasWriting) continue;
+          if (!subHasWriting && colHasWriting) continue;
+
+          // 2. Oral vs Non-oral isolation
+          if (subHasOral && !colHasOral) continue;
+          if (!subHasOral && colHasOral) continue;
+
+          // 3. Variant 1 vs Variant 2 isolation (prevents Hindi 1 from matching Hindi 2)
+          if (colHas2 && subHas1 && !subHas2) continue;
+          if (colHas1 && subHas2 && !subHas1) continue;
+
+          // 4. SST vs Science isolation
+          const colHasSst = lowerCol.includes('sst') || lowerCol.includes('social') || lowerCol.includes('सामाजिक');
+          const subIsSst = sub.id === 'sub-sst' || rawSubName.includes('sst') || rawSubName.includes('social');
+          const subIsScience = (sub.id === 'sub-science' || rawSubName.includes('science') || rawSubName.includes('विज्ञान')) && !subIsSst;
+
+          if (colHasSst && subIsScience) continue;
+          if (!colHasSst && subIsSst && (lowerCol.includes('science') || lowerCol.includes('विज्ञान'))) continue;
 
           // Priority 1: Exact match with template-generated header names
-          // E.g. "dd_Half" or "dd_Annual"
+          // e.g. "Hindi_1_Half", "Hindi_1_Annual", "Mathematics_Half", "Mathematics_Annual"
           const isDirectTemplateHalf =
             lowerCol === `${cleanHeaderName}_half` ||
             lowerCol === `${cleanHeaderName} half` ||
@@ -505,8 +550,8 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
             lowerCol === `${cleanHeaderName}(half)` ||
             lowerCol === `${rawSubName}_half` ||
             lowerCol === `${rawSubId}_half` ||
-            normCol === `${cleanHeaderName}half` ||
-            normCol === `${rawSubName.replace(/[^a-z0-9\u0900-\u097F]/g, '')}half`;
+            normCol === `${cleanHeaderNorm}half` ||
+            normCol === `${rawSubNorm}half`;
 
           const isDirectTemplateAnnual =
             lowerCol === `${cleanHeaderName}_annual` ||
@@ -516,8 +561,8 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
             lowerCol === `${cleanHeaderName}(annual)` ||
             lowerCol === `${rawSubName}_annual` ||
             lowerCol === `${rawSubId}_annual` ||
-            normCol === `${cleanHeaderName}annual` ||
-            normCol === `${rawSubName.replace(/[^a-z0-9\u0900-\u097F]/g, '')}annual`;
+            normCol === `${cleanHeaderNorm}annual` ||
+            normCol === `${rawSubNorm}annual`;
 
           if (isDirectTemplateHalf) {
             subColMap.push({ subjectId: sub.id, colIdx, type: 'half' });
@@ -530,81 +575,47 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
             break;
           }
 
-          // Priority 2: Direct match with single subject name (e.g. "dd", "Hindi", "Maths")
+          // Priority 2: Direct match with single subject name (e.g. "Hindi_1", "Mathematics", "Maths")
           const isDirectSingleSub =
             lowerCol === cleanHeaderName ||
             lowerCol === rawSubName ||
             cleanSubjectName === cleanHeaderName ||
             cleanSubjectName === rawSubName ||
-            subToken === cleanHeaderName.replace(/[^a-z0-9\u0900-\u097F]/g, '') ||
-            subToken === rawSubName.replace(/[^a-z0-9\u0900-\u097F]/g, '');
+            normCol === cleanHeaderNorm ||
+            normCol === rawSubNorm ||
+            subToken === cleanHeaderNorm ||
+            subToken === rawSubNorm;
 
           // Priority 3: Token / Alias matching
-          const cleanHeaderNorm = cleanHeaderName.replace(/[^a-z0-9\u0900-\u097F]/g, '');
           let tokenMatched = isDirectSingleSub;
 
           if (!tokenMatched) {
-            if (
-              subToken &&
-              cleanHeaderNorm &&
-              (subToken === cleanHeaderNorm ||
-                subToken.startsWith(cleanHeaderNorm) ||
-                cleanHeaderNorm.startsWith(subToken))
-            ) {
-              tokenMatched = true;
-            } else {
-              const tokens = getSubjectMatchTokens(sub);
-              for (const token of tokens) {
-                const cleanToken = token.toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, '');
-                if (!cleanToken) continue;
+            const tokens = getSubjectMatchTokens(sub);
+            for (const token of tokens) {
+              const cleanToken = token.toLowerCase().replace(/[^a-z0-9\u0900-\u097F]/g, '');
+              if (!cleanToken) continue;
 
-                if (subToken === cleanToken || normCol === cleanToken) {
-                  tokenMatched = true;
-                  break;
-                }
-                if (subToken.length >= 2 && cleanToken.length >= 2) {
-                  if (subToken === cleanToken) {
-                    tokenMatched = true;
-                    break;
-                  }
-                  if (subToken.length >= 3 && cleanToken.length >= 3) {
-                    if (subToken.startsWith(cleanToken) || cleanToken.startsWith(subToken)) {
-                      tokenMatched = true;
-                      break;
-                    }
-                  }
-                }
-                if (normCol.includes(cleanToken) || cleanToken.includes(subToken && subToken.length >= 3 ? subToken : '_____')) {
+              // Check if normCol equals alias + half/annual
+              if (normCol === `${cleanToken}half` || normCol === `${cleanToken}h` || normCol === `${cleanToken}ardh`) {
+                tokenMatched = true;
+                break;
+              }
+              if (normCol === `${cleanToken}annual` || normCol === `${cleanToken}a` || normCol === `${cleanToken}varshik`) {
+                tokenMatched = true;
+                break;
+              }
+              if (subToken === cleanToken || normCol === cleanToken) {
+                tokenMatched = true;
+                break;
+              }
+              if (subToken.length >= 3 && cleanToken.length >= 3) {
+                if (subToken === cleanToken) {
                   tokenMatched = true;
                   break;
                 }
               }
             }
           }
-
-          // Strict negative guards against cross-subject collisions:
-          const colHas2 = /\b(2|2nd|ii|second|द्वितीय)\b/i.test(lowerCol) || normCol.includes('2nd') || normCol.includes('hindi2') || normCol.includes('english2');
-          const colHas1 = /\b(1|1st|i|first|प्रथम)\b/i.test(lowerCol) || normCol.includes('1st') || normCol.includes('hindi1') || normCol.includes('english1');
-          const subHas2 = /\b(2|2nd|ii|second|द्वितीय)\b/i.test(sub.name) || sub.id.includes('2');
-          const subHas1 = /\b(1|1st|i|first|प्रथम)\b/i.test(sub.name) || sub.id.includes('1');
-
-          if (colHas2 && subHas1 && !subHas2) continue;
-          if (colHas1 && subHas2 && !subHas1) continue;
-
-          const colHasOral = lowerCol.includes('oral') || lowerCol.includes('moukhik') || lowerCol.includes('मौखिक');
-          const colHasWriting = lowerCol.includes('writing') || lowerCol.includes('likhit') || lowerCol.includes('लिखित');
-          const subHasOral = sub.name.toLowerCase().includes('oral') || sub.id.includes('oral');
-          const subHasWriting = sub.name.toLowerCase().includes('writing') || sub.id.includes('writing');
-
-          if (colHasOral && subHasWriting && !subHasOral) continue;
-          if (colHasWriting && subHasOral && !subHasWriting) continue;
-
-          const colHasSst = lowerCol.includes('sst') || lowerCol.includes('social') || lowerCol.includes('सामाजिक');
-          const subIsSst = sub.id === 'sub-sst' || sub.name.toLowerCase().includes('sst') || sub.name.toLowerCase().includes('social');
-          const subIsScience = (sub.id === 'sub-science' || sub.name.toLowerCase().includes('science') || sub.name.toLowerCase().includes('विज्ञान')) && !subIsSst;
-
-          if (colHasSst && subIsScience) continue;
-          if (!colHasSst && subIsSst && (lowerCol.includes('science') || lowerCol.includes('विज्ञान'))) continue;
 
           if (tokenMatched) {
             if (isExplicitHalf) {

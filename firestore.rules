@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Students collection: Multi-device read & write for portal search and admin marks management
+    match /students/{studentId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Subjects collection: Configuration accessible to all devices
+    match /subjects/{subjectId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Settings collection: Global portal settings and toggles
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Class Teachers collection: Teacher designations and signatures
+    match /class_teachers/{teacherId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Grade Rules collection: Academic evaluation scales
+    match /grade_rules/{ruleId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Staff Users: Assistant login accounts
+    match /staff_users/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Trash and backup history
+    match /deleted_students/{studentId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /cleared_marks_history/{backupId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

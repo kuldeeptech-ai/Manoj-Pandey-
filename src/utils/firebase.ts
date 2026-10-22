@@ -12,18 +12,29 @@ import {
   User,
 } from 'firebase/auth';
 import {
-  getDatabase,
-  ref,
-  get,
-  set,
-  update,
-  remove,
-  onValue,
-  Database,
+  getFirestore,
+  Firestore,
+  doc,
+  collection,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  writeBatch,
+  getDocFromServer,
   Unsubscribe,
-  DataSnapshot,
-} from 'firebase/database';
-import { Student, SubjectConfig, SchoolSettings, GradeRule, ClearedMarksBackup, StaffUser } from '../types';
+} from 'firebase/firestore';
+import {
+  Student,
+  SubjectConfig,
+  SchoolSettings,
+  GradeRule,
+  ClearedMarksBackup,
+  StaffUser,
+} from '../types';
+import firebaseAppletConfig from '../../firebase-applet-config.json';
 
 // ============================================================================
 // SOLE AUTHORIZED ADMIN EMAIL
@@ -36,104 +47,106 @@ export function isAuthorizedAdmin(email?: string | null): boolean {
   return email.trim().toLowerCase() === AUTHORIZED_ADMIN_EMAIL.toLowerCase();
 }
 
-// ============================================================================
-// ⚠️ PASTE YOUR FIREBASE CONFIG KEYS HERE:
-// ============================================================================
-// Replace the placeholder values below with your actual Firebase Project credentials.
-// Where to find them:
-// 1. Go to Firebase Console: https://console.firebase.google.com/
-// 2. Click on your project -> Project Settings (Gear icon) -> General
-// 3. Under "Your apps", select your Web app (</>) or click "Add app" -> Web.
-// 4. Copy the `firebaseConfig` object and paste its values into the fields below:
-// ============================================================================
-
-// ============================================================================
-// Your web app's Firebase configuration
-// ============================================================================
-export const firebaseConfig = {
-  apiKey: "AIzaSyBM7gmp5C9ve0LVk8mhwh2kLw23QGv0vj0",
-  authDomain: "hd-pandey-school-portal.firebaseapp.com",
-  databaseURL: "https://hd-pandey-school-portal-default-rtdb.firebaseio.com",
-  projectId: "hd-pandey-school-portal",
-  storageBucket: "hd-pandey-school-portal.firebasestorage.app",
-  messagingSenderId: "743517383647",
-  appId: "1:743517383647:web:e48e48f5af62c35110b26a"
-};
-
-// ============================================================================
-// INITIALIZE FIREBASE APP & REALTIME DATABASE (v9 Modular Approach)
-// ============================================================================
+// Active Firebase configuration provisioned for this application
+export const firebaseConfig = firebaseAppletConfig;
 
 let appInstance: FirebaseApp | null = null;
-let dbInstance: Database | null = null;
+let firestoreInstance: Firestore | null = null;
+let authInstance: Auth | null = null;
+
+try {
+  if (typeof window !== 'undefined' || typeof process !== 'undefined') {
+    appInstance = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    firestoreInstance = getFirestore(appInstance, firebaseConfig.firestoreDatabaseId);
+    authInstance = getAuth(appInstance);
+  }
+} catch (err) {
+  console.warn('[Firebase] Initialization error:', err);
+}
 
 export function isFirebaseConfigured(): boolean {
-  return (
-    Boolean(firebaseConfig.databaseURL) &&
-    !firebaseConfig.databaseURL.includes('YOUR_PROJECT_ID') &&
-    firebaseConfig.databaseURL.startsWith('https://')
-  );
+  return Boolean(firebaseConfig.projectId && firebaseConfig.apiKey);
 }
 
 export function getFirebaseApp(): FirebaseApp | null {
-  try {
-    if (!appInstance) {
-      const existing = getApps();
-      if (existing.length > 0) {
-        appInstance = existing[0];
-      } else {
-        appInstance = initializeApp(firebaseConfig);
-      }
-    }
-    return appInstance;
-  } catch (err) {
-    console.warn('[Firebase RTDB] Failed to initialize Firebase App:', err);
-    return null;
-  }
+  return appInstance;
 }
 
-export function getFirebaseDb(): Database | null {
-  try {
-    if (!dbInstance) {
-      const app = getFirebaseApp();
-      if (app) {
-        dbInstance = getDatabase(app);
-      }
-    }
-    return dbInstance;
-  } catch (err) {
-    console.warn('[Firebase RTDB] Failed to get Realtime Database instance:', err);
-    return null;
-  }
+export function getFirebaseFirestore(): Firestore | null {
+  return firestoreInstance;
 }
 
-// Export database reference directly
-export const db = getFirebaseDb();
-
-let authInstance: Auth | null = null;
+export const db = firestoreInstance as Firestore;
 
 export function getFirebaseAuth(): Auth | null {
-  try {
-    if (!authInstance) {
-      const app = getFirebaseApp();
-      if (app) {
-        authInstance = getAuth(app);
-      }
-    }
-    return authInstance;
-  } catch (err) {
-    console.warn('[Firebase Auth] Failed to get Auth instance:', err);
-    return null;
-  }
+  return authInstance;
 }
 
-export const auth = getFirebaseAuth();
+export const auth = authInstance as Auth;
 
-/**
- * Recursively removes any `undefined` properties from an object/array,
- * ensuring Firebase Realtime Database never throws:
- * "set failed: value argument contains undefined in property ...".
- */
+// Test connection on boot as mandated by the Firebase skill
+if (typeof window !== 'undefined' && firestoreInstance) {
+  (async () => {
+    try {
+      await getDocFromServer(doc(firestoreInstance, 'test', 'connection'));
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('the client is offline')) {
+        console.warn('Firebase connection check: client is offline.');
+      }
+    }
+  })();
+}
+
+// Standard Firestore error handler per skill requirements
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const currentAuth = getFirebaseAuth();
+  const user = currentAuth?.currentUser;
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: user?.uid,
+      email: user?.email,
+      emailVerified: user?.emailVerified,
+      isAnonymous: user?.isAnonymous,
+      tenantId: user?.tenantId,
+      providerInfo:
+        user?.providerData?.map((provider) => ({
+          providerId: provider.providerId,
+          email: provider.email,
+        })) || [],
+    },
+    operationType,
+    path,
+  };
+  console.warn('Firestore Error: ', JSON.stringify(errInfo));
+}
+
 export function cleanForFirebase<T>(obj: T): T {
   if (obj === undefined) {
     return null as any;
@@ -155,11 +168,10 @@ export function cleanForFirebase<T>(obj: T): T {
   return cleanObj as any;
 }
 
-/**
- * Sign in Admin using Google Account Popup via Firebase Auth.
- * STRICT SECURITY: ONLY kuldeeprai75220@gmail.com is allowed.
- * Any other Google account is immediately signed out and blocked.
- */
+// ============================================================================
+// AUTHENTICATION
+// ============================================================================
+
 export async function signInAdminWithGoogle(): Promise<{ success: boolean; email?: string; error?: string }> {
   const authClient = getFirebaseAuth();
   if (!authClient) {
@@ -177,33 +189,24 @@ export async function signInAdminWithGoogle(): Promise<{ success: boolean; email
       await signOut(authClient);
       return {
         success: false,
-        error: `अनधिकृत Google खाता (${user.email || 'अज्ञात'})! केवल अधिकृत व्यवस्थापक (${AUTHORIZED_ADMIN_EMAIL}) ही एडमिन पोर्टल में प्रवेश कर सकते हैं। अन्य किसी भी ईमेल को अनुमति नहीं है।`,
+        error: `अनधिकृत Google खाता (${user.email || 'अज्ञात'})! केवल अधिकृत व्यवस्थापक (${AUTHORIZED_ADMIN_EMAIL}) ही प्रवेश कर सकते हैं।`,
       };
     }
 
-    // Successfully verified sole admin
-    localStorage.setItem('school_admin_email', signedInEmail);
-    localStorage.setItem('school_admin_auth_type', 'firebase_google');
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('school_admin_email', signedInEmail);
+      localStorage.setItem('school_admin_auth_type', 'firebase_google');
+    }
     return { success: true, email: signedInEmail };
   } catch (err: any) {
     console.warn('[Firebase Auth] Google Sign-in error:', err);
     if (err.code === 'auth/popup-closed-by-user') {
       return { success: false, error: 'Google लॉगिन विंडो बंद कर दी गई।' };
     }
-    if (err.code === 'auth/unauthorized-domain') {
-      return {
-        success: false,
-        error: `Google लॉगिन डोमेन अधिकृत नहीं है (${window.location.hostname})। आप नीचे अपने ईमेल और पासवर्ड से सीधे 1-क्लिक में लॉगिन कर सकते हैं!`,
-      };
-    }
     return { success: false, error: err.message || 'Google लॉगिन में त्रुटि हुई।' };
   }
 }
 
-/**
- * Send official Password Reset Email via Firebase directly to kuldeeprai75220@gmail.com.
- * Powered directly by Google Firebase transactional mail servers.
- */
 export async function sendAdminFirebasePasswordReset(
   emailToReset?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> {
@@ -225,766 +228,403 @@ export async function sendAdminFirebasePasswordReset(
     await sendPasswordResetEmail(authClient, targetEmail);
     return {
       success: true,
-      message: `पासवर्ड रीसेट लिंक आधिकारिक रूप से आपके ईमेल (${targetEmail}) पर भेज दिया गया है! कृपया अपना Gmail इनबॉक्स अथवा स्पैम फ़ोल्डर देखें और लिंक पर क्लिक करके नया पासवर्ड सेट करें।`,
+      message: `पासवर्ड रीसेट लिंक आधिकारिक रूप से आपके ईमेल (${targetEmail}) पर भेज दिया गया है!`,
     };
   } catch (err: any) {
     console.warn('[Firebase Auth] sendPasswordResetEmail failed:', err);
-    if (err.code === 'auth/user-not-found') {
-      return {
-        success: false,
-        error: `Firebase Auth में अभी यह ईमेल (${targetEmail}) सीधे ईमेल-पासवर्ड से पंजीकृत नहीं है। आप Google Sign-in बटन से सीधे 1-क्लिक में लॉगिन कर सकते हैं अथवा व्यवस्थापक पासवर्ड से लॉगिन कर सकते हैं।`,
-      };
-    }
     return {
       success: false,
-      error: `Firebase ईमेल भेजने में त्रुटि: ${err.message || 'कृपया नेटवर्क जांचें'}`,
+      error: `Firebase ईमेल भेजने में त्रुटि: ${err.message || 'नेटवर्क जांचें'}`,
     };
   }
 }
 
-/**
- * Sign in Admin with Email & Password via Firebase Auth
- * STRICT SECURITY: ONLY kuldeeprai75220@gmail.com is allowed.
- */
 export async function signInAdminWithFirebaseEmailPassword(
   email: string,
   pass: string
-): Promise<{ success: boolean; email?: string; error?: string; isNewUserCreated?: boolean }> {
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanPass = pass.trim();
-
-  if (!isAuthorizedAdmin(cleanEmail)) {
-    return {
-      success: false,
-      error: `अनधिकृत ईमेल! केवल अधिकृत व्यवस्थापक (${AUTHORIZED_ADMIN_EMAIL}) ही लॉगिन कर सकते हैं। कोई अन्य व्यक्ति एडमिन नहीं बन सकता।`,
-    };
-  }
-
+): Promise<{ success: boolean; user?: User; error?: string }> {
+  const targetEmail = email.trim().toLowerCase();
   const authClient = getFirebaseAuth();
+
   if (!authClient) {
     return { success: false, error: 'Firebase Auth लोड नहीं हो सका।' };
   }
 
-  try {
-    const userCredential = await signInWithEmailAndPassword(authClient, cleanEmail, cleanPass);
-    localStorage.setItem('school_admin_email', cleanEmail);
-    localStorage.setItem('school_admin_auth_type', 'firebase_email');
-    return { success: true, email: userCredential.user.email || cleanEmail };
-  } catch (err: any) {
-    // If user is not yet created in Firebase Auth, auto-provision this authorized admin
-    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-      try {
-        const createResult = await createUserWithEmailAndPassword(authClient, cleanEmail, cleanPass);
-        localStorage.setItem('school_admin_email', cleanEmail);
-        localStorage.setItem('school_admin_auth_type', 'firebase_email');
-        return {
-          success: true,
-          email: createResult.user.email || cleanEmail,
-          isNewUserCreated: true,
-        };
-      } catch (createErr: any) {
-        if (createErr.code === 'auth/email-already-in-use') {
-          return { success: false, error: 'गलत पासवर्ड! कृपया सही पासवर्ड दर्ज करें अथवा Google से लॉगिन करें।' };
-        }
-        return { success: false, error: 'गलत पासवर्ड या क्रेडेंशियल! कृपया सही पासवर्ड दर्ज करें।' };
-      }
-    }
-    if (err.code === 'auth/wrong-password') {
-      return { success: false, error: 'गलत पासवर्ड! कृपया सही पासवर्ड दर्ज करें।' };
-    }
-    return { success: false, error: err.message || 'लॉगिन विफल रहा।' };
-  }
-}
-
-// ============================================================================
-// CRUCIAL REAL-TIME LISTENER: school_settings/toggles node
-// Whenever an admin changes a toggle (e.g. hide PDF button or Half-Yearly marks),
-// this listener triggers instantly on all open marksheets without page refresh!
-// ============================================================================
-
-export function subscribeToSchoolSettingsToggles(
-  onToggleUpdate: (toggles: Record<string, boolean>) => void
-): Unsubscribe {
-  const database = getFirebaseDb();
-  if (!database) {
-    return () => {};
-  }
-
-  try {
-    const togglesRef = ref(database, 'school_settings/toggles');
-    const unsubscribe = onValue(
-      togglesRef,
-      (snapshot: DataSnapshot) => {
-        if (snapshot.exists()) {
-          const val = snapshot.val();
-          if (val && typeof val === 'object') {
-            console.log('[Firebase RTDB] Real-time toggle update received:', val);
-            onToggleUpdate(val);
-          }
-        }
-      },
-      (error) => {
-        console.warn('[Firebase RTDB] Toggles onValue listener error:', error);
-      }
-    );
-
-    return unsubscribe;
-  } catch (err) {
-    console.warn('[Firebase RTDB] Could not attach toggles onValue listener:', err);
-    return () => {};
-  }
-}
-
-// ============================================================================
-// REAL-TIME LISTENER: Full Database / School Data
-// ============================================================================
-
-export function subscribeToFirebaseData(callbacks: {
-  onSettings?: (settings: Partial<SchoolSettings>) => void;
-  onStudents?: (students: Student[]) => void;
-  onSubjects?: (subjects: SubjectConfig[]) => void;
-  onGradeRules?: (rules: GradeRule[]) => void;
-}): () => void {
-  const database = getFirebaseDb();
-  if (!database) return () => {};
-
-  const unsubscribers: Unsubscribe[] = [];
-
-  try {
-    // 1. Listen to school_settings node
-    if (callbacks.onSettings) {
-      const settingsRef = ref(database, 'school_settings');
-      const unsub = onValue(
-        settingsRef,
-        (snap) => {
-          if (snap.exists()) {
-            const data = snap.val();
-            if (data && typeof data === 'object') {
-              callbacks.onSettings?.(data);
-            }
-          }
-        },
-        (err) => console.warn('[Firebase RTDB] settings listener error:', err)
-      );
-      unsubscribers.push(unsub);
-    }
-
-    // 2. Listen to students node
-    if (callbacks.onStudents) {
-      const studentsRef = ref(database, 'students');
-      const unsub = onValue(
-        studentsRef,
-        (snap) => {
-          if (snap.exists()) {
-            const val = snap.val();
-            let studentList: Student[] = [];
-            if (Array.isArray(val)) {
-              studentList = val.filter(Boolean);
-            } else if (val && typeof val === 'object') {
-              studentList = Object.values(val);
-            }
-            if (studentList.length > 0) {
-              const safeStudents = studentList.map((st: any) => ({
-                ...st,
-                marks: st.marks && typeof st.marks === 'object' ? st.marks : {},
-              }));
-              callbacks.onStudents?.(safeStudents);
-            }
-          }
-        },
-        (err) => console.warn('[Firebase RTDB] students listener error:', err)
-      );
-      unsubscribers.push(unsub);
-    }
-
-    // 3. Listen to subjects node
-    if (callbacks.onSubjects) {
-      const subjectsRef = ref(database, 'subjects');
-      const unsub = onValue(
-        subjectsRef,
-        (snap) => {
-          if (snap.exists()) {
-            const val = snap.val();
-            let subjectList: SubjectConfig[] = [];
-            if (Array.isArray(val)) {
-              subjectList = val.filter(Boolean);
-            } else if (val && typeof val === 'object') {
-              subjectList = Object.values(val);
-            }
-            if (subjectList.length > 0) {
-              callbacks.onSubjects?.(subjectList);
-            }
-          }
-        },
-        (err) => console.warn('[Firebase RTDB] subjects listener error:', err)
-      );
-      unsubscribers.push(unsub);
-    }
-
-    // 4. Listen to grade_rules node
-    if (callbacks.onGradeRules) {
-      const gradeRef = ref(database, 'grade_rules');
-      const unsub = onValue(
-        gradeRef,
-        (snap) => {
-          if (snap.exists()) {
-            const val = snap.val();
-            let rulesList: GradeRule[] = [];
-            if (Array.isArray(val)) {
-              rulesList = val.filter(Boolean);
-            } else if (val && typeof val === 'object') {
-              rulesList = Object.values(val);
-            }
-            if (rulesList.length > 0) {
-              callbacks.onGradeRules?.(rulesList);
-            }
-          }
-        },
-        (err) => console.warn('[Firebase RTDB] grade_rules listener error:', err)
-      );
-      unsubscribers.push(unsub);
-    }
-  } catch (err) {
-    console.warn('[Firebase RTDB] Subscription error:', err);
-  }
-
-  return () => {
-    unsubscribers.forEach((fn) => {
-      try {
-        fn();
-      } catch {}
-    });
-  };
-}
-
-// ============================================================================
-// READ OPERATIONS: get()
-// ============================================================================
-
-export async function fetchAllFromFirebase(): Promise<{
-  students?: Student[];
-  subjects?: SubjectConfig[];
-  settings?: SchoolSettings;
-  gradeRules?: GradeRule[];
-  staffUsers?: StaffUser[];
-} | null> {
-  const database = getFirebaseDb();
-  if (!database) return null;
-
-  try {
-    const rootRef = ref(database);
-    const snap = await get(rootRef);
-    if (!snap.exists()) return null;
-
-    const data = snap.val();
-    if (!data) return null;
-
-    // Normalize students
-    let students: Student[] | undefined;
-    if (data.students) {
-      let rawList: any[] = [];
-      if (Array.isArray(data.students)) {
-        rawList = data.students.filter(Boolean);
-      } else if (typeof data.students === 'object') {
-        rawList = Object.values(data.students);
-      }
-      students = rawList.map((st: any) => ({
-        ...st,
-        marks: st.marks && typeof st.marks === 'object' ? st.marks : {},
-      }));
-    }
-
-    // Normalize subjects
-    let subjects: SubjectConfig[] | undefined;
-    if (data.subjects) {
-      if (Array.isArray(data.subjects)) {
-        subjects = data.subjects.filter(Boolean);
-      } else if (typeof data.subjects === 'object') {
-        subjects = Object.values(data.subjects);
-      }
-    }
-
-    // Normalize grade rules
-    let gradeRules: GradeRule[] | undefined;
-    if (data.grade_rules) {
-      if (Array.isArray(data.grade_rules)) {
-        gradeRules = data.grade_rules.filter(Boolean);
-      } else if (typeof data.grade_rules === 'object') {
-        gradeRules = Object.values(data.grade_rules);
-      }
-    }
-
-    // Normalize staff users
-    let staffUsers: StaffUser[] | undefined;
-    if (data.staff_users) {
-      if (Array.isArray(data.staff_users)) {
-        staffUsers = data.staff_users.filter(Boolean);
-      } else if (typeof data.staff_users === 'object') {
-        staffUsers = Object.values(data.staff_users);
-      }
-    }
-
+  if (!isAuthorizedAdmin(targetEmail)) {
     return {
-      students,
-      subjects,
-      settings: data.school_settings || undefined,
-      gradeRules,
-      staffUsers,
+      success: false,
+      error: `अनधिकृत ईमेल! केवल अधिकृत व्यवस्थापक (${AUTHORIZED_ADMIN_EMAIL}) ही लॉगिन कर सकते हैं।`,
     };
-  } catch (err) {
-    console.warn('[Firebase RTDB] fetchAllFromFirebase failed:', err);
-    return null;
+  }
+
+  try {
+    const cred = await signInWithEmailAndPassword(authClient, targetEmail, pass);
+    return { success: true, user: cred.user };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'ईमेल या पासवर्ड अमान्य है।' };
   }
 }
 
 // ============================================================================
-// CRUD OPERATION: STUDENTS (ref, set, update, remove)
+// CRUD & REAL-TIME: STUDENTS
 // ============================================================================
 
-/**
- * Add or overwrite single student in Firebase:
- * ref(db, 'students/' + student.id), set(...)
- */
 export async function saveStudentToFirebase(student: Student): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !student?.id) return false;
   try {
-    const studentRef = ref(database, `students/${student.id}`);
-    await set(studentRef, cleanForFirebase(student));
-    console.log(`[Firebase RTDB] Student ${student.id} saved successfully.`);
+    const ref = doc(firestoreInstance, 'students', student.id);
+    await setDoc(ref, cleanForFirebase(student), { merge: true });
     return true;
   } catch (err) {
-    console.error(`[Firebase RTDB] Error saving student ${student.id}:`, err);
+    handleFirestoreError(err, OperationType.WRITE, `students/${student.id}`);
     return false;
   }
 }
 
-/**
- * Save / replace entire students list in Firebase Realtime Database
- */
 export async function saveAllStudentsToFirebase(students: Student[]): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !Array.isArray(students)) return false;
   try {
-    const studentsRef = ref(database, 'students');
-    // Store as key-value map keyed by student.id for efficient updates
-    const studentMap: Record<string, Student> = {};
-    students.forEach((s) => {
-      studentMap[s.id] = s;
-    });
-    await set(studentsRef, cleanForFirebase(studentMap));
-    console.log(`[Firebase RTDB] All ${students.length} students saved to Firebase.`);
+    // Firestore batch limit is 500 documents per batch
+    const chunkSize = 400;
+    for (let i = 0; i < students.length; i += chunkSize) {
+      const chunk = students.slice(i, i + chunkSize);
+      const batch = writeBatch(firestoreInstance);
+      for (const st of chunk) {
+        if (st && st.id) {
+          const ref = doc(firestoreInstance, 'students', st.id);
+          batch.set(ref, cleanForFirebase(st), { merge: true });
+        }
+      }
+      await batch.commit();
+    }
+    console.log(`[Firestore] Successfully saved ${students.length} students to cloud.`);
     return true;
   } catch (err) {
-    console.error('[Firebase RTDB] Error saving students array to Firebase:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'students');
     return false;
   }
 }
 
-/**
- * Update student marks and teacher remark in Firebase Realtime Database:
- * ref(db, 'students/' + studentId), update(...)
- */
 export async function updateStudentMarksInFirebase(
   studentId: string,
   marks: Record<string, { halfObtained: number; annualObtained: number }>,
   teacherRemark?: string
 ): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !studentId) return false;
   try {
-    const studentRef = ref(database, `students/${studentId}`);
-    const updates: Record<string, any> = { marks };
+    const ref = doc(firestoreInstance, 'students', studentId);
+    const updates: Record<string, any> = { marks: cleanForFirebase(marks) };
     if (teacherRemark !== undefined) {
       updates.teacherRemark = teacherRemark;
     }
-    await update(studentRef, cleanForFirebase(updates));
-    console.log(`[Firebase RTDB] Marks for student ${studentId} updated.`);
+    await updateDoc(ref, updates);
     return true;
   } catch (err) {
-    console.error(`[Firebase RTDB] Error updating marks for ${studentId}:`, err);
+    handleFirestoreError(err, OperationType.UPDATE, `students/${studentId}`);
     return false;
   }
 }
 
-/**
- * Delete student record from Firebase Realtime Database:
- * ref(db, 'students/' + studentId), remove(...)
- */
 export async function deleteStudentFromFirebase(studentId: string): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !studentId) return false;
   try {
-    const studentRef = ref(database, `students/${studentId}`);
-    await remove(studentRef);
-    console.log(`[Firebase RTDB] Student ${studentId} deleted.`);
+    const ref = doc(firestoreInstance, 'students', studentId);
+    await deleteDoc(ref);
     return true;
   } catch (err) {
-    console.error(`[Firebase RTDB] Error deleting student ${studentId}:`, err);
+    handleFirestoreError(err, OperationType.DELETE, `students/${studentId}`);
     return false;
   }
 }
 
-/**
- * Move student to Recycle Bin (Trash) in Firebase Realtime Database:
- * 1. Writes to ref(db, `deleted_students/${student.id}`)
- * 2. Removes from ref(db, `students/${student.id}`)
- */
 export async function moveStudentToTrashInFirebase(student: Student): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !student?.id) return false;
   try {
-    const studentWithTimestamp = {
-      ...student,
-      deletedAt: student.deletedAt || new Date().toISOString(),
-    };
-    const trashRef = ref(database, `deleted_students/${student.id}`);
-    const studentRef = ref(database, `students/${student.id}`);
+    const batch = writeBatch(firestoreInstance);
+    const trashRef = doc(firestoreInstance, 'deleted_students', student.id);
+    const studentRef = doc(firestoreInstance, 'students', student.id);
 
-    await set(trashRef, cleanForFirebase(studentWithTimestamp));
-    await remove(studentRef);
-    console.log(`[Firebase RTDB] Student ${student.id} moved to trash.`);
+    batch.set(trashRef, cleanForFirebase({ ...student, deletedAt: new Date().toISOString() }));
+    batch.delete(studentRef);
+    await batch.commit();
     return true;
   } catch (err) {
-    console.error(`[Firebase RTDB] Error moving student ${student.id} to trash:`, err);
+    handleFirestoreError(err, OperationType.WRITE, `students/${student.id}`);
     return false;
   }
 }
 
-/**
- * Move multiple students to Recycle Bin (Trash) in batch
- */
 export async function moveBatchStudentsToTrashInFirebase(studentsList: Student[]): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database || studentsList.length === 0) return false;
-
+  if (!firestoreInstance || !studentsList?.length) return false;
   try {
-    const updates: Record<string, any> = {};
+    const batch = writeBatch(firestoreInstance);
     const now = new Date().toISOString();
     for (const st of studentsList) {
-      const studentWithTimestamp = {
-        ...st,
-        deletedAt: st.deletedAt || now,
-      };
-      updates[`deleted_students/${st.id}`] = cleanForFirebase(studentWithTimestamp);
-      updates[`students/${st.id}`] = null;
+      if (st && st.id) {
+        const trashRef = doc(firestoreInstance, 'deleted_students', st.id);
+        const studentRef = doc(firestoreInstance, 'students', st.id);
+        batch.set(trashRef, cleanForFirebase({ ...st, deletedAt: st.deletedAt || now }));
+        batch.delete(studentRef);
+      }
     }
-    await update(ref(database), updates);
-    console.log(`[Firebase RTDB] Batch ${studentsList.length} students moved to trash.`);
+    await batch.commit();
     return true;
   } catch (err) {
-    console.error(`[Firebase RTDB] Error batch moving students to trash:`, err);
+    handleFirestoreError(err, OperationType.WRITE, 'students/batch-trash');
     return false;
   }
 }
 
-/**
- * Restore student from Recycle Bin back to active students list
- */
 export async function restoreStudentFromTrashInFirebase(student: Student): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !student?.id) return false;
   try {
     const { deletedAt, ...activeStudent } = student;
-    const studentRef = ref(database, `students/${student.id}`);
-    const trashRef = ref(database, `deleted_students/${student.id}`);
+    const batch = writeBatch(firestoreInstance);
+    const studentRef = doc(firestoreInstance, 'students', student.id);
+    const trashRef = doc(firestoreInstance, 'deleted_students', student.id);
 
-    await set(studentRef, cleanForFirebase(activeStudent));
-    await remove(trashRef);
-    console.log(`[Firebase RTDB] Student ${student.id} restored from trash.`);
+    batch.set(studentRef, cleanForFirebase(activeStudent));
+    batch.delete(trashRef);
+    await batch.commit();
     return true;
   } catch (err) {
-    console.error(`[Firebase RTDB] Error restoring student ${student.id}:`, err);
+    handleFirestoreError(err, OperationType.WRITE, `deleted_students/${student.id}`);
     return false;
   }
 }
 
-/**
- * Restore all students from Recycle Bin back to active students list
- */
 export async function restoreAllStudentsFromTrashInFirebase(studentsList: Student[]): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database || studentsList.length === 0) return false;
-
+  if (!firestoreInstance || !studentsList?.length) return false;
   try {
-    const updates: Record<string, any> = {};
+    const batch = writeBatch(firestoreInstance);
     for (const st of studentsList) {
-      const { deletedAt, ...activeStudent } = st;
-      updates[`students/${st.id}`] = cleanForFirebase(activeStudent);
-      updates[`deleted_students/${st.id}`] = null;
-    }
-    await update(ref(database), updates);
-    console.log(`[Firebase RTDB] All ${studentsList.length} students restored from trash.`);
-    return true;
-  } catch (err) {
-    console.error(`[Firebase RTDB] Error restoring all students from trash:`, err);
-    return false;
-  }
-}
-
-/**
- * Permanently delete student from Trash (irreversible)
- */
-export async function permanentlyDeleteStudentFromTrashInFirebase(studentId: string): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
-  try {
-    const trashRef = ref(database, `deleted_students/${studentId}`);
-    await remove(trashRef);
-    console.log(`[Firebase RTDB] Student ${studentId} permanently deleted from trash.`);
-    return true;
-  } catch (err) {
-    console.error(`[Firebase RTDB] Error permanently deleting student ${studentId}:`, err);
-    return false;
-  }
-}
-
-/**
- * Empty entire Recycle Bin in Firebase
- */
-export async function emptyTrashInFirebase(): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
-  try {
-    const trashRef = ref(database, 'deleted_students');
-    await remove(trashRef);
-    console.log(`[Firebase RTDB] Trash emptied.`);
-    return true;
-  } catch (err) {
-    console.error(`[Firebase RTDB] Error emptying trash:`, err);
-    return false;
-  }
-}
-
-/**
- * Subscribe to Deleted Students (Recycle Bin) in Realtime Database
- */
-export function subscribeToDeletedStudents(callback: (deletedStudents: Student[]) => void): Unsubscribe {
-  const database = getFirebaseDb();
-  if (!database) return () => {};
-
-  try {
-    const trashRef = ref(database, 'deleted_students');
-    return onValue(trashRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const val = snapshot.val();
-        let list: Student[] = [];
-        if (Array.isArray(val)) {
-          list = val.filter(Boolean);
-        } else if (typeof val === 'object' && val !== null) {
-          list = Object.values(val);
-        }
-        callback(list);
-      } else {
-        callback([]);
+      if (st && st.id) {
+        const { deletedAt, ...activeStudent } = st;
+        const studentRef = doc(firestoreInstance, 'students', st.id);
+        const trashRef = doc(firestoreInstance, 'deleted_students', st.id);
+        batch.set(studentRef, cleanForFirebase(activeStudent));
+        batch.delete(trashRef);
       }
-    });
+    }
+    await batch.commit();
+    return true;
   } catch (err) {
-    console.warn('[Firebase RTDB] Error subscribing to deleted students:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'deleted_students/restore-all');
+    return false;
+  }
+}
+
+export async function permanentlyDeleteStudentFromTrashInFirebase(studentId: string): Promise<boolean> {
+  if (!firestoreInstance || !studentId) return false;
+  try {
+    const ref = doc(firestoreInstance, 'deleted_students', studentId);
+    await deleteDoc(ref);
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `deleted_students/${studentId}`);
+    return false;
+  }
+}
+
+export async function emptyTrashInFirebase(): Promise<boolean> {
+  if (!firestoreInstance) return false;
+  try {
+    const snapshot = await getDocs(collection(firestoreInstance, 'deleted_students'));
+    const batch = writeBatch(firestoreInstance);
+    snapshot.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, 'deleted_students');
+    return false;
+  }
+}
+
+export function subscribeToDeletedStudents(callback: (deletedStudents: Student[]) => void): Unsubscribe {
+  if (!firestoreInstance) return () => {};
+  try {
+    return onSnapshot(
+      collection(firestoreInstance, 'deleted_students'),
+      (snapshot) => {
+        const list: Student[] = [];
+        snapshot.forEach((d) => list.push(d.data() as Student));
+        callback(list);
+      },
+      (err) => handleFirestoreError(err, OperationType.LIST, 'deleted_students')
+    );
+  } catch (err) {
     return () => {};
   }
 }
 
 // ============================================================================
-// CRUD OPERATION: CLEARED MARKS HISTORY / BACKUPS (RECYCLE BIN FOR MARKS)
+// CLEARED MARKS HISTORY
 // ============================================================================
 
 export async function saveClearedMarksBackupToFirebase(backup: ClearedMarksBackup): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !backup?.id) return false;
   try {
-    const backupRef = ref(database, `cleared_marks_history/${backup.id}`);
-    await set(backupRef, cleanForFirebase(backup));
-    console.log(`[Firebase RTDB] Cleared marks backup ${backup.id} saved to Firebase.`);
+    const ref = doc(firestoreInstance, 'cleared_marks_history', backup.id);
+    await setDoc(ref, cleanForFirebase(backup));
     return true;
   } catch (err) {
-    console.error('[Firebase RTDB] Error saving cleared marks backup:', err);
+    handleFirestoreError(err, OperationType.WRITE, `cleared_marks_history/${backup.id}`);
     return false;
   }
 }
 
 export async function deleteClearedMarksBackupFromFirebase(backupId: string): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !backupId) return false;
   try {
-    const backupRef = ref(database, `cleared_marks_history/${backupId}`);
-    await remove(backupRef);
-    console.log(`[Firebase RTDB] Cleared marks backup ${backupId} deleted.`);
+    await deleteDoc(doc(firestoreInstance, 'cleared_marks_history', backupId));
     return true;
   } catch (err) {
-    console.error(`[Firebase RTDB] Error deleting cleared marks backup ${backupId}:`, err);
+    handleFirestoreError(err, OperationType.DELETE, `cleared_marks_history/${backupId}`);
     return false;
   }
 }
 
 export async function emptyClearedMarksHistoryInFirebase(): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance) return false;
   try {
-    const historyRef = ref(database, 'cleared_marks_history');
-    await remove(historyRef);
-    console.log(`[Firebase RTDB] Cleared marks history emptied.`);
+    const snapshot = await getDocs(collection(firestoreInstance, 'cleared_marks_history'));
+    const batch = writeBatch(firestoreInstance);
+    snapshot.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
     return true;
   } catch (err) {
-    console.error('[Firebase RTDB] Error emptying cleared marks history:', err);
+    handleFirestoreError(err, OperationType.DELETE, 'cleared_marks_history');
     return false;
   }
 }
 
 export function subscribeToClearedMarksHistory(callback: (history: ClearedMarksBackup[]) => void): Unsubscribe {
-  const database = getFirebaseDb();
-  if (!database) return () => {};
-
+  if (!firestoreInstance) return () => {};
   try {
-    const historyRef = ref(database, 'cleared_marks_history');
-    return onValue(historyRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const val = snapshot.val();
-        let list: ClearedMarksBackup[] = [];
-        if (Array.isArray(val)) {
-          list = val.filter(Boolean);
-        } else if (typeof val === 'object' && val !== null) {
-          list = Object.values(val);
-        }
+    return onSnapshot(
+      collection(firestoreInstance, 'cleared_marks_history'),
+      (snapshot) => {
+        const list: ClearedMarksBackup[] = [];
+        snapshot.forEach((d) => list.push(d.data() as ClearedMarksBackup));
         list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         callback(list);
-      } else {
-        callback([]);
-      }
-    });
+      },
+      (err) => handleFirestoreError(err, OperationType.LIST, 'cleared_marks_history')
+    );
   } catch (err) {
-    console.warn('[Firebase RTDB] Error subscribing to cleared marks history:', err);
     return () => {};
   }
 }
 
 // ============================================================================
-// CRUD OPERATION: SUBJECTS (ref, set)
+// SUBJECTS, SETTINGS, AND GRADE RULES
 // ============================================================================
 
 export async function saveSubjectsToFirebase(subjects: SubjectConfig[]): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !Array.isArray(subjects)) return false;
   try {
-    const subjectsRef = ref(database, 'subjects');
-    const subjectsMap: Record<string, SubjectConfig> = {};
-    subjects.forEach((s) => {
-      subjectsMap[s.id] = s;
-    });
-    await set(subjectsRef, cleanForFirebase(subjectsMap));
-    console.log(`[Firebase RTDB] Subjects saved to Firebase.`);
+    const batch = writeBatch(firestoreInstance);
+    for (const sub of subjects) {
+      if (sub && sub.id) {
+        batch.set(doc(firestoreInstance, 'subjects', sub.id), cleanForFirebase(sub), { merge: true });
+      }
+    }
+    await batch.commit();
     return true;
   } catch (err) {
-    console.error('[Firebase RTDB] Error saving subjects:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'subjects');
     return false;
   }
 }
-
-// ============================================================================
-// CRUD OPERATION: SCHOOL SETTINGS & TOGGLES (ref, set, update)
-// ============================================================================
 
 export async function saveSchoolSettingsToFirebase(settings: SchoolSettings): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !settings) return false;
   try {
-    // Extract toggles node so both school_settings and school_settings/toggles are in sync
-    const toggles = {
-      showHalfYearlyExam: settings.showHalfYearlyExam !== false,
-      showAnnualExam: settings.showAnnualExam !== false,
-      showTeacherRemarks: settings.showTeacherRemarks !== false,
-      showStudentPhoto: settings.showStudentPhoto !== false,
-      showSignatures: settings.showSignatures !== false,
-      showPercentage: settings.showPercentage !== false,
-      showGrade: settings.showGrade !== false,
-      showProgressGraph: settings.showProgressGraph !== false,
-      showStudentMobile: settings.showStudentMobile !== false,
-      showStudentAadhar: settings.showStudentAadhar !== false,
-      showPdfButton: settings.showPdfButton !== false,
-      showPrintButton: settings.showPrintButton !== false,
-      showImageButton: settings.showImageButton !== false,
-      allowPublicSearch: settings.allowPublicSearch !== false,
-      isMaintenanceMode: Boolean(settings.isMaintenanceMode),
-      isResultLive: settings.isResultLive !== false,
-    };
-
-    const payload = cleanForFirebase({
-      ...settings,
-      toggles,
-    });
-
-    const settingsRef = ref(database, 'school_settings');
-    await set(settingsRef, payload);
-    console.log('[Firebase RTDB] School settings and toggles saved.');
+    const ref = doc(firestoreInstance, 'settings', 'main');
+    await setDoc(ref, cleanForFirebase(settings), { merge: true });
     return true;
   } catch (err) {
-    console.error('[Firebase RTDB] Error saving school settings:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'settings/main');
     return false;
   }
 }
 
-/**
- * Instantly update a single toggle in school_settings/toggles node:
- * ref(db, 'school_settings/toggles'), update(...)
- * This triggers onValue on all clients in real-time!
- */
-export async function updateSchoolToggleInFirebase(
-  toggleKey: string,
-  value: boolean
-): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+export async function updateSchoolToggleInFirebase(key: string, value: boolean): Promise<boolean> {
+  if (!firestoreInstance || !key) return false;
   try {
-    const togglesRef = ref(database, 'school_settings/toggles');
-    const settingsRef = ref(database, 'school_settings');
-
-    // Update both school_settings/toggles node and the parent school_settings property
-    await update(togglesRef, cleanForFirebase({ [toggleKey]: value }));
-    await update(settingsRef, cleanForFirebase({ [toggleKey]: value }));
-
-    console.log(`[Firebase RTDB] Toggle "${toggleKey}" set to ${value} in real-time.`);
+    const ref = doc(firestoreInstance, 'settings', 'main');
+    await setDoc(
+      ref,
+      {
+        [key]: value,
+        toggles: {
+          [key]: value,
+        },
+      },
+      { merge: true }
+    );
     return true;
   } catch (err) {
-    console.error(`[Firebase RTDB] Error updating toggle "${toggleKey}":`, err);
+    handleFirestoreError(err, OperationType.UPDATE, 'settings/main');
     return false;
   }
 }
 
-// ============================================================================
-// CRUD OPERATION: GRADE RULES (ref, set)
-// ============================================================================
+export function subscribeToSchoolSettingsToggles(callback: (toggles: Record<string, any>) => void): Unsubscribe {
+  if (!firestoreInstance) return () => {};
+  try {
+    return onSnapshot(
+      doc(firestoreInstance, 'settings', 'main'),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          const toggles = {
+            ...(data.toggles || {}),
+            showHalfYearlyExam: data.showHalfYearlyExam,
+            showAnnualExam: data.showAnnualExam,
+            showTeacherRemarks: data.showTeacherRemarks,
+            showStudentPhoto: data.showStudentPhoto,
+            showSignatures: data.showSignatures,
+            showPercentage: data.showPercentage,
+            showGrade: data.showGrade,
+            showProgressGraph: data.showProgressGraph,
+            showStudentMobile: data.showStudentMobile,
+            showStudentAadhar: data.showStudentAadhar,
+            showPdfButton: data.showPdfButton,
+            showPrintButton: data.showPrintButton,
+            showImageButton: data.showImageButton,
+            allowPublicSearch: data.allowPublicSearch,
+            isMaintenanceMode: data.isMaintenanceMode,
+            isResultLive: data.isResultLive,
+          };
+          callback(cleanForFirebase(toggles));
+        }
+      },
+      (err) => handleFirestoreError(err, OperationType.GET, 'settings/main')
+    );
+  } catch (err) {
+    return () => {};
+  }
+}
 
 export async function saveGradeRulesToFirebase(gradeRules: GradeRule[]): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !Array.isArray(gradeRules)) return false;
   try {
-    const rulesRef = ref(database, 'grade_rules');
-    await set(rulesRef, cleanForFirebase(gradeRules));
-    console.log('[Firebase RTDB] Grade rules saved.');
+    const batch = writeBatch(firestoreInstance);
+    gradeRules.forEach((rule, idx) => {
+      const ruleId = rule.grade?.replace(/[^a-zA-Z0-9]/g, '_') || `rule_${idx}`;
+      batch.set(doc(firestoreInstance, 'grade_rules', ruleId), cleanForFirebase(rule), { merge: true });
+    });
+    await batch.commit();
     return true;
   } catch (err) {
-    console.error('[Firebase RTDB] Error saving grade rules:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'grade_rules');
     return false;
   }
 }
 
 // ============================================================================
-// FULL SYNC: Push all data to Firebase Realtime Database
+// FULL SYNC AND SUBSCRIPTIONS
 // ============================================================================
 
 export async function syncAllDataToFirebase(payload: {
@@ -993,146 +633,239 @@ export async function syncAllDataToFirebase(payload: {
   subjects: SubjectConfig[];
   gradeRules: GradeRule[];
 }): Promise<{ success: boolean; message: string }> {
-  const database = getFirebaseDb();
-  if (!database) {
+  if (!firestoreInstance) {
     return {
       success: false,
-      message: 'Firebase Realtime Database is not configured. Please paste your Firebase keys.',
+      message: 'Firebase Firestore is not initialized.',
     };
   }
 
   try {
-    const studentMap: Record<string, Student> = {};
-    payload.students.forEach((s) => {
-      studentMap[s.id] = s;
-    });
+    // 1. Settings
+    await setDoc(doc(firestoreInstance, 'settings', 'main'), cleanForFirebase(payload.schoolSettings), { merge: true });
 
-    const subjectMap: Record<string, SubjectConfig> = {};
-    payload.subjects.forEach((sub) => {
-      subjectMap[sub.id] = sub;
-    });
+    // 2. Subjects
+    if (payload.subjects?.length) {
+      const subBatch = writeBatch(firestoreInstance);
+      payload.subjects.forEach((s) => {
+        subBatch.set(doc(firestoreInstance!, 'subjects', s.id), cleanForFirebase(s), { merge: true });
+      });
+      await subBatch.commit();
+    }
 
-    const toggles = {
-      showHalfYearlyExam: payload.schoolSettings.showHalfYearlyExam !== false,
-      showAnnualExam: payload.schoolSettings.showAnnualExam !== false,
-      showTeacherRemarks: payload.schoolSettings.showTeacherRemarks !== false,
-      showStudentPhoto: payload.schoolSettings.showStudentPhoto !== false,
-      showSignatures: payload.schoolSettings.showSignatures !== false,
-      showPercentage: payload.schoolSettings.showPercentage !== false,
-      showGrade: payload.schoolSettings.showGrade !== false,
-      showProgressGraph: payload.schoolSettings.showProgressGraph !== false,
-      showStudentMobile: payload.schoolSettings.showStudentMobile !== false,
-      showStudentAadhar: payload.schoolSettings.showStudentAadhar !== false,
-      showPdfButton: payload.schoolSettings.showPdfButton !== false,
-      showPrintButton: payload.schoolSettings.showPrintButton !== false,
-      showImageButton: payload.schoolSettings.showImageButton !== false,
-      allowPublicSearch: payload.schoolSettings.allowPublicSearch !== false,
-      isMaintenanceMode: Boolean(payload.schoolSettings.isMaintenanceMode),
-      isResultLive: payload.schoolSettings.isResultLive !== false,
-    };
+    // 3. Grade Rules
+    if (payload.gradeRules?.length) {
+      const gBatch = writeBatch(firestoreInstance);
+      payload.gradeRules.forEach((r, idx) => {
+        const id = r.grade?.replace(/[^a-zA-Z0-9]/g, '_') || `rule_${idx}`;
+        gBatch.set(doc(firestoreInstance!, 'grade_rules', id), cleanForFirebase(r), { merge: true });
+      });
+      await gBatch.commit();
+    }
 
-    const rootUpdates: Record<string, any> = cleanForFirebase({
-      'school_settings': {
-        ...payload.schoolSettings,
-        toggles,
-      },
-      'students': studentMap,
-      'subjects': subjectMap,
-      'grade_rules': payload.gradeRules,
-      'last_synced_at': new Date().toISOString(),
-    });
-
-    const rootRef = ref(database);
-    await update(rootRef, rootUpdates);
+    // 4. Students
+    if (payload.students?.length) {
+      await saveAllStudentsToFirebase(payload.students);
+    }
 
     return {
       success: true,
-      message: '✓ All data synchronized to Firebase Realtime Database successfully!',
+      message: `✓ सभी ${payload.students.length} छात्र और डाटा Firebase Firestore क्लाउड में सुरक्षित हो गए!`,
     };
   } catch (err: any) {
-    console.error('[Firebase RTDB] Full sync error:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'root');
     return {
       success: false,
-      message: `Firebase Sync Error: ${err.message || 'Check database permissions and rules.'}`,
+      message: `Firebase Sync Error: ${err.message || 'त्रुटि'}`,
     };
   }
 }
 
+export function subscribeToFirebaseData(callbacks: {
+  onSettings?: (settings: SchoolSettings) => void;
+  onStudents?: (students: Student[]) => void;
+  onSubjects?: (subjects: SubjectConfig[]) => void;
+  onGradeRules?: (gradeRules: GradeRule[]) => void;
+}): () => void {
+  if (!firestoreInstance) return () => {};
+
+  const unsubs: Unsubscribe[] = [];
+
+  // Settings
+  if (callbacks.onSettings) {
+    try {
+      const u = onSnapshot(
+        doc(firestoreInstance, 'settings', 'main'),
+        (snapshot) => {
+          if (snapshot.exists()) {
+            callbacks.onSettings!(snapshot.data() as SchoolSettings);
+          }
+        },
+        (err) => handleFirestoreError(err, OperationType.GET, 'settings/main')
+      );
+      unsubs.push(u);
+    } catch {}
+  }
+
+  // Students
+  if (callbacks.onStudents) {
+    try {
+      const u = onSnapshot(
+        collection(firestoreInstance, 'students'),
+        (snapshot) => {
+          const list: Student[] = [];
+          snapshot.forEach((d) => list.push(d.data() as Student));
+          if (list.length > 0) {
+            callbacks.onStudents!(list);
+          }
+        },
+        (err) => handleFirestoreError(err, OperationType.LIST, 'students')
+      );
+      unsubs.push(u);
+    } catch {}
+  }
+
+  // Subjects
+  if (callbacks.onSubjects) {
+    try {
+      const u = onSnapshot(
+        collection(firestoreInstance, 'subjects'),
+        (snapshot) => {
+          const list: SubjectConfig[] = [];
+          snapshot.forEach((d) => list.push(d.data() as SubjectConfig));
+          if (list.length > 0) {
+            callbacks.onSubjects!(list);
+          }
+        },
+        (err) => handleFirestoreError(err, OperationType.LIST, 'subjects')
+      );
+      unsubs.push(u);
+    } catch {}
+  }
+
+  // Grade rules
+  if (callbacks.onGradeRules) {
+    try {
+      const u = onSnapshot(
+        collection(firestoreInstance, 'grade_rules'),
+        (snapshot) => {
+          const list: GradeRule[] = [];
+          snapshot.forEach((d) => list.push(d.data() as GradeRule));
+          if (list.length > 0) {
+            callbacks.onGradeRules!(list);
+          }
+        },
+        (err) => handleFirestoreError(err, OperationType.LIST, 'grade_rules')
+      );
+      unsubs.push(u);
+    } catch {}
+  }
+
+  return () => {
+    unsubs.forEach((u) => u());
+  };
+}
+
+export async function fetchAllFromFirebase(): Promise<{
+  students?: Student[];
+  subjects?: SubjectConfig[];
+  settings?: SchoolSettings;
+  gradeRules?: GradeRule[];
+  staffUsers?: StaffUser[];
+} | null> {
+  if (!firestoreInstance) return null;
+  try {
+    const [stSnap, subSnap, sSnap, gSnap, staffSnap] = await Promise.all([
+      getDocs(collection(firestoreInstance, 'students')).catch(() => null),
+      getDocs(collection(firestoreInstance, 'subjects')).catch(() => null),
+      getDoc(doc(firestoreInstance, 'settings', 'main')).catch(() => null),
+      getDocs(collection(firestoreInstance, 'grade_rules')).catch(() => null),
+      getDocs(collection(firestoreInstance, 'staff_users')).catch(() => null),
+    ]);
+
+    const students: Student[] = [];
+    stSnap?.forEach((d) => students.push(d.data() as Student));
+
+    const subjects: SubjectConfig[] = [];
+    subSnap?.forEach((d) => subjects.push(d.data() as SubjectConfig));
+
+    const gradeRules: GradeRule[] = [];
+    gSnap?.forEach((d) => gradeRules.push(d.data() as GradeRule));
+
+    const staffUsers: StaffUser[] = [];
+    staffSnap?.forEach((d) => staffUsers.push(d.data() as StaffUser));
+
+    const settings = sSnap?.exists() ? (sSnap.data() as SchoolSettings) : undefined;
+
+    return {
+      students: students.length > 0 ? students : undefined,
+      subjects: subjects.length > 0 ? subjects : undefined,
+      settings,
+      gradeRules: gradeRules.length > 0 ? gradeRules : undefined,
+      staffUsers: staffUsers.length > 0 ? staffUsers : undefined,
+    };
+  } catch (err) {
+    handleFirestoreError(err, OperationType.GET, 'root');
+    return null;
+  }
+}
+
 // ============================================================================
-// STAFF HELPERS OPERATIONS (staff_users node in RTDB)
+// STAFF MANAGEMENT
 // ============================================================================
 
 export function subscribeToStaffUsers(callback: (staff: StaffUser[]) => void): Unsubscribe | null {
-  const database = getFirebaseDb();
-  if (!database) return null;
-
+  if (!firestoreInstance) return null;
   try {
-    const staffRef = ref(database, 'staff_users');
-    return onValue(
-      staffRef,
-      (snap) => {
-        if (snap.exists()) {
-          const val = snap.val();
-          let list: StaffUser[] = [];
-          if (Array.isArray(val)) {
-            list = val.filter(Boolean);
-          } else if (val && typeof val === 'object') {
-            list = Object.values(val);
-          }
-          callback(list);
-        }
+    return onSnapshot(
+      collection(firestoreInstance, 'staff_users'),
+      (snapshot) => {
+        const list: StaffUser[] = [];
+        snapshot.forEach((d) => list.push(d.data() as StaffUser));
+        callback(list);
       },
-      (err) => console.warn('[Firebase RTDB] staff_users subscription error:', err)
+      (err) => handleFirestoreError(err, OperationType.LIST, 'staff_users')
     );
   } catch (err) {
-    console.warn('[Firebase RTDB] subscribeToStaffUsers error:', err);
     return null;
   }
 }
 
 export async function saveStaffUserToFirebase(staff: StaffUser): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !staff?.id) return false;
   try {
-    const staffRef = ref(database, `staff_users/${staff.id}`);
-    await set(staffRef, cleanForFirebase(staff));
+    await setDoc(doc(firestoreInstance, 'staff_users', staff.id), cleanForFirebase(staff), { merge: true });
     return true;
   } catch (err) {
-    console.error('[Firebase RTDB] Error saving staff user:', err);
+    handleFirestoreError(err, OperationType.WRITE, `staff_users/${staff.id}`);
     return false;
   }
 }
 
 export async function deleteStaffUserFromFirebase(staffId: string): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !staffId) return false;
   try {
-    const staffRef = ref(database, `staff_users/${staffId}`);
-    await remove(staffRef);
+    await deleteDoc(doc(firestoreInstance, 'staff_users', staffId));
     return true;
   } catch (err) {
-    console.error('[Firebase RTDB] Error deleting staff user:', err);
+    handleFirestoreError(err, OperationType.DELETE, `staff_users/${staffId}`);
     return false;
   }
 }
 
 export async function saveAllStaffUsersToFirebase(staffList: StaffUser[]): Promise<boolean> {
-  const database = getFirebaseDb();
-  if (!database) return false;
-
+  if (!firestoreInstance || !staffList?.length) return false;
   try {
-    const staffMap: Record<string, any> = {};
-    (staffList || []).forEach((s) => {
-      if (s && s.id) staffMap[s.id] = s;
-    });
-    const staffRef = ref(database, 'staff_users');
-    await set(staffRef, cleanForFirebase(staffMap));
+    const batch = writeBatch(firestoreInstance);
+    for (const staff of staffList) {
+      if (staff && staff.id) {
+        batch.set(doc(firestoreInstance, 'staff_users', staff.id), cleanForFirebase(staff), { merge: true });
+      }
+    }
+    await batch.commit();
     return true;
   } catch (err) {
-    console.error('[Firebase RTDB] Error saving all staff users:', err);
+    handleFirestoreError(err, OperationType.WRITE, 'staff_users');
     return false;
   }
 }
-

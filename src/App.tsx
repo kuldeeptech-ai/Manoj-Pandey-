@@ -55,6 +55,7 @@ import {
   saveStaffUserToFirebase,
   deleteStaffUserFromFirebase,
 } from './utils/firebase';
+import { fetchAllFromGoogleSheet, getGoogleSheetUrl } from './utils/googleSheetSync';
 
 type ViewMode = 'public_search' | 'result_view' | 'admin';
 
@@ -337,42 +338,66 @@ export default function App() {
       // Backend not accessible
     }
 
-    // 2. Fetch dataset from Firebase Realtime Database if backend didn't supply
+    // 2. Fetch dataset from Firebase Realtime Database or Google Sheet if backend didn't supply
     if (!backendSuccess) {
+      let cloudLoaded = false;
       try {
         const fbData = await fetchAllFromFirebase();
-        if (fbData) {
-          if (fbData.students && fbData.students.length > 0) {
-            const normalizedStudents = sortStudentsByRoll(fbData.students.map(normalizeStudentRecord));
-            setStudents(normalizedStudents);
-          }
+        if (fbData && fbData.students && fbData.students.length > 0) {
+          const normalizedStudents = sortStudentsByRoll(fbData.students.map(normalizeStudentRecord));
+          setStudents(normalizedStudents);
+          try {
+            localStorage.setItem('school_students_cache', JSON.stringify(normalizedStudents));
+          } catch {}
           if (fbData.subjects && fbData.subjects.length >= DEFAULT_SUBJECTS.length) {
             setSubjects(fbData.subjects);
-          } else {
-            setSubjects(DEFAULT_SUBJECTS);
           }
           if (fbData.settings) {
-            const norm = normalizeSchoolSettings({ ...currentSettings, ...fbData.settings });
-            setSchoolSettings(norm);
+            setSchoolSettings(normalizeSchoolSettings({ ...currentSettings, ...fbData.settings }));
           }
           if (fbData.gradeRules && fbData.gradeRules.length > 0) {
             setGradeRules(fbData.gradeRules);
           }
-          if (Array.isArray(fbData.staffUsers) && fbData.staffUsers.length > 0) {
-            setStaffUsers(fbData.staffUsers);
-            try {
-              localStorage.setItem('staff_users_cache', JSON.stringify(fbData.staffUsers));
-            } catch {}
-          }
-          setOnlineSyncStatus((prev) => ({
-            ...prev,
-            isSaving: false,
-            lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            type: 'idle',
-          }));
+          cloudLoaded = true;
         }
       } catch (e) {
         // Firebase fallback notice
+      }
+
+      // 3. Robust Google Sheet Web App synchronization for cross-device access
+      if (!cloudLoaded) {
+        try {
+          const sheetUrl = getGoogleSheetUrl(currentSettings);
+          const sheetData = await fetchAllFromGoogleSheet(sheetUrl);
+          if (sheetData && sheetData.students && sheetData.students.length > 0) {
+            const normalizedStudents = sortStudentsByRoll(sheetData.students.map(normalizeStudentRecord));
+            setStudents(normalizedStudents);
+            try {
+              localStorage.setItem('school_students_cache', JSON.stringify(normalizedStudents));
+            } catch {}
+            if (sheetData.subjects && sheetData.subjects.length >= DEFAULT_SUBJECTS.length) {
+              setSubjects(sheetData.subjects);
+            }
+            if (sheetData.settings) {
+              setSchoolSettings(normalizeSchoolSettings({ ...currentSettings, ...sheetData.settings }));
+            }
+            if (sheetData.gradeRules && sheetData.gradeRules.length > 0) {
+              setGradeRules(sheetData.gradeRules);
+            }
+            cloudLoaded = true;
+          }
+        } catch (e) {
+          // Google Sheet sync notice
+        }
+      }
+
+      if (cloudLoaded) {
+        setOnlineSyncStatus((prev) => ({
+          ...prev,
+          isSaving: false,
+          lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          type: 'idle',
+        }));
       }
     }
   }, []);
