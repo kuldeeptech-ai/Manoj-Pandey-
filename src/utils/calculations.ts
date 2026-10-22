@@ -717,10 +717,9 @@ export function getSubjectsForStudent(
   let studentTakesUrdu = false;
   if (urduSubject) {
     const hasUrduMarks = studentHasEnteredMarks(student, urduSubject.id, options?.examMode);
-    const hasUrduKey = Boolean(student?.marks && (urduSubject.id in student.marks || 'sub-urdu' in student.marks));
     const hasUrduAssigned =
       Array.isArray(student?.assignedSubjectIds) && student.assignedSubjectIds.includes(urduSubject.id);
-    studentTakesUrdu = hasUrduMarks || hasUrduKey || hasUrduAssigned || Boolean(options?.includeUrdu);
+    studentTakesUrdu = hasUrduMarks || hasUrduAssigned || Boolean(options?.includeUrdu);
   }
 
   // Filter strictly within class subjects

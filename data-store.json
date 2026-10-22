@@ -162,7 +162,14 @@
       "showStudentMobile": true,
       "showStudentPhoto": true,
       "showTeacherRemarks": true
-    }
+    },
+    "enableCaptcha": true,
+    "enableAdminLoginCaptcha": false,
+    "saveSelectedClass": true,
+    "saveSearchRoll": true,
+    "saveRecentSearches": true,
+    "saveLastResult": true,
+    "autoFillOnLoad": true
   },
   "subjects": [
     {
@@ -507,8 +514,12 @@
           "halfObtained": 86
         },
         "sub-hindi-1": {
-          "halfObtained": 86,
-          "annualObtained": 0
+          "halfObtained": 88,
+          "annualObtained": 92
+        },
+        "sub-urdu": {
+          "halfObtained": 75,
+          "annualObtained": 80
         }
       },
       "mobile": "8756415405",
@@ -518,7 +529,20 @@
       "rollNo": "1",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Satisfactory academic progress. Regular homework submission and active classroom participation appreciated."
+      "teacherRemark": "Excellent work and dedication.",
+      "assignedSubjectIds": [
+        "sub-hindi-1",
+        "sub-hindi-2",
+        "sub-english-1",
+        "sub-english-2",
+        "sub-maths",
+        "sub-computer",
+        "sub-science",
+        "sub-drawing",
+        "sub-pt",
+        "sub-gk",
+        "sub-urdu"
+      ]
     },
     {
       "aadharNo": "552138776442",
@@ -537,7 +561,8 @@
       "rollNo": "10",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "750860496624",
@@ -556,7 +581,8 @@
       "rollNo": "11",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "483733609592",
@@ -575,7 +601,8 @@
       "rollNo": "12",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "356964443021",
@@ -594,7 +621,8 @@
       "rollNo": "13",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "853591511127",
@@ -613,7 +641,8 @@
       "rollNo": "14",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "681553815568",
@@ -632,7 +661,8 @@
       "rollNo": "15",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "445799951613",
@@ -651,7 +681,8 @@
       "rollNo": "16",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "268955357087",
@@ -670,7 +701,8 @@
       "rollNo": "17",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "813601116138",
@@ -689,7 +721,8 @@
       "rollNo": "18",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "893870933029",
@@ -708,7 +741,8 @@
       "rollNo": "19",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "492101310924",
@@ -727,7 +761,8 @@
       "rollNo": "2",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "393681145142",
@@ -746,7 +781,8 @@
       "rollNo": "20",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "865706815281",
@@ -765,7 +801,8 @@
       "rollNo": "21",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "538241473098",
@@ -784,7 +821,8 @@
       "rollNo": "22",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "993462031738",
@@ -803,7 +841,8 @@
       "rollNo": "23",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "834745019931",
@@ -822,7 +861,8 @@
       "rollNo": "24",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "541219196643",
@@ -841,7 +881,8 @@
       "rollNo": "25",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "925961683201",
@@ -860,7 +901,8 @@
       "rollNo": "26",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "563155934987",
@@ -879,7 +921,8 @@
       "rollNo": "3",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "365495263038",
@@ -898,7 +941,8 @@
       "rollNo": "4",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "208471433618",
@@ -917,7 +961,8 @@
       "rollNo": "5",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "318214755899",
@@ -936,7 +981,8 @@
       "rollNo": "6",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -955,7 +1001,8 @@
       "rollNo": "7",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "419354952929",
@@ -974,7 +1021,8 @@
       "rollNo": "8",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "580080754927",
@@ -993,7 +1041,8 @@
       "rollNo": "9",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "662089131931",
@@ -1012,7 +1061,8 @@
       "rollNo": "1",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "362080849529",
@@ -1031,7 +1081,8 @@
       "rollNo": "10",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "975848397668",
@@ -1050,7 +1101,8 @@
       "rollNo": "11",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "844873205448",
@@ -1069,7 +1121,8 @@
       "rollNo": "12",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "472217773386",
@@ -1088,7 +1141,8 @@
       "rollNo": "13",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "677047149735",
@@ -1107,7 +1161,8 @@
       "rollNo": "14",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "567836667451",
@@ -1126,7 +1181,8 @@
       "rollNo": "15",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "323485158882",
@@ -1145,7 +1201,8 @@
       "rollNo": "16",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "767524433678",
@@ -1164,7 +1221,8 @@
       "rollNo": "17",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "454725256686",
@@ -1183,7 +1241,8 @@
       "rollNo": "18",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -1202,7 +1261,8 @@
       "rollNo": "19",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "255116633109",
@@ -1221,7 +1281,8 @@
       "rollNo": "2",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "734269038302",
@@ -1240,7 +1301,8 @@
       "rollNo": "20",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "980060331685",
@@ -1259,7 +1321,8 @@
       "rollNo": "21",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "221405645888",
@@ -1278,7 +1341,8 @@
       "rollNo": "22",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "374765769781",
@@ -1297,7 +1361,8 @@
       "rollNo": "23",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "497731465224",
@@ -1316,7 +1381,8 @@
       "rollNo": "24",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "951931710501",
@@ -1335,7 +1401,8 @@
       "rollNo": "25",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "717586843614",
@@ -1354,7 +1421,8 @@
       "rollNo": "26",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "692839987704",
@@ -1373,7 +1441,8 @@
       "rollNo": "27",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "270259954135",
@@ -1392,7 +1461,8 @@
       "rollNo": "28",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "483268568527",
@@ -1411,7 +1481,8 @@
       "rollNo": "29",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -1430,7 +1501,8 @@
       "rollNo": "3",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "281246200802",
@@ -1449,7 +1521,8 @@
       "rollNo": "30",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "890278468564",
@@ -1468,7 +1541,8 @@
       "rollNo": "31",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "659317458531",
@@ -1487,7 +1561,8 @@
       "rollNo": "32",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "64930888811",
@@ -1506,7 +1581,8 @@
       "rollNo": "33",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "398514153250",
@@ -1525,7 +1601,8 @@
       "rollNo": "34",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "958768226957",
@@ -1544,7 +1621,8 @@
       "rollNo": "35",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "482382377201",
@@ -1563,7 +1641,8 @@
       "rollNo": "36",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "657994475034",
@@ -1582,7 +1661,8 @@
       "rollNo": "37",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "861043596325",
@@ -1601,7 +1681,8 @@
       "rollNo": "4",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "352670522505",
@@ -1620,7 +1701,8 @@
       "rollNo": "5",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "552629344571",
@@ -1639,7 +1721,8 @@
       "rollNo": "6",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "475753821650",
@@ -1658,7 +1741,8 @@
       "rollNo": "7",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "280547383168",
@@ -1677,7 +1761,8 @@
       "rollNo": "8",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "992922996507",
@@ -1696,7 +1781,8 @@
       "rollNo": "9",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "406056196633",
@@ -7876,7 +7962,8 @@
       "rollNo": "1",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -7895,7 +7982,8 @@
       "rollNo": "10",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -7914,7 +8002,8 @@
       "rollNo": "11",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -7933,7 +8022,8 @@
       "rollNo": "12",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "947840660609",
@@ -7952,7 +8042,8 @@
       "rollNo": "13",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "884799276486",
@@ -7971,7 +8062,8 @@
       "rollNo": "14",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -7990,7 +8082,8 @@
       "rollNo": "15",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "943896361024",
@@ -8009,7 +8102,8 @@
       "rollNo": "16",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "311139311064",
@@ -8028,7 +8122,8 @@
       "rollNo": "17",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "323157931251",
@@ -8047,7 +8142,8 @@
       "rollNo": "18",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8066,7 +8162,8 @@
       "rollNo": "19",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "590376530334",
@@ -8085,7 +8182,8 @@
       "rollNo": "2",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "515686939653",
@@ -8104,7 +8202,8 @@
       "rollNo": "20",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "496214713899",
@@ -8123,7 +8222,8 @@
       "rollNo": "21",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "532700447207",
@@ -8142,7 +8242,8 @@
       "rollNo": "22",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "533167451813",
@@ -8161,7 +8262,8 @@
       "rollNo": "23",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8181,7 +8283,8 @@
       "rollNo": "24",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8200,7 +8303,8 @@
       "rollNo": "25",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "415724705545",
@@ -8219,7 +8323,8 @@
       "rollNo": "26",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8238,7 +8343,8 @@
       "rollNo": "27",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8257,7 +8363,8 @@
       "rollNo": "28",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8276,7 +8383,8 @@
       "rollNo": "29",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "794426422514",
@@ -8295,7 +8403,8 @@
       "rollNo": "3",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8314,7 +8423,8 @@
       "rollNo": "30",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "579130057165",
@@ -8333,7 +8443,8 @@
       "rollNo": "31",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8352,7 +8463,8 @@
       "rollNo": "32",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "463930370368",
@@ -8371,7 +8483,8 @@
       "rollNo": "4",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8390,7 +8503,8 @@
       "rollNo": "5",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "318072434353",
@@ -8409,7 +8523,8 @@
       "rollNo": "6",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8428,7 +8543,8 @@
       "rollNo": "7",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "494272646535",
@@ -8447,7 +8563,8 @@
       "rollNo": "8",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -8466,7 +8583,8 @@
       "rollNo": "9",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8485,7 +8603,8 @@
       "rollNo": "1",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8504,7 +8623,8 @@
       "rollNo": "10",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "892268591314",
@@ -8523,7 +8643,8 @@
       "rollNo": "11",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "41975289965",
@@ -8542,7 +8663,8 @@
       "rollNo": "12",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "503139544209",
@@ -8561,7 +8683,8 @@
       "rollNo": "13",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "58086776713",
@@ -8580,7 +8703,8 @@
       "rollNo": "14",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8599,7 +8723,8 @@
       "rollNo": "15",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "723553503005",
@@ -8618,7 +8743,8 @@
       "rollNo": "16",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8637,7 +8763,8 @@
       "rollNo": "17",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8656,7 +8783,8 @@
       "rollNo": "18",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "447110495325",
@@ -8675,7 +8803,8 @@
       "rollNo": "19",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "679837118737",
@@ -8694,7 +8823,8 @@
       "rollNo": "2",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "70608360799",
@@ -8713,7 +8843,8 @@
       "rollNo": "20",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8732,7 +8863,8 @@
       "rollNo": "21",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "763917562864",
@@ -8751,7 +8883,8 @@
       "rollNo": "22",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8770,7 +8903,8 @@
       "rollNo": "23",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "663940195829",
@@ -8789,7 +8923,8 @@
       "rollNo": "24",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "350659527281",
@@ -8808,7 +8943,8 @@
       "rollNo": "25",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "227458330539",
@@ -8827,7 +8963,8 @@
       "rollNo": "26",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8846,7 +8983,8 @@
       "rollNo": "27",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8865,7 +9003,8 @@
       "rollNo": "28",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "25152558873",
@@ -8884,7 +9023,8 @@
       "rollNo": "29",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "409627438603",
@@ -8903,7 +9043,8 @@
       "rollNo": "3",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "986040645081",
@@ -8922,7 +9063,8 @@
       "rollNo": "30",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -8941,7 +9083,8 @@
       "rollNo": "31",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "868283043150",
@@ -8960,7 +9103,8 @@
       "rollNo": "32",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "474726354062",
@@ -8979,7 +9123,8 @@
       "rollNo": "33",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "500508039355",
@@ -8998,7 +9143,8 @@
       "rollNo": "34",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -9017,7 +9163,8 @@
       "rollNo": "35",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "980518447961",
@@ -9036,7 +9183,8 @@
       "rollNo": "36",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "—",
@@ -9055,7 +9203,8 @@
       "rollNo": "4",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "504199450541",
@@ -9074,7 +9223,8 @@
       "rollNo": "5",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "808927650376",
@@ -9093,7 +9243,8 @@
       "rollNo": "6",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "45278124963",
@@ -9112,7 +9263,8 @@
       "rollNo": "7",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "544474605455",
@@ -9131,7 +9283,8 @@
       "rollNo": "8",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "779322786238",
@@ -9150,7 +9303,8 @@
       "rollNo": "9",
       "section": "A",
       "session": "2026–2027",
-      "teacherRemark": "Good student with positive attitude"
+      "teacherRemark": "Good student with positive attitude",
+      "marks": {}
     },
     {
       "aadharNo": "",
@@ -9296,6 +9450,29 @@
       "grade": "D",
       "maxPercentage": 39.99,
       "minPercentage": 0
+    }
+  ],
+  "staffUsers": [
+    {
+      "id": "staff-helper-1",
+      "name": "श्री रमेश कुमार (सहायक शिक्षक / डेटा एंट्री)",
+      "username": "staff1",
+      "password": "teacher123",
+      "role": "staff",
+      "phone": "9838700021",
+      "isActive": true,
+      "permissions": {
+        "canAddStudents": true,
+        "canEditStudents": true,
+        "canDeleteStudents": false,
+        "canEnterMarks": true,
+        "canBulkMarks": true,
+        "canExportData": true,
+        "canEditSchoolSettings": false,
+        "canManageStaff": false,
+        "canResetDatabase": false
+      },
+      "createdAt": "2026-10-22T03:00:20.185Z"
     }
   ],
   "deletedStudents": [
@@ -15526,6 +15703,6 @@
       "teacherRemark": "Regular and disciplined student. Shows consistent academic progress."
     }
   ],
-  "lastUpdated": "2026-10-16T08:48:29.149Z",
-  "clearedMarksHistory": []
+  "clearedMarksHistory": [],
+  "lastUpdated": "2026-10-22T03:20:56.220Z"
 }

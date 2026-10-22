@@ -691,8 +691,15 @@ async function startServer() {
   // Save full state (Students, Subjects, Settings, Grade Rules)
   app.post('/api/admin/data', (req, res) => {
     const { students, subjects, schoolSettings, gradeRules, deletedStudents, clearedMarksHistory, staffUsers } = req.body;
-    if (Array.isArray(students)) store.students = students.map(normalizeStudent);
-    if (Array.isArray(subjects)) store.subjects = subjects;
+    if (Array.isArray(students)) {
+      // Safety guard: NEVER overwrite a healthy student roster with an empty or stub list
+      if (store.students && store.students.length > 50 && students.length < 10) {
+        console.warn(`[Safety Guard] Blocked overwriting ${store.students.length} real students with only ${students.length} stub students!`);
+      } else {
+        store.students = students.map(normalizeStudent);
+      }
+    }
+    if (Array.isArray(subjects) && subjects.length > 0) store.subjects = subjects;
     if (Array.isArray(deletedStudents)) store.deletedStudents = deletedStudents;
     if (Array.isArray(clearedMarksHistory)) store.clearedMarksHistory = clearedMarksHistory;
     if (Array.isArray(staffUsers)) store.staffUsers = staffUsers;
@@ -882,13 +889,17 @@ async function startServer() {
   });
 
   app.post('/api/admin/marks', (req, res) => {
-    const { studentId, marks, teacherRemark } = req.body;
+    const { studentId, marks, teacherRemark, assignedSubjectIds } = req.body;
     const student = store.students.find((s) => s.id === studentId);
     if (!student) {
       return res.status(404).json({ error: 'Student not found.' });
     }
-    if (marks) student.marks = marks;
+    if (marks && typeof marks === 'object') student.marks = marks;
     if (teacherRemark !== undefined) student.teacherRemark = teacherRemark;
+    if (Array.isArray(assignedSubjectIds)) {
+      student.assignedSubjectIds = assignedSubjectIds.map(String).filter(Boolean);
+    }
+    store.lastUpdated = new Date().toISOString();
     saveStore();
     res.json({ success: true, student });
     syncToGoogleSheetInBackground();

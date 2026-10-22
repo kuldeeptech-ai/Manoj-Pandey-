@@ -144,8 +144,19 @@ export default function App() {
     return getInitialViewMode() === 'admin';
   });
 
-  // Online-First Database State (No reliance on local storage so all users see identical live records)
+  // Online-First Database State with instant local caching for zero-flicker resilience
   const [students, setStudents] = useState<Student[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('school_students_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return sortStudentsByRoll(parsed.map(normalizeStudentRecord));
+          }
+        }
+      } catch {}
+    }
     return sortStudentsByRoll((DEFAULT_STUDENTS || []).map(normalizeStudentRecord));
   });
 
@@ -289,6 +300,9 @@ export default function App() {
           if (Array.isArray(data.students) && data.students.length > 0) {
             const normalizedStudents = sortStudentsByRoll(data.students.map(normalizeStudentRecord));
             setStudents(normalizedStudents);
+            try {
+              localStorage.setItem('school_students_cache', JSON.stringify(normalizedStudents));
+            } catch {}
           }
           if (Array.isArray(data.subjects) && data.subjects.length >= DEFAULT_SUBJECTS.length) {
             setSubjects(data.subjects);
@@ -870,8 +884,18 @@ export default function App() {
     }
   };
 
-  // Save Handlers (Online Express API and Firebase Realtime Database - NO localStorage)
+  // Save Handlers (Online Express API and Firebase Realtime Database)
   const handleSaveStudents = async (newStudents: Student[]) => {
+    if (!Array.isArray(newStudents) || newStudents.length === 0) {
+      console.warn('[Safety Guard] Blocked attempt to save empty student list.');
+      return;
+    }
+    // Prevent wiping out healthy roster with stub array
+    if (studentsRef.current.length > 50 && newStudents.length < 10) {
+      console.warn(`[Safety Guard] Blocked attempt to save only ${newStudents.length} students over ${studentsRef.current.length} existing students!`);
+      return;
+    }
+
     lastLocalMutationTimeRef.current = Date.now();
     const formatted = sortStudentsByRoll(newStudents.map((s) => ({
       ...s,
@@ -881,6 +905,10 @@ export default function App() {
       aadharNo: s.aadharNo ? String(s.aadharNo).trim() : '',
     })));
     setStudents(formatted);
+    try {
+      localStorage.setItem('school_students_cache', JSON.stringify(formatted));
+    } catch {}
+
     setOnlineSyncStatus({
       isSaving: true,
       message: 'ऑनलाइन सर्वर व डेटाबेस में सुरक्षित हो रहा है...',

@@ -246,9 +246,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [studentClassFilter, setStudentClassFilter] = useState<string>(() => {
     if (typeof localStorage !== 'undefined') {
       const saved = localStorage.getItem('hd_admin_selected_class');
-      if (saved && saved !== 'ALL') return saved;
+      if (saved) return saved;
     }
-    return '8th';
+    return 'ALL';
   });
   const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
   const [isTrashModalOpen, setIsTrashModalOpen] = useState<boolean>(false);
@@ -458,15 +458,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }).catch((err) => console.warn('[Firebase Bulk Marks Sync] Error:', err));
   };
 
-  // Synchronize current student's marks and remarks only when switching selected student
-  const prevSelectedStudentIdRef = useRef<string>(selectedStudentIdForMarks);
+  // Ensure selected student for marks is always valid and in sync
   useEffect(() => {
-    if (prevSelectedStudentIdRef.current !== selectedStudentIdForMarks) {
-      prevSelectedStudentIdRef.current = selectedStudentIdForMarks;
-      const std = students.find((s) => s.id === selectedStudentIdForMarks);
-      if (std) {
+    if (!students || students.length === 0) return;
+    const exists = students.some((s) => s.id === selectedStudentIdForMarks);
+    if (!exists) {
+      const fallback = studentsForMarks[0]?.id || students[0]?.id;
+      if (fallback) {
+        setSelectedStudentIdForMarks(fallback);
+      }
+    }
+  }, [students, studentsForMarks, selectedStudentIdForMarks]);
+
+  // Synchronize current student's marks and remarks when switching selected student or when student updates
+  const lastLoadedStudentIdRef = useRef<string>('');
+  useEffect(() => {
+    const std = students.find((s) => s.id === selectedStudentIdForMarks) || students[0];
+    if (std) {
+      if (lastLoadedStudentIdRef.current !== std.id) {
+        lastLoadedStudentIdRef.current = std.id;
         setCurrentMarks(std.marks || {});
         setCurrentRemark(std.teacherRemark || '');
+        setMarksValidationErrors({});
       }
     }
   }, [selectedStudentIdForMarks, students]);
@@ -697,13 +710,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       alert('Please fix marks validation errors before saving (Obtained cannot exceed Maximum marks).');
       return;
     }
+    const targetId = currentStudent?.id || selectedStudentIdForMarks;
+    if (!targetId) return;
+
     const updated = students.map((s) => {
-      if (s.id === selectedStudentIdForMarks) {
+      if (s.id === targetId) {
         return {
           ...s,
           assignedSubjectIds: s.assignedSubjectIds,
-          marks: currentMarks,
-          teacherRemark: currentRemark,
+          marks: { ...(currentMarks || {}) },
+          teacherRemark: currentRemark || '',
         };
       }
       return s;
@@ -716,20 +732,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       setBulkNotice(null);
     }, 5000);
 
-    // Realtime Database CRUD: update marks and remarks at students/{id}
+    // Direct, instant disk persistence to backend API (/api/admin/marks)
     setIsCloudSyncing(true);
-    updateStudentMarksInFirebase(selectedStudentIdForMarks, currentMarks, currentRemark)
-      .then(() => {
+    fetch('/api/admin/marks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentId: targetId,
+        marks: currentMarks,
+        teacherRemark: currentRemark,
+        assignedSubjectIds: currentStudent?.assignedSubjectIds,
+      }),
+    })
+      .then((res) => {
         setIsCloudSyncing(false);
-        setMarksCloudStatus('synced');
-        setTimeout(() => setMarksCloudStatus(null), 6000);
+        if (res.ok) {
+          setMarksCloudStatus('synced');
+          setTimeout(() => setMarksCloudStatus(null), 6000);
+        } else {
+          setMarksCloudStatus('local_only');
+        }
       })
       .catch((err) => {
-        console.warn('[Firebase RTDB] Error updating marks:', err);
+        console.warn('Backend marks update error:', err);
         setIsCloudSyncing(false);
-        setMarksCloudStatus('offline');
-        setTimeout(() => setMarksCloudStatus(null), 6000);
+        setMarksCloudStatus('local_only');
       });
+
+    // Realtime Database background sync
+    updateStudentMarksInFirebase(targetId, currentMarks, currentRemark).catch(() => {});
   };
 
   const handleSaveMarksAndNext = () => {
@@ -801,6 +832,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     });
 
     onSaveStudents(updated);
+
+    // Instant direct backend save for marks and elective subject assignment
+    fetch('/api/admin/marks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentId: targetStudentId,
+        marks: newMarks,
+        assignedSubjectIds: newAssigned,
+      }),
+    }).catch(() => {});
+
     setBulkNotice(
       hasUrduAssigned
         ? `✓ छात्र "${std.name}" से उर्दू विषय हटा दिया गया है!`
@@ -2304,8 +2347,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   <tbody className="divide-y divide-slate-100">
                     {filteredStudents.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="py-8 text-center text-slate-400 font-medium">
-                          कोई छात्र नहीं मिला।
+                        <td colSpan={11} className="py-12 text-center text-slate-500 font-medium">
+                          <p className="text-sm font-bold text-slate-700">
+                            {studentClassFilter !== 'ALL'
+                              ? `कक्षा ${studentClassFilter} में वर्तमान में कोई छात्र नहीं है।`
+                              : 'खोज के अनुसार कोई छात्र नहीं मिला।'}
+                          </p>
+                          {students.length > 0 && studentClassFilter !== 'ALL' && (
+                            <p className="mt-2 text-xs text-slate-500">
+                              विद्यालय में कुल <strong className="text-[#0f2b48]">{students.length} छात्र</strong> सुरक्षित हैं।{' '}
+                              <button
+                                type="button"
+                                onClick={() => handleStudentClassFilterChange('ALL')}
+                                className="underline font-bold text-blue-600 hover:text-blue-800 cursor-pointer ml-1"
+                              >
+                                सभी {students.length} छात्रों को देखें (Show All Students)
+                              </button>
+                            </p>
+                          )}
                         </td>
                       </tr>
                     ) : (
@@ -3673,8 +3732,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <tbody className="divide-y divide-slate-100">
                       {studentsForMarks.length === 0 ? (
                         <tr>
-                          <td colSpan={11} className="py-8 text-center text-slate-400">
-                            इस कक्षा में कोई छात्र नहीं मिला।
+                          <td colSpan={11} className="py-12 text-center text-slate-500 font-medium">
+                            <p className="text-sm font-bold text-slate-700">
+                              {studentClassFilter !== 'ALL'
+                                ? `कक्षा ${studentClassFilter} में वर्तमान में कोई छात्र नहीं है।`
+                                : 'कोई छात्र नहीं मिला।'}
+                            </p>
+                            {students.length > 0 && studentClassFilter !== 'ALL' && (
+                              <p className="mt-2 text-xs text-slate-500">
+                                विद्यालय में कुल <strong className="text-[#0f2b48]">{students.length} छात्र</strong> मौजूद हैं।{' '}
+                                <button
+                                  type="button"
+                                  onClick={() => handleStudentClassFilterChange('ALL')}
+                                  className="underline font-bold text-blue-600 hover:text-blue-800 cursor-pointer ml-1"
+                                >
+                                  सभी {students.length} छात्रों को देखें (Show All Students)
+                                </button>
+                              </p>
+                            )}
                           </td>
                         </tr>
                       ) : (
@@ -4116,7 +4191,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         };
                         const studentSubs = getSubjectsForStudent(subjects, studentWithMarks, undefined, { forMarksEntry: true });
                         const isUrduAssigned =
-                          studentSubs.some((s) => isUrduOrOptional(s)) ||
+                          (Array.isArray(currentStudent.assignedSubjectIds) && currentStudent.assignedSubjectIds.includes(urduSubject.id)) ||
                           Boolean(currentMarks && currentMarks[urduSubject.id] !== undefined) ||
                           studentHasEnteredMarks(currentStudent, urduSubject.id);
 
