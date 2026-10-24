@@ -300,14 +300,213 @@ export function isSubjectApplicableToClass(subject: SubjectConfig, className?: s
 }
 
 /**
- * Returns all active subjects applicable to a given class, sorted by displayOrder.
- * If no className is provided, returns all active subjects.
+ * Standard curriculum order defined per class (Nursery through 8th)
+ * Enforces the exact subject lists specified by the school administration
+ */
+export const CLASS_SUBJECT_STANDARD_ORDER: Record<string, string[]> = {
+  nursery: [
+    'sub-hindi-writing',
+    'sub-hindi-oral',
+    'sub-english-writing',
+    'sub-english-oral',
+    'sub-maths-writing',
+    'sub-maths-oral',
+    'sub-drawing',
+    'sub-pt',
+  ],
+  lkg: [
+    'sub-hindi-writing',
+    'sub-hindi-oral',
+    'sub-english-writing',
+    'sub-english-oral',
+    'sub-maths-writing',
+    'sub-maths-oral',
+    'sub-drawing',
+    'sub-pt',
+  ],
+  ukg: [
+    'sub-hindi-writing',
+    'sub-hindi-oral',
+    'sub-english-writing',
+    'sub-english-oral',
+    'sub-maths-writing',
+    'sub-maths-oral',
+    'sub-sst',
+    'sub-pt',
+    'sub-gk',
+    'sub-drawing',
+  ],
+  '1st': [
+    'sub-hindi-1',
+    'sub-hindi-2',
+    'sub-english-1',
+    'sub-english-2',
+    'sub-maths',
+    'sub-sst',
+    'sub-drawing',
+    'sub-pt',
+    'sub-gk',
+    'sub-urdu',
+  ],
+  '2nd': [
+    'sub-hindi-1',
+    'sub-hindi-2',
+    'sub-english-1',
+    'sub-english-2',
+    'sub-maths',
+    'sub-sst',
+    'sub-drawing',
+    'sub-pt',
+    'sub-gk',
+    'sub-urdu',
+  ],
+  '3rd': [
+    'sub-hindi-1',
+    'sub-hindi-2',
+    'sub-english-1',
+    'sub-english-2',
+    'sub-maths',
+    'sub-computer',
+    'sub-science',
+    'sub-drawing',
+    'sub-pt',
+    'sub-gk',
+    'sub-urdu',
+  ],
+  '4th': [
+    'sub-hindi-1',
+    'sub-hindi-2',
+    'sub-english-1',
+    'sub-english-2',
+    'sub-maths',
+    'sub-computer',
+    'sub-science',
+    'sub-drawing',
+    'sub-pt',
+    'sub-gk',
+    'sub-urdu',
+  ],
+  '5th': [
+    'sub-hindi-1',
+    'sub-hindi-2',
+    'sub-english-1',
+    'sub-english-2',
+    'sub-maths',
+    'sub-computer',
+    'sub-science',
+    'sub-drawing',
+    'sub-pt',
+    'sub-gk',
+    'sub-urdu',
+  ],
+  '6th': [
+    'sub-hindi-1',
+    'sub-hindi-2',
+    'sub-english-1',
+    'sub-english-2',
+    'sub-maths',
+    'sub-computer',
+    'sub-science',
+    'sub-drawing',
+    'sub-pt',
+    'sub-gk',
+    'sub-sst',
+    'sub-sanskrit',
+    'sub-urdu',
+  ],
+  '7th': [
+    'sub-hindi-1',
+    'sub-hindi-2',
+    'sub-english-1',
+    'sub-english-2',
+    'sub-maths',
+    'sub-computer',
+    'sub-science',
+    'sub-drawing',
+    'sub-pt',
+    'sub-gk',
+    'sub-sst',
+    'sub-sanskrit',
+    'sub-urdu',
+  ],
+  '8th': [
+    'sub-hindi-1',
+    'sub-hindi-2',
+    'sub-english-1',
+    'sub-english-2',
+    'sub-maths',
+    'sub-computer',
+    'sub-science',
+    'sub-drawing',
+    'sub-pt',
+    'sub-gk',
+    'sub-sst',
+    'sub-sanskrit',
+    'sub-urdu',
+  ],
+};
+
+function getStandardSubjectOrderIndex(sub: SubjectConfig, standardList: string[]): number {
+  if (!sub || !standardList) return 999;
+  const rawId = (sub.id || '').toLowerCase();
+  const directIdx = standardList.indexOf(rawId);
+  if (directIdx >= 0) return directIdx;
+
+  const name = (sub.name || '').toLowerCase();
+  for (let i = 0; i < standardList.length; i++) {
+    const stdId = standardList[i];
+    if (rawId.includes(stdId) || stdId.includes(rawId)) return i;
+
+    // Check name tokens
+    if (stdId === 'sub-hindi-writing' && name.includes('hindi') && name.includes('writing')) return i;
+    if (stdId === 'sub-hindi-oral' && name.includes('hindi') && name.includes('oral')) return i;
+    if (stdId === 'sub-english-writing' && name.includes('english') && name.includes('writing')) return i;
+    if (stdId === 'sub-english-oral' && name.includes('english') && name.includes('oral')) return i;
+    if (stdId === 'sub-maths-writing' && (name.includes('math') || name.includes('गणित')) && name.includes('writing')) return i;
+    if (stdId === 'sub-maths-oral' && (name.includes('math') || name.includes('गणित')) && name.includes('oral')) return i;
+    if (stdId === 'sub-hindi-1' && (name === 'hindi 1' || name === 'hindi 1st' || name === 'hindi_1' || name === 'hindi i')) return i;
+    if (stdId === 'sub-hindi-2' && (name === 'hindi 2' || name === 'hindi 2nd' || name === 'hindi_2' || name === 'hindi ii')) return i;
+    if (stdId === 'sub-english-1' && (name === 'english 1' || name === 'english 1st' || name === 'english_1' || name === 'english i')) return i;
+    if (stdId === 'sub-english-2' && (name === 'english 2' || name === 'english 2nd' || name === 'english_2' || name === 'english ii')) return i;
+    if (stdId === 'sub-maths' && (name === 'mathematics' || name === 'maths' || name === 'math' || name === 'गणित')) return i;
+    if (stdId === 'sub-computer' && (name.includes('computer') || name.includes('कम्प्यूटर') || name.includes('कंप्यूटर'))) return i;
+    if (stdId === 'sub-science' && (name.includes('science') || name.includes('विज्ञान')) && !name.includes('social')) return i;
+    if (stdId === 'sub-sst' && (name.includes('sst') || name.includes('social') || name.includes('सामाजिक'))) return i;
+    if (stdId === 'sub-drawing' && (name.includes('draw') || name.includes('art') || name.includes('kala') || name.includes('कला') || name.includes('चित्रकला'))) return i;
+    if (stdId === 'sub-pt' && (name.includes('pt') || name.includes('physical') || name.includes('व्यायाम') || name.includes('शारीरिक'))) return i;
+    if (stdId === 'sub-gk' && (name.includes('gk') || name.includes('general') || name.includes('सामान्य'))) return i;
+    if (stdId === 'sub-sanskrit' && (name.includes('sanskrit') || name.includes('संस्कृत'))) return i;
+    if (stdId === 'sub-urdu' && (name.includes('urdu') || name.includes('उर्दू'))) return i;
+  }
+  return 999;
+}
+
+/**
+ * Returns all active subjects applicable to a given class, sorted by the official curriculum order.
+ * If no className is provided, returns all active subjects sorted by displayOrder.
  */
 export function getSubjectsForClass(subjects: SubjectConfig[], className?: string): SubjectConfig[] {
   if (!Array.isArray(subjects)) return [];
-  return subjects
-    .filter((s) => s.active && (!className || isSubjectApplicableToClass(s, className)))
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+  const filtered = subjects.filter((s) => s.active && (!className || isSubjectApplicableToClass(s, className)));
+
+  if (!className) {
+    return filtered.sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+
+  const canonical = canonicalClassName(className).toLowerCase();
+  const standardList = CLASS_SUBJECT_STANDARD_ORDER[canonical] ||
+    CLASS_SUBJECT_STANDARD_ORDER[className.toLowerCase().replace(/[^a-z0-9]/g, '')];
+
+  if (!standardList) {
+    return filtered.sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+
+  return filtered.sort((a, b) => {
+    const idxA = getStandardSubjectOrderIndex(a, standardList);
+    const idxB = getStandardSubjectOrderIndex(b, standardList);
+    if (idxA !== idxB) return idxA - idxB;
+    return a.displayOrder - b.displayOrder;
+  });
 }
 
 /**

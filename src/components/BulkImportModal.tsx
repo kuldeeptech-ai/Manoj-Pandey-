@@ -11,8 +11,12 @@ import {
   Copy,
   CheckCheck,
   HelpCircle,
+  Link as LinkIcon,
+  RefreshCw,
+  Globe,
 } from 'lucide-react';
 import { Student } from '../types';
+import { CLASS_SUBJECT_STANDARD_ORDER } from '../utils/calculations';
 
 interface BulkImportModalProps {
   isOpen: boolean;
@@ -37,7 +41,9 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
   onImportStudents,
   onImport,
 }) => {
-  const [activeInputTab, setActiveInputTab] = useState<'upload' | 'paste'>('paste');
+  const [activeInputTab, setActiveInputTab] = useState<'link' | 'paste' | 'upload'>('link');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [isLoadingLink, setIsLoadingLink] = useState(false);
   const [pasteContent, setPasteContent] = useState('');
   const [parsedStudents, setParsedStudents] = useState<Student[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -182,6 +188,9 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
     const idxApar = findCol(['aparid', 'apaarid', 'apar', 'apaar', 'onenation', 'onenationid']);
     const idxRemark = findCol(['remark', 'teacherremark', 'tippani']);
     const idxPhoto = findCol(['photo', 'image', 'photourl']);
+    const idxLanguage = findCol(['language', 'bhasha', 'thirdlanguage', 'optlang', 'subject3', 'sub3']);
+    const idxUrdu = findCol(['urdu', 'उर्दू']);
+    const idxSanskrit = findCol(['sanskrit', 'संस्कृत']);
 
     if (idxName === -1 && idxRoll === -1) {
       setParseError(
@@ -219,6 +228,44 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         gender = 'OTHER';
       }
 
+      // Canonical curriculum subject assignment (Automatic, no repeated manual selection)
+      const canonical = rawClass.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const standardList = CLASS_SUBJECT_STANDARD_ORDER[canonical] || [];
+
+      const rawLang = (getVal(idxLanguage) || getVal(idxUrdu) || '').toLowerCase();
+      const takesUrdu =
+        rawLang.includes('urdu') ||
+        rawLang.includes('उर्दू') ||
+        rawLang === 'yes' ||
+        rawLang === 'हाँ' ||
+        rawLang === 'y';
+
+      let assignedSubjectIds: string[] | undefined = undefined;
+      if (standardList.length > 0) {
+        if (
+          canonical === '6th' ||
+          canonical === '7th' ||
+          canonical === '8th' ||
+          canonical === '6' ||
+          canonical === '7' ||
+          canonical === '8'
+        ) {
+          if (takesUrdu) {
+            assignedSubjectIds = standardList.filter((s) => s !== 'sub-sanskrit');
+          } else {
+            assignedSubjectIds = standardList.filter((s) => s !== 'sub-urdu');
+          }
+        } else if (['1st', '2nd', '3rd', '4th', '5th', '1', '2', '3', '4', '5'].includes(canonical)) {
+          if (takesUrdu) {
+            assignedSubjectIds = [...standardList];
+          } else {
+            assignedSubjectIds = standardList.filter((s) => s !== 'sub-urdu');
+          }
+        } else {
+          assignedSubjectIds = [...standardList];
+        }
+      }
+
       const stdId = `st-bulk-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
 
       studentsResult.push({
@@ -239,6 +286,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
         photoUrl: getVal(idxPhoto, ''),
         session: getVal(idxSession, currentSession) || currentSession || '2026–2027',
         teacherRemark: getVal(idxRemark, 'Good student with positive attitude'),
+        assignedSubjectIds,
         marks: {},
       });
     }
@@ -268,6 +316,61 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleFetchFromLink = async () => {
+    if (!linkUrl.trim()) {
+      setParseError('कृपया मान्य Google Sheets लिंक या CSV URL दर्ज करें।');
+      return;
+    }
+    setIsLoadingLink(true);
+    setParseError(null);
+    try {
+      const res = await fetch('/api/admin/fetch-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: linkUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.content) {
+        throw new Error(data.error || 'लिंक से डेटा लोड नहीं हो सका।');
+      }
+      setPasteContent(data.content);
+      parseRawText(data.content);
+      setCopyFeedback(`✅ लिंक से ${data.content.split('\n').filter(Boolean).length - 1} छात्रों का डेटा सफलतापूर्वक लोड हो गया!`);
+      setTimeout(() => setCopyFeedback(null), 5000);
+    } catch (err: any) {
+      // Fallback direct client fetch
+      try {
+        let directUrl = linkUrl.trim();
+        if (directUrl.includes('docs.google.com/spreadsheets/d/')) {
+          const match = directUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+          if (match && match[1]) {
+            let gid = '0';
+            const gidMatch = directUrl.match(/gid=([0-9]+)/);
+            if (gidMatch && gidMatch[1]) gid = gidMatch[1];
+            directUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv&gid=${gid}`;
+          }
+        }
+        const clientRes = await fetch(directUrl);
+        if (clientRes.ok) {
+          const text = await clientRes.text();
+          if (text && text.trim().length > 0) {
+            setPasteContent(text);
+            parseRawText(text);
+            setCopyFeedback('✅ गूगल शीट से डेटा सफलतापूर्वक लोड हो गया!');
+            setTimeout(() => setCopyFeedback(null), 5000);
+            return;
+          }
+        }
+      } catch {}
+      setParseError(
+        err.message ||
+          'गूगल शीट लोड करने में त्रुटि। कृपया सुनिश्चित करें कि गूगल शीट "Anyone with the link can view" पर सेट है।'
+      );
+    } finally {
+      setIsLoadingLink(false);
+    }
   };
 
   const handleConfirmImport = () => {
@@ -374,33 +477,104 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({
 
           {/* Input Method Switcher */}
           <div className="space-y-3">
-            <div className="flex border-b border-slate-200">
+            <div className="flex border-b border-slate-200 overflow-x-auto gap-1">
+              <button
+                type="button"
+                onClick={() => setActiveInputTab('link')}
+                className={`px-4 py-2 font-bold text-xs flex items-center gap-1.5 border-b-2 cursor-pointer transition-all shrink-0 ${
+                  activeInputTab === 'link'
+                    ? 'border-[#0f2b48] text-[#0f2b48] bg-slate-50'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <LinkIcon className="w-3.5 h-3.5 text-blue-600" />
+                <span>1. Google Sheets / Web Link से इम्पोर्ट</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setActiveInputTab('paste')}
-                className={`px-4 py-2 font-bold text-xs flex items-center gap-1.5 border-b-2 cursor-pointer transition-all ${
+                className={`px-4 py-2 font-bold text-xs flex items-center gap-1.5 border-b-2 cursor-pointer transition-all shrink-0 ${
                   activeInputTab === 'paste'
                     ? 'border-[#0f2b48] text-[#0f2b48] bg-slate-50'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <ClipboardIcon className="w-3.5 h-3.5" />
-                <span>1. Excel / Sheets से डायरेक्ट कॉपी-पेस्ट (सबसे आसान)</span>
+                <ClipboardIcon className="w-3.5 h-3.5 text-emerald-600" />
+                <span>2. डायरेक्ट कॉपी-पेस्ट (Excel / Sheets)</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveInputTab('upload')}
-                className={`px-4 py-2 font-bold text-xs flex items-center gap-1.5 border-b-2 cursor-pointer transition-all ${
+                className={`px-4 py-2 font-bold text-xs flex items-center gap-1.5 border-b-2 cursor-pointer transition-all shrink-0 ${
                   activeInputTab === 'upload'
                     ? 'border-[#0f2b48] text-[#0f2b48] bg-slate-50'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <Upload className="w-3.5 h-3.5" />
-                <span>2. CSV फ़ाइल अपलोड करें</span>
+                <Upload className="w-3.5 h-3.5 text-purple-600" />
+                <span>3. CSV फ़ाइल अपलोड करें</span>
               </button>
             </div>
+
+            {/* TAB 1: GOOGLE SHEETS / LINK */}
+            {activeInputTab === 'link' && (
+              <div className="space-y-3 p-4 bg-slate-50/70 border border-slate-200 rounded-xl">
+                <div>
+                  <label className="block font-bold text-slate-700 text-xs mb-1">
+                    Google Sheets लिंक या CSV फ़ाइल का वेब लिंक पेस्ट करें:
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Globe className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="url"
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/edit#gid=0"
+                        className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-hidden focus:ring-2 focus:ring-[#0f2b48]"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleFetchFromLink}
+                      disabled={isLoadingLink || !linkUrl.trim()}
+                      className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer ${
+                        !isLoadingLink && linkUrl.trim()
+                          ? 'bg-[#0f2b48] hover:bg-[#1a4773] text-white active:scale-98'
+                          : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {isLoadingLink ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>लोड हो रहा है...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-3.5 h-3.5" />
+                          <span>डेटा लोड करें (Load Data)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50/80 border border-blue-200 rounded-lg p-2.5 text-[11px] text-blue-900 leading-relaxed">
+                  <p className="font-bold flex items-center gap-1 mb-0.5">
+                    <Info className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span>Google Sheets लिंक उपयोग करने के निर्देश:</span>
+                  </p>
+                  <ol className="list-decimal pl-4 space-y-0.5 text-blue-800">
+                    <li>अपनी गूगल शीट खोलें जिसमें पंक्ति 1 पर हेडर (Roll_No, Student_Name, Class आदि) हों।</li>
+                    <li>ऊपर दाईं ओर <strong>"Share"</strong> बटन पर क्लिक करें।</li>
+                    <li>General Access में <strong>"Anyone with the link"</strong> (Viewer) चुनें।</li>
+                    <li><strong>"Copy link"</strong> पर क्लिक करें और लिंक को ऊपर बॉक्स में पेस्ट करके <strong>"डेटा लोड करें"</strong> दबाएं।</li>
+                  </ol>
+                </div>
+              </div>
+            )}
 
             {/* TAB 1: PASTE */}
             {activeInputTab === 'paste' && (

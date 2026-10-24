@@ -911,13 +911,7 @@ export default function App() {
 
   // Save Handlers (Online Express API and Firebase Realtime Database)
   const handleSaveStudents = async (newStudents: Student[]) => {
-    if (!Array.isArray(newStudents) || newStudents.length === 0) {
-      console.warn('[Safety Guard] Blocked attempt to save empty student list.');
-      return;
-    }
-    // Prevent wiping out healthy roster with stub array
-    if (studentsRef.current.length > 50 && newStudents.length < 10) {
-      console.warn(`[Safety Guard] Blocked attempt to save only ${newStudents.length} students over ${studentsRef.current.length} existing students!`);
+    if (!Array.isArray(newStudents)) {
       return;
     }
 

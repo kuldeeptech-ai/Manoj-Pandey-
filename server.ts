@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, doc, collection, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, doc, collection, getDoc, getDocs, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 import {
   DEFAULT_SCHOOL_SETTINGS,
@@ -136,7 +136,7 @@ async function syncToFirebaseInBackground() {
       await batch.commit();
     }
 
-    // 2. Students in batches
+    // 2. Students in batches + prune deleted from Firestore
     if (Array.isArray(store.students) && store.students.length > 0) {
       const chunkSize = 200;
       for (let i = 0; i < store.students.length; i += chunkSize) {
@@ -148,6 +148,22 @@ async function syncToFirebaseInBackground() {
           }
         }
         await batch.commit();
+      }
+    }
+
+    // Prune deleted students from Firestore's students collection
+    if (Array.isArray(store.deletedStudents) && store.deletedStudents.length > 0) {
+      const chunkSize = 200;
+      for (let i = 0; i < store.deletedStudents.length; i += chunkSize) {
+        const chunk = store.deletedStudents.slice(i, i + chunkSize);
+        const batch = writeBatch(firestoreDb);
+        for (const ds of chunk) {
+          if (ds && ds.id) {
+            batch.delete(doc(firestoreDb, 'students', ds.id));
+            batch.set(doc(firestoreDb, 'deleted_students', ds.id), cleanForDb(ds), { merge: true });
+          }
+        }
+        await batch.commit().catch(() => {});
       }
     }
 
@@ -200,10 +216,19 @@ async function syncFromFirebaseOnStart() {
     ]);
 
     if (stSnap && stSnap.size > 0) {
+      const deletedIds = new Set((store.deletedStudents || []).map((s: any) => s.id));
       const loadedStudents: any[] = [];
-      stSnap.forEach((d) => loadedStudents.push(d.data()));
-      if (store.students.length === 0 || loadedStudents.length >= store.students.length) {
+      stSnap.forEach((d) => {
+        const data = d.data();
+        if (data && data.id && !deletedIds.has(data.id)) {
+          loadedStudents.push(data);
+        }
+      });
+      if (store.students.length === 0) {
         store.students = loadedStudents.map(normalizeStudent);
+      } else {
+        // Sync our local state to Firestore to prune any orphaned deleted documents
+        syncToFirebaseInBackground();
       }
     } else if (store.students.length > 0) {
       syncToFirebaseInBackground();
@@ -807,12 +832,7 @@ async function startServer() {
   app.post('/api/admin/data', (req, res) => {
     const { students, subjects, schoolSettings, gradeRules, deletedStudents, clearedMarksHistory, staffUsers } = req.body;
     if (Array.isArray(students)) {
-      // Safety guard: NEVER overwrite a healthy student roster with an empty or stub list
-      if (store.students && store.students.length > 50 && students.length < 10) {
-        console.warn(`[Safety Guard] Blocked overwriting ${store.students.length} real students with only ${students.length} stub students!`);
-      } else {
-        store.students = students.map(normalizeStudent);
-      }
+      store.students = students.map(normalizeStudent);
     }
     if (Array.isArray(subjects) && subjects.length > 0) store.subjects = subjects;
     if (Array.isArray(deletedStudents)) store.deletedStudents = deletedStudents;
@@ -888,16 +908,26 @@ async function startServer() {
   app.delete('/api/admin/student/:id', (req, res) => {
     const { id } = req.params;
     const toDelete = store.students.find((s) => s.id === id);
+    const now = new Date().toISOString();
     if (toDelete) {
       store.deletedStudents = store.deletedStudents || [];
       store.deletedStudents = [
-        { ...toDelete, deletedAt: new Date().toISOString() },
+        { ...toDelete, deletedAt: now },
         ...store.deletedStudents.filter((s) => s.id !== id),
       ];
     }
     store.students = store.students.filter((s) => s.id !== id);
-    store.lastUpdated = new Date().toISOString();
+    store.lastUpdated = now;
     saveStore();
+
+    // Directly delete from Firestore students and mirror into deleted_students
+    if (firestoreDb && id) {
+      deleteDoc(doc(firestoreDb, 'students', id)).catch((e) => console.warn('[Firestore] Delete student error:', e));
+      if (toDelete) {
+        setDoc(doc(firestoreDb, 'deleted_students', id), cleanForDb({ ...toDelete, deletedAt: now }), { merge: true }).catch(() => {});
+      }
+    }
+
     res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
     syncToGoogleSheetInBackground();
   });
@@ -914,8 +944,32 @@ async function startServer() {
     const newDeleted = toDeleteList.map((s) => ({ ...s, deletedAt: now }));
     store.deletedStudents = [...newDeleted, ...store.deletedStudents.filter((s) => !idSet.has(s.id))];
     store.students = store.students.filter((s) => !idSet.has(s.id));
-    store.lastUpdated = new Date().toISOString();
+    store.lastUpdated = now;
     saveStore();
+
+    // Directly execute batch delete in Firestore
+    if (firestoreDb && ids.length > 0) {
+      (async () => {
+        try {
+          const chunkSize = 200;
+          for (let i = 0; i < ids.length; i += chunkSize) {
+            const chunk = ids.slice(i, i + chunkSize);
+            const batch = writeBatch(firestoreDb);
+            for (const id of chunk) {
+              batch.delete(doc(firestoreDb, 'students', id));
+              const std = toDeleteList.find((s) => s.id === id);
+              if (std) {
+                batch.set(doc(firestoreDb, 'deleted_students', id), cleanForDb({ ...std, deletedAt: now }), { merge: true });
+              }
+            }
+            await batch.commit();
+          }
+        } catch (err) {
+          console.warn('[Firestore] Batch delete error:', err);
+        }
+      })();
+    }
+
     res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
     syncToGoogleSheetInBackground();
   });
@@ -934,6 +988,14 @@ async function startServer() {
       store.deletedStudents = store.deletedStudents.filter((s) => s.id !== id);
       store.lastUpdated = new Date().toISOString();
       saveStore();
+
+      // Mirror restore in Firestore
+      if (firestoreDb) {
+        const batch = writeBatch(firestoreDb);
+        batch.set(doc(firestoreDb, 'students', id), cleanForDb(active), { merge: true });
+        batch.delete(doc(firestoreDb, 'deleted_students', id));
+        batch.commit().catch(() => {});
+      }
     }
     res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
     syncToGoogleSheetInBackground();
@@ -946,27 +1008,126 @@ async function startServer() {
       return active;
     });
     store.students.push(...restored);
+    const restoredIds = store.deletedStudents.map((s) => s.id);
     store.deletedStudents = [];
     store.lastUpdated = new Date().toISOString();
     saveStore();
+
+    if (firestoreDb && restored.length > 0) {
+      (async () => {
+        try {
+          const chunkSize = 200;
+          for (let i = 0; i < restored.length; i += chunkSize) {
+            const chunk = restored.slice(i, i + chunkSize);
+            const batch = writeBatch(firestoreDb);
+            for (const st of chunk) {
+              if (st && st.id) {
+                batch.set(doc(firestoreDb, 'students', st.id), cleanForDb(st), { merge: true });
+                batch.delete(doc(firestoreDb, 'deleted_students', st.id));
+              }
+            }
+            await batch.commit();
+          }
+        } catch (err) {
+          console.warn('[Firestore] Restore all error:', err);
+        }
+      })();
+    }
+
     res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
     syncToGoogleSheetInBackground();
   });
 
+  // Permanently delete a single student from Recycle Bin
   app.delete('/api/admin/trash/:id', (req, res) => {
     const { id } = req.params;
     store.deletedStudents = store.deletedStudents || [];
     store.deletedStudents = store.deletedStudents.filter((s) => s.id !== id);
     store.lastUpdated = new Date().toISOString();
     saveStore();
+
+    // Permanently remove document from Firestore deleted_students collection
+    if (firestoreDb && id) {
+      deleteDoc(doc(firestoreDb, 'deleted_students', id)).catch((err) =>
+        console.warn('[Firestore] Permanent delete trash error:', err)
+      );
+    }
+
     res.json({ success: true, deletedStudents: store.deletedStudents });
   });
 
-  app.delete('/api/admin/trash', (req, res) => {
+  // Permanently empty entire Recycle Bin
+  app.delete('/api/admin/trash', async (req, res) => {
     store.deletedStudents = [];
     store.lastUpdated = new Date().toISOString();
     saveStore();
+
+    // Permanently purge all documents in Firestore deleted_students collection
+    if (firestoreDb) {
+      try {
+        const snap = await getDocs(collection(firestoreDb, 'deleted_students'));
+        if (!snap.empty) {
+          const batch = writeBatch(firestoreDb);
+          snap.forEach((d) => batch.delete(d.ref));
+          await batch.commit();
+        }
+      } catch (err) {
+        console.warn('[Firestore] Empty trash error:', err);
+      }
+    }
+
     res.json({ success: true, deletedStudents: [] });
+  });
+
+  // Fetch Link Endpoint (For Bulk Import from Google Sheets link or web CSV link without CORS)
+  app.post('/api/admin/fetch-link', async (req, res) => {
+    let { url } = req.body || {};
+    if (!url || typeof url !== 'string' || !url.startsWith('http')) {
+      return res.status(400).json({
+        success: false,
+        error: 'कृपया एक मान्य URL (जैसे Google Sheet लिंक या CSV लिंक) दर्ज करें।',
+      });
+    }
+
+    url = url.trim();
+    // Auto-convert standard Google Sheets edit/view URLs to direct CSV export format
+    if (url.includes('docs.google.com/spreadsheets/d/')) {
+      const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) {
+        const sheetId = match[1];
+        let gid = '0';
+        const gidMatch = url.match(/gid=([0-9]+)/);
+        if (gidMatch && gidMatch[1]) gid = gidMatch[1];
+        url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+      }
+    }
+
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        signal: AbortSignal.timeout(20000),
+      });
+
+      if (!response.ok) {
+        return res.status(400).json({
+          success: false,
+          error: `गूगल शीट/लिंक लोड नहीं हो सका (HTTP ${response.status})। कृपया सुनिश्चित करें कि गूगल शीट 'Anyone with the link can view' पर सेट है।`,
+        });
+      }
+
+      const content = await response.text();
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ success: false, error: 'लिंक से प्राप्त डेटा खाली है।' });
+      }
+
+      res.json({ success: true, content });
+    } catch (err: any) {
+      console.warn('[Fetch Link Error]:', err);
+      res.status(500).json({
+        success: false,
+        error: `लिंक लोड करने में समस्या: ${err.message || 'नेटवर्क समस्या'}। कृपया लिंक जांचें या CSV फ़ाइल अपलोड करें।`,
+      });
+    }
   });
 
   // Cleared Marks Backups (Recycle Bin for Marks)
