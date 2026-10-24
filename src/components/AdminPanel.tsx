@@ -304,11 +304,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     return () => clearTimeout(t);
   }, [undoToast]);
 
-  // Derived unique classes for student filter
+  // Derived unique classes for student filter (guarantees all 11 standard classes Nursery through 8th)
   const studentClasses = useMemo(() => {
+    const standard = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
     const fromStudents = students.map((s) => canonicalClassName(s.className)).filter(Boolean);
     const fromSettings = (schoolSettings.activeClasses || []).map((c) => canonicalClassName(c)).filter(Boolean);
-    const combined = Array.from(new Set([...fromStudents, ...fromSettings]));
+    const combined = Array.from(new Set([...standard, ...fromStudents, ...fromSettings]));
     return combined.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
   }, [students, schoolSettings.activeClasses]);
 
@@ -1065,7 +1066,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Derived all available classes for subject management
   const allAvailableClasses = useMemo(() => {
-    const list = studentClasses && studentClasses.length > 0 ? studentClasses : ['5th', '6th', '7th', '8th'];
+    const standard = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+    const list = studentClasses && studentClasses.length > 0 ? studentClasses : standard;
     return list;
   }, [studentClasses]);
 
@@ -1078,6 +1080,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [newSubjectClasses, setNewSubjectClasses] = useState<string[]>(['ALL']);
   const [subjectClassFilter, setSubjectClassFilter] = useState<string>('ALL');
   const [subjectNotice, setSubjectNotice] = useState<string | null>(null);
+
+  // Distinct class-wise filtered subjects ("alag class ka alag subject")
+  // When a specific class is selected, ONLY that class's subjects are shown!
+  const displayedSubjects = useMemo(() => {
+    if (subjectClassFilter === 'ALL') {
+      return [...editingSubjects].sort((a, b) => a.displayOrder - b.displayOrder);
+    }
+    const classSubs = editingSubjects.filter((subj) => isSubjectApplicableToClass(subj, subjectClassFilter));
+    return classSubs.sort((a, b) => a.displayOrder - b.displayOrder);
+  }, [editingSubjects, subjectClassFilter]);
 
   // Synchronize local subjects when parent updates
   useEffect(() => {
@@ -4957,22 +4969,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {editingSubjects.map((subj) => {
-                      const isApplicableToCurrentFilter =
-                        subjectClassFilter === 'ALL' || isSubjectApplicableToClass(subj, subjectClassFilter);
+                    {displayedSubjects.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-8 px-4 text-center text-slate-500 font-medium">
+                          <p className="text-sm font-bold text-slate-700">
+                            कक्षा {subjectClassFilter} में वर्तमान में कोई विषय नहीं है।
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            ऊपर 'आधिकारिक पाठ्यक्रम लागू करें' बटन दबाएं या नया विषय जोड़ें।
+                          </p>
+                        </td>
+                      </tr>
+                    ) : (
+                      displayedSubjects.map((subj) => {
+                        const isApplicableToCurrentFilter = true;
 
-                      const isAllClasses =
-                        !subj.applicableClasses ||
-                        subj.applicableClasses.length === 0 ||
-                        subj.applicableClasses.some((c) => String(c).trim().toUpperCase() === 'ALL');
+                        const isAllClasses =
+                          !subj.applicableClasses ||
+                          subj.applicableClasses.length === 0 ||
+                          subj.applicableClasses.some((c) => String(c).trim().toUpperCase() === 'ALL');
 
-                      return (
-                        <tr
-                          key={subj.id}
-                          className={`hover:bg-slate-50 transition-colors ${
-                            !isApplicableToCurrentFilter ? 'opacity-40 bg-slate-50/50' : ''
-                          }`}
-                        >
+                        return (
+                          <tr
+                            key={subj.id}
+                            className="hover:bg-slate-50 transition-colors"
+                          >
                           <td className="py-2 px-3 text-center">
                             <input
                               type="number"
@@ -5082,7 +5103,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           </td>
                         </tr>
                       );
-                    })}
+                    }))}
                   </tbody>
                 </table>
               </div>

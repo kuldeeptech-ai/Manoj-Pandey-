@@ -70,11 +70,23 @@ if (typeof window !== 'undefined') {
     localStorage.removeItem('hd_pandey_settings');
     localStorage.removeItem('hd_pandey_grades');
 
-    // Purge old 193 demo students cache so they never resurrect on refresh
-    if (localStorage.getItem('roster_purge_v5') !== 'done') {
+    // Purge old demo students cache so they never resurrect on refresh
+    if (localStorage.getItem('roster_purge_v7') !== 'done') {
       localStorage.removeItem('school_students_cache');
       localStorage.removeItem('school_deleted_students_cache');
-      localStorage.setItem('roster_purge_v5', 'done');
+      localStorage.removeItem('hp_recent_searches');
+      localStorage.removeItem('hp_cached_last_result');
+      // Clear any cached Google Sheet Web App URL that held demo data
+      const cachedUrl = localStorage.getItem('google_sheet_webapp_url');
+      if (
+        !cachedUrl ||
+        cachedUrl.includes('AKfycbwFMPA6Zf3SfRQF2eWP3zt7TjAXy47lAmP8zGlEiSmwN4ksFC-IKuyGWln3g0YEM7HRNg') ||
+        cachedUrl.includes('AKfycbwjEIjK4Ldc3ZAOt8ICHFBBpCdic86k50TMx5QybZRI12-4v8L1nr-b9w3BBEHjCx5H') ||
+        cachedUrl.includes('AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ')
+      ) {
+        localStorage.removeItem('google_sheet_webapp_url');
+      }
+      localStorage.setItem('roster_purge_v7', 'done');
     }
 
     // Clean up any stale cache where the logo was an SVG or old school name with J.H.S.
@@ -1016,7 +1028,11 @@ export default function App() {
     });
 
     try {
-      await fetch(`/api/admin/student/${encodeURIComponent(studentId)}`, { method: 'DELETE' });
+      await fetch(`/api/admin/student/${encodeURIComponent(studentId)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student: target }),
+      });
       setOnlineSyncStatus({
         isSaving: false,
         message: `✓ छात्र "${target.name}" ऑनलाइन डेटाबेस से हटाकर रीसायकल बिन में सुरक्षित कर दिया गया!`,
@@ -1061,7 +1077,7 @@ export default function App() {
       await fetch('/api/admin/student/batch-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: studentIds }),
+        body: JSON.stringify({ ids: studentIds, students: targets }),
       });
       setOnlineSyncStatus({
         isSaving: false,

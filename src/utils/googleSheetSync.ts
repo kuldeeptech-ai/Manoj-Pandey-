@@ -1,21 +1,22 @@
 import { Student, SubjectConfig, SchoolSettings, GradeRule } from '../types';
 import { formatDisplayDate } from './calculations';
 
-export const DEFAULT_FALLBACK_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ/exec';
+export const DEFAULT_FALLBACK_SHEET_URL = '';
 
 /**
  * Returns the effective Google Sheet Web App URL from all potential sources:
  * 1. School Settings stored in app/database
  * 2. localStorage ('google_sheet_webapp_url')
  * 3. Vite environment variable (VITE_GOOGLE_SHEET_URL) configured in Vercel or GitHub
- * 4. Production fallback Google Sheet URL
+ * (No hardcoded demo sheet fallbacks that resurrect old student records)
  */
 export function getGoogleSheetUrl(settings?: SchoolSettings): string {
   const isStaleUrl = (url?: string | null) => {
     if (!url) return true;
     return (
       url.includes('AKfycbwFMPA6Zf3SfRQF2eWP3zt7TjAXy47lAmP8zGlEiSmwN4ksFC-IKuyGWln3g0YEM7HRNg') ||
-      url.includes('AKfycbwjEIjK4Ldc3ZAOt8ICHFBBpCdic86k50TMx5QybZRI12-4v8L1nr-b9w3BBEHjCx5H')
+      url.includes('AKfycbwjEIjK4Ldc3ZAOt8ICHFBBpCdic86k50TMx5QybZRI12-4v8L1nr-b9w3BBEHjCx5H') ||
+      url.includes('AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ')
     );
   };
 
@@ -32,7 +33,7 @@ export function getGoogleSheetUrl(settings?: SchoolSettings): string {
   if (fromEnv && typeof fromEnv === 'string' && fromEnv.trim().startsWith('http') && !isStaleUrl(fromEnv)) {
     return fromEnv.trim();
   }
-  return DEFAULT_FALLBACK_SHEET_URL;
+  return '';
 }
 
 export function saveGoogleSheetUrl(url: string): void {

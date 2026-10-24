@@ -953,9 +953,11 @@ async function startServer() {
     syncToGoogleSheetInBackground();
   });
 
-  app.delete('/api/admin/student/:id', (req, res) => {
-    const { id } = req.params;
-    const toDelete = store.students.find((s) => s.id === id);
+  const handleStudentDelete = (id: string, incomingStudent?: any) => {
+    let toDelete = store.students.find((s) => s.id === id);
+    if (!toDelete && incomingStudent) {
+      toDelete = normalizeStudent(incomingStudent);
+    }
     const now = new Date().toISOString();
     if (toDelete) {
       store.deletedStudents = store.deletedStudents || [];
@@ -975,18 +977,41 @@ async function startServer() {
         setDoc(doc(firestoreDb, 'deleted_students', id), cleanForDb({ ...toDelete, deletedAt: now }), { merge: true }).catch(() => {});
       }
     }
+    return toDelete;
+  };
 
+  app.delete('/api/admin/student/:id', (req, res) => {
+    const { id } = req.params;
+    const incomingStudent = req.body?.student;
+    handleStudentDelete(id, incomingStudent);
+    res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
+    syncToGoogleSheetInBackground();
+  });
+
+  app.post('/api/admin/student/:id/delete', (req, res) => {
+    const { id } = req.params;
+    const incomingStudent = req.body?.student;
+    handleStudentDelete(id, incomingStudent);
     res.json({ success: true, students: store.students, deletedStudents: store.deletedStudents });
     syncToGoogleSheetInBackground();
   });
 
   app.post('/api/admin/student/batch-delete', (req, res) => {
-    const { ids } = req.body;
+    const { ids, students: incomingStudents } = req.body || {};
     if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ error: 'Array of student IDs required' });
     }
     const idSet = new Set(ids);
-    const toDeleteList = store.students.filter((s) => idSet.has(s.id));
+    const existingTargets = store.students.filter((s) => idSet.has(s.id));
+    const incomingTargets = Array.isArray(incomingStudents)
+      ? incomingStudents.filter((s) => idSet.has(s?.id)).map(normalizeStudent)
+      : [];
+
+    const targetMap = new Map<string, any>();
+    incomingTargets.forEach((s) => targetMap.set(s.id, s));
+    existingTargets.forEach((s) => targetMap.set(s.id, s));
+    const toDeleteList = Array.from(targetMap.values());
+
     const now = new Date().toISOString();
     store.deletedStudents = store.deletedStudents || [];
     const newDeleted = toDeleteList.map((s) => ({ ...s, deletedAt: now }));
@@ -1005,7 +1030,7 @@ async function startServer() {
             const batch = writeBatch(firestoreDb);
             for (const id of chunk) {
               batch.delete(doc(firestoreDb, 'students', id));
-              const std = toDeleteList.find((s) => s.id === id);
+              const std = targetMap.get(id);
               if (std) {
                 batch.set(doc(firestoreDb, 'deleted_students', id), cleanForDb({ ...std, deletedAt: now }), { merge: true });
               }

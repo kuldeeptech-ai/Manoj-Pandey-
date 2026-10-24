@@ -222,7 +222,7 @@ export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
   showDigitalStamp: true,
   stampType: 'digital',
   defaultExamMode: 'half_yearly_only',
-  googleSheetWebAppUrl: 'https://script.google.com/macros/s/AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ/exec',
+  googleSheetWebAppUrl: '',
   classTeachers: DEFAULT_CLASS_TEACHERS,
   adminUserId: 'Kld7522',
   adminPassword: 'Kld@2314',

@@ -71,10 +71,12 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
   onSaveMarks,
 }) => {
   const detectedClasses = useMemo(() => {
-    const list = Array.from(
+    const standard = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+    const fromStudents = Array.from(
       new Set(students.map((s) => canonicalClassName(s.className)).filter(Boolean))
     ) as string[];
-    return list.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+    const combined = Array.from(new Set([...standard, ...fromStudents]));
+    return combined.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
   }, [students]);
 
   const [selectedClass, setSelectedClass] = useState<string>(() => {
