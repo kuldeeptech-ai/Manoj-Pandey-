@@ -24,6 +24,8 @@ import {
   getCleanSubjectHeader,
   getSubjectMatchTokens,
   isUrduOrOptional,
+  isUrduSubject,
+  isSanskritSubject,
 } from '../utils/calculations';
 import { DEFAULT_STUDENT_PHOTO_FALLBACK } from '../data/defaultData';
 
@@ -789,15 +791,42 @@ export const BulkMarksModal: React.FC<BulkMarksModalProps> = ({
                 }
 
                 // CRUCIAL: ALWAYS ensure assignedSubjectIds includes imported subject
-                // while preserving all compulsory subjects of the student's class!
+                // and strictly enforces mutual exclusivity between Sanskrit and Urdu!
+                const matchedSub = subjects.find((s) => s.id === subjectId);
+                const isUrdu = matchedSub && isUrduSubject(matchedSub);
+                const isSanskrit = matchedSub && isSanskritSubject(matchedSub);
+
                 if (!Array.isArray(targetStudent!.assignedSubjectIds)) {
                   const classCompulsoryIds = getSubjectsForClass(subjects, targetStudent!.className)
-                    .filter((s) => !isUrduOrOptional(s))
+                    .filter((s) => !isUrduSubject(s) && !isSanskritSubject(s))
                     .map((s) => s.id);
                   targetStudent!.assignedSubjectIds = [...classCompulsoryIds];
                 }
+
                 if (!targetStudent!.assignedSubjectIds.includes(subjectId)) {
                   targetStudent!.assignedSubjectIds.push(subjectId);
+                }
+
+                if (isUrdu) {
+                  // If student has Urdu, strictly remove Sanskrit
+                  const sanskritSub = subjects.find(isSanskritSubject);
+                  if (sanskritSub) {
+                    targetStudent!.assignedSubjectIds = targetStudent!.assignedSubjectIds.filter(
+                      (id) => id !== sanskritSub.id
+                    );
+                    delete targetStudent!.marks[sanskritSub.id];
+                    delete targetStudent!.marks['sub-sanskrit'];
+                  }
+                } else if (isSanskrit) {
+                  // If student has Sanskrit, strictly remove Urdu
+                  const urduSub = subjects.find(isUrduSubject);
+                  if (urduSub) {
+                    targetStudent!.assignedSubjectIds = targetStudent!.assignedSubjectIds.filter(
+                      (id) => id !== urduSub.id
+                    );
+                    delete targetStudent!.marks[urduSub.id];
+                    delete targetStudent!.marks['sub-urdu'];
+                  }
                 }
               }
             }

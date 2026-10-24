@@ -644,12 +644,34 @@ export function getSubjectMatchTokens(sub: SubjectConfig): string[] {
 export function isUrduOrOptional(subject: SubjectConfig): boolean {
   if (!subject) return false;
   if (subject.isOptional) return true;
+  return isUrduSubject(subject);
+}
+
+/**
+ * Specifically identifies whether a subject is Urdu
+ */
+export function isUrduSubject(subject?: SubjectConfig | null): boolean {
+  if (!subject) return false;
   const name = (subject.name || '').toLowerCase();
   return (
     subject.id === 'sub-urdu' ||
     name === 'urdu' ||
     name.includes('urdu') ||
     name.includes('उर्दू')
+  );
+}
+
+/**
+ * Specifically identifies whether a subject is Sanskrit
+ */
+export function isSanskritSubject(subject?: SubjectConfig | null): boolean {
+  if (!subject) return false;
+  const name = (subject.name || '').toLowerCase();
+  return (
+    subject.id === 'sub-sanskrit' ||
+    name === 'sanskrit' ||
+    name.includes('sanskrit') ||
+    name.includes('संस्कृत')
   );
 }
 
@@ -680,21 +702,15 @@ export function studentHasEnteredMarks(
  * Returns all active subjects specifically applicable to a student.
  * 
  * CORE ARCHITECTURAL RULES (User Brief Compliance):
- * 1. "alag koi subject nhu aana cghaiye kisis class mew":
- *    A subject that is NOT applicable to the student's class (via isSubjectApplicableToClass)
- *    MUST NEVER be returned for this student, under ANY condition.
- * 2. "aur subject me pure class ke liye 10 subject h lekin har bachhe ko seperate selection karna pad rha h subject fix problem":
- *    All COMPULSORY subjects of the class automatically apply to every child of the class!
- *    Teachers DO NOT have to manually configure or select subjects for each student.
- * 3. "aur urdu aiss kro ki subject ka me do lekin har class ke bachho ke liye lagu n ho kyoki har class me 1 2 bachhe hi h":
- *    Urdu is optional in classes 1st to 8th. It is ONLY included for a student if:
- *    - The student has entered marks (> 0) in Urdu, OR
- *    - The student was explicitly assigned Urdu.
- *    For all other students in the class, Urdu is NOT included.
- * 4. "aur sanskrti 6 7 8 bas h to wo bhi wiase hi rhega":
- *    Sanskrit is strictly for 6th, 7th, 8th.
- *    In 6th-8th, Sanskrit is the standard 12th subject for regular students.
- *    If an Urdu student takes Urdu, Urdu is their 12th subject (or replaces Sanskrit).
+ * 1. Mutual Exclusivity between Urdu and Sanskrit:
+ *    - "jo urdu liya ho wo usme sanskrit n dikhe" -> Any student who took Urdu NEVER sees Sanskrit.
+ *    - "sirf unhi me jisme sanskrit ho usme urdu n dikhe" -> Sanskrit students NEVER see Urdu.
+ *    - Both Urdu and Sanskrit will NEVER appear on the same student's marksheet or subject list!
+ * 2. Compulsory Class Curriculum:
+ *    All compulsory subjects for the student's class apply automatically.
+ * 3. Sanskrit is strictly for classes 6th, 7th, 8th.
+ *    In 6th-8th, Sanskrit is the default 3rd language for non-Urdu students.
+ * 4. In 1st-5th, Sanskrit does not exist; Urdu only applies if student takes Urdu.
  */
 export function getSubjectsForStudent(
   subjects: SubjectConfig[],
@@ -712,36 +728,73 @@ export function getSubjectsForStudent(
 
   if (classSubjects.length === 0) return [];
 
-  // Check if student takes Urdu
-  const urduSubject = classSubjects.find((s) => isUrduOrOptional(s));
+  const urduSubject = classSubjects.find(isUrduSubject);
+  const sanskritSubject = classSubjects.find(isSanskritSubject);
+
+  // 1. Check marks (> 0): Strongest definitive indicator of what the student studied
+  const hasUrduMarks = urduSubject ? studentHasEnteredMarks(student, urduSubject.id, options?.examMode) : false;
+  const hasSanskritMarks = sanskritSubject ? studentHasEnteredMarks(student, sanskritSubject.id, options?.examMode) : false;
+
+  // 2. Check explicit assignment in assignedSubjectIds
+  const assignedList = Array.isArray(student?.assignedSubjectIds) ? student.assignedSubjectIds : null;
+  const hasUrduInAssigned = assignedList && urduSubject ? assignedList.includes(urduSubject.id) : false;
+  const hasSanskritInAssigned = assignedList && sanskritSubject ? assignedList.includes(sanskritSubject.id) : false;
+
   let studentTakesUrdu = false;
-  if (urduSubject) {
-    const hasUrduMarks = studentHasEnteredMarks(student, urduSubject.id, options?.examMode);
-    const hasUrduAssigned =
-      Array.isArray(student?.assignedSubjectIds) && student.assignedSubjectIds.includes(urduSubject.id);
-    studentTakesUrdu = hasUrduMarks || hasUrduAssigned || Boolean(options?.includeUrdu);
+  let studentTakesSanskrit = false;
+
+  // Strict Mutual Exclusion Decision Engine:
+  if (hasUrduMarks && !hasSanskritMarks) {
+    // Definitive Urdu student
+    studentTakesUrdu = true;
+    studentTakesSanskrit = false;
+  } else if (hasSanskritMarks && !hasUrduMarks) {
+    // Definitive Sanskrit student
+    studentTakesSanskrit = true;
+    studentTakesUrdu = false;
+  } else if (hasUrduMarks && hasSanskritMarks) {
+    // Conflict resolution: prefer explicit assignment or Sanskrit
+    if (hasUrduInAssigned && !hasSanskritInAssigned) {
+      studentTakesUrdu = true;
+      studentTakesSanskrit = false;
+    } else {
+      studentTakesSanskrit = true;
+      studentTakesUrdu = false;
+    }
+  } else if (hasUrduInAssigned && !hasSanskritInAssigned) {
+    // Explicitly assigned Urdu only
+    studentTakesUrdu = true;
+    studentTakesSanskrit = false;
+  } else if (hasSanskritInAssigned && !hasUrduInAssigned) {
+    // Explicitly assigned Sanskrit only
+    studentTakesSanskrit = true;
+    studentTakesUrdu = false;
+  } else if (options?.includeUrdu) {
+    studentTakesUrdu = true;
+    studentTakesSanskrit = false;
+  } else {
+    // Default assignment when no marks are entered and assignedSubjectIds is unconfigured or has both:
+    if (sanskritSubject) {
+      // In classes 6th, 7th, 8th: Sanskrit is the standard 3rd language; Urdu is excluded
+      studentTakesSanskrit = true;
+      studentTakesUrdu = false;
+    } else {
+      // In classes 1st to 5th: Sanskrit does not exist; Urdu only applies if student explicitly took Urdu
+      studentTakesUrdu = false;
+      studentTakesSanskrit = false;
+    }
   }
 
-  // Filter strictly within class subjects
+  // Filter strictly within class subjects with mutual exclusivity guaranteed
   const resultSubs = classSubjects.filter((subj) => {
-    // A. Urdu handling: only include if this student studies Urdu
-    if (isUrduOrOptional(subj)) {
+    // A. Urdu: only included if student takes Urdu; never if student takes Sanskrit
+    if (isUrduSubject(subj)) {
       return studentTakesUrdu;
     }
 
-    // B. Sanskrit in 6th, 7th, 8th:
-    // If student takes Urdu, check whether they also study Sanskrit.
-    // If they only study Urdu and have no Sanskrit marks or assignment, Sanskrit is omitted (Urdu is their 12th subject).
-    if (subj.id === 'sub-sanskrit' || subj.name.toLowerCase().includes('sanskrit')) {
-      if (studentTakesUrdu) {
-        const hasSanskritMarks = studentHasEnteredMarks(student, subj.id, options?.examMode);
-        const hasSanskritAssigned =
-          Array.isArray(student?.assignedSubjectIds) && student.assignedSubjectIds.includes(subj.id);
-        if (!hasSanskritMarks && !hasSanskritAssigned) {
-          return false;
-        }
-      }
-      return true;
+    // B. Sanskrit: only included if student takes Sanskrit; never if student takes Urdu
+    if (isSanskritSubject(subj)) {
+      return studentTakesSanskrit;
     }
 
     // C. All other subjects are compulsory for the whole class!

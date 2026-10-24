@@ -46,7 +46,6 @@ import {
   syncAllDataToFirebase,
   fetchAllFromFirebase,
 } from '../utils/firebase';
-import { ref, get, set, update, remove } from 'firebase/database';
 import {
   formatDisplayDate,
   sortStudentsByRoll,
@@ -57,6 +56,8 @@ import {
   getSubjectsForStudent,
   isSubjectApplicableToClass,
   isUrduOrOptional,
+  isUrduSubject,
+  isSanskritSubject,
   studentHasEnteredMarks,
 } from '../utils/calculations';
 import { ClassTeachersManager } from './ClassTeachersManager';
@@ -778,14 +779,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const std = students.find((s) => s.id === targetStudentId);
     if (!std) return;
 
-    const urduSub = subjects.find((s) => isUrduOrOptional(s));
+    const urduSub = subjects.find(isUrduSubject);
+    const sanskritSub = subjects.find(isSanskritSubject);
     if (!urduSub) {
       alert('उर्दू विषय उपलब्ध नहीं है। कृपया विषय प्रबंधन में "Urdu" विषय सक्रिय रखें।');
       return;
     }
 
     const classSubs = getSubjectsForClass(subjects, std.className);
-    const compulsoryIds = classSubs.filter((s) => !isUrduOrOptional(s)).map((s) => s.id);
+    const baseCompulsoryIds = classSubs.filter((s) => !isUrduSubject(s) && !isSanskritSubject(s)).map((s) => s.id);
+    const isSanskritInClass = sanskritSub && isSubjectApplicableToClass(sanskritSub, std.className);
 
     const hasUrduAssigned =
       (Array.isArray(std.assignedSubjectIds) && std.assignedSubjectIds.includes(urduSub.id)) ||
@@ -796,27 +799,50 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     let newMarks = { ...(std.marks || {}) };
 
     if (hasUrduAssigned) {
-      // Remove Urdu
-      newAssigned = compulsoryIds.filter((id) => id !== urduSub.id);
+      // Switch from Urdu to Sanskrit (if class has Sanskrit, e.g. 6th-8th) or remove Urdu (1st-5th)
       delete newMarks[urduSub.id];
       delete newMarks['sub-urdu'];
+
+      if (isSanskritInClass && sanskritSub) {
+        newAssigned = Array.from(new Set([...baseCompulsoryIds, sanskritSub.id]));
+        if (!newMarks[sanskritSub.id]) {
+          newMarks[sanskritSub.id] = { halfObtained: 0, annualObtained: 0 };
+        }
+      } else {
+        newAssigned = [...baseCompulsoryIds];
+      }
+
       if (std.id === selectedStudentIdForMarks) {
         setCurrentMarks((prev) => {
           const next = { ...prev };
           delete next[urduSub.id];
           delete next['sub-urdu'];
+          if (isSanskritInClass && sanskritSub && !next[sanskritSub.id]) {
+            next[sanskritSub.id] = { halfObtained: 0, annualObtained: 0 };
+          }
           return next;
         });
       }
     } else {
-      // Add Urdu
-      newAssigned = Array.from(new Set([...compulsoryIds, urduSub.id]));
+      // Switch from Sanskrit to Urdu: strictly remove Sanskrit so both never coexist
+      if (sanskritSub) {
+        delete newMarks[sanskritSub.id];
+        delete newMarks['sub-sanskrit'];
+      }
+
+      newAssigned = Array.from(new Set([...baseCompulsoryIds, urduSub.id]));
       newMarks[urduSub.id] = { halfObtained: 0, annualObtained: 0 };
+
       if (std.id === selectedStudentIdForMarks) {
-        setCurrentMarks((prev) => ({
-          ...prev,
-          [urduSub.id]: { halfObtained: 0, annualObtained: 0 },
-        }));
+        setCurrentMarks((prev) => {
+          const next = { ...prev };
+          if (sanskritSub) {
+            delete next[sanskritSub.id];
+            delete next['sub-sanskrit'];
+          }
+          next[urduSub.id] = { halfObtained: 0, annualObtained: 0 };
+          return next;
+        });
       }
     }
 
@@ -2801,16 +2827,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </div>
                     </div>
 
-                    {/* 🎯 AUTOMATIC CLASS CURRICULUM & URDU TOGGLE */}
+                    {/* 🎯 AUTOMATIC CLASS CURRICULUM & URDU / SANSKRIT SELECTION */}
                     <div className="pt-3 border-t border-slate-200">
                       <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
                         {(() => {
                           const classSubs = getSubjectsForClass(subjects, editingStudent.className);
-                          const urduSub = subjects.find((s) => isUrduOrOptional(s));
+                          const urduSub = subjects.find(isUrduSubject);
+                          const sanskritSub = subjects.find(isSanskritSubject);
                           const isUrduApplicable = urduSub && isSubjectApplicableToClass(urduSub, editingStudent.className);
-                          const compulsorySubs = classSubs.filter((s) => !isUrduOrOptional(s));
+                          const isSanskritApplicable = sanskritSub && isSubjectApplicableToClass(sanskritSub, editingStudent.className);
+                          const compulsorySubs = classSubs.filter((s) => !isUrduSubject(s) && !isSanskritSubject(s));
+                          const baseCompulsoryIds = compulsorySubs.map((s) => s.id);
+
+                          const assigned = Array.isArray(editingStudent.assignedSubjectIds) ? editingStudent.assignedSubjectIds : [];
                           const takesUrdu = Boolean(
-                            (Array.isArray(editingStudent.assignedSubjectIds) && urduSub && editingStudent.assignedSubjectIds.includes(urduSub.id)) ||
+                            (urduSub && assigned.includes(urduSub.id)) ||
                             (urduSub && studentHasEnteredMarks(editingStudent, urduSub.id))
                           );
 
@@ -2827,19 +2858,80 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     </span>
                                   </div>
                                   <p className="text-[11px] text-slate-600 mt-1">
-                                    कक्षा <strong>{editingStudent.className}</strong> के सभी अनिवार्य विषय ({compulsorySubs.map((s) => s.name).join(', ')}) इस छात्र पर स्वतः लागू हैं। आपको अलग से कोई विषय चुनने की आवश्यकता नहीं है।
+                                    कक्षा <strong>{editingStudent.className}</strong> के सभी अनिवार्य विषय ({compulsorySubs.map((s) => s.name).join(', ')}) इस छात्र पर स्वतः लागू हैं।
                                   </p>
                                 </div>
                               </div>
 
-                              {isUrduApplicable && urduSub && (
+                              {/* In classes with both Sanskrit and Urdu (6th, 7th, 8th): Mutually Exclusive Radio */}
+                              {isSanskritApplicable && isUrduApplicable && sanskritSub && urduSub ? (
+                                <div className="p-3 bg-white border-2 border-indigo-200 rounded-lg space-y-2 shadow-2xs">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-indigo-950">
+                                      तृतीय भाषा / वैकल्पिक विषय (संस्कृत बनाम उर्दू)
+                                    </span>
+                                    <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold">
+                                      {takesUrdu ? 'उर्दू सक्रिय (संस्कृत बंद)' : 'संस्कृत सक्रिय (उर्दू बंद)'}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-600">
+                                    नियम: जो छात्र उर्दू लेगा उसमें संस्कृत नहीं दिखेगी, और जो संस्कृत लेगा उसमें उर्दू नहीं दिखेगी।
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2 pt-1">
+                                    <label className={`flex items-center gap-2.5 p-2 rounded-lg border-2 cursor-pointer transition-all ${
+                                      !takesUrdu ? 'border-indigo-600 bg-indigo-50 font-bold text-indigo-900' : 'border-slate-200 bg-slate-50 text-slate-600'
+                                    }`}>
+                                      <input
+                                        type="radio"
+                                        name="modal_third_lang"
+                                        checked={!takesUrdu}
+                                        onChange={() => {
+                                          const newAssigned = Array.from(new Set([...baseCompulsoryIds, sanskritSub.id])).filter((id) => id !== urduSub.id);
+                                          setEditingStudent({
+                                            ...editingStudent,
+                                            assignedSubjectIds: newAssigned,
+                                          });
+                                        }}
+                                        className="w-4 h-4 text-indigo-600 cursor-pointer"
+                                      />
+                                      <div>
+                                        <span className="text-xs block font-bold">🕉️ संस्कृत (Sanskrit)</span>
+                                        <span className="text-[10px] text-slate-500 block">अधिकांश छात्रों के लिए</span>
+                                      </div>
+                                    </label>
+
+                                    <label className={`flex items-center gap-2.5 p-2 rounded-lg border-2 cursor-pointer transition-all ${
+                                      takesUrdu ? 'border-amber-600 bg-amber-50 font-bold text-amber-950' : 'border-slate-200 bg-slate-50 text-slate-600'
+                                    }`}>
+                                      <input
+                                        type="radio"
+                                        name="modal_third_lang"
+                                        checked={takesUrdu}
+                                        onChange={() => {
+                                          const newAssigned = Array.from(new Set([...baseCompulsoryIds, urduSub.id])).filter((id) => id !== sanskritSub.id);
+                                          setEditingStudent({
+                                            ...editingStudent,
+                                            assignedSubjectIds: newAssigned,
+                                          });
+                                        }}
+                                        className="w-4 h-4 text-amber-600 cursor-pointer"
+                                      />
+                                      <div>
+                                        <span className="text-xs block font-bold">📖 उर्दू (Urdu)</span>
+                                        <span className="text-[10px] text-slate-500 block">उर्दू पढ़ने वाले छात्रों के लिए</span>
+                                      </div>
+                                    </label>
+                                  </div>
+                                </div>
+                              ) : isUrduApplicable && urduSub ? (
+                                /* Classes 1st-5th: Urdu optional toggle (No Sanskrit) */
                                 <div className="p-3 bg-white border-2 border-amber-300 rounded-lg flex items-center justify-between gap-3 shadow-2xs">
                                   <div>
                                     <span className="text-xs font-bold text-amber-950 block">
                                       उर्दू विषय (Urdu Elective)
                                     </span>
                                     <span className="text-[11px] text-amber-800 block">
-                                      क्या यह छात्र उर्दू पढ़ता है? (कक्षा में केवल 1–2 छात्र ही उर्दू पढ़ते हैं)
+                                      क्या यह छात्र उर्दू पढ़ता है? (यदि नहीं, तो मार्कशीट में उर्दू नहीं दिखेगी)
                                     </span>
                                   </div>
 
@@ -2848,10 +2940,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                       type="checkbox"
                                       checked={takesUrdu}
                                       onChange={(e) => {
-                                        const compIds = compulsorySubs.map((s) => s.id);
                                         const newAssigned = e.target.checked
-                                          ? Array.from(new Set([...compIds, urduSub.id]))
-                                          : compIds;
+                                          ? Array.from(new Set([...baseCompulsoryIds, urduSub.id]))
+                                          : baseCompulsoryIds;
                                         setEditingStudent({
                                           ...editingStudent,
                                           assignedSubjectIds: newAssigned,
@@ -2862,7 +2953,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     <span>{takesUrdu ? 'उर्दू शामिल है ✓' : '+ उर्दू जोड़ें'}</span>
                                   </label>
                                 </div>
-                              )}
+                              ) : null}
                             </>
                           );
                         })()}
@@ -3875,25 +3966,52 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                     <span>अंक भरें</span>
                                   </button>
                                   {(() => {
-                                    const urduSub = subjects.find((s) => isUrduOrOptional(s));
-                                    if (!urduSub || !isSubjectApplicableToClass(urduSub, st.className)) return null;
+                                    const urduSub = subjects.find(isUrduSubject);
+                                    const sanskritSub = subjects.find(isSanskritSubject);
+                                    const isUrduInClass = urduSub && isSubjectApplicableToClass(urduSub, st.className);
+                                    const isSanskritInClass = sanskritSub && isSubjectApplicableToClass(sanskritSub, st.className);
+
+                                    if (!isUrduInClass && !isSanskritInClass) return null;
+
                                     const hasUrdu =
-                                      (Array.isArray(st.assignedSubjectIds) && st.assignedSubjectIds.includes(urduSub.id)) ||
-                                      studentHasEnteredMarks(st, urduSub.id);
-                                    return (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleToggleUrduForStudent(st.id)}
-                                        className={`px-1.5 py-1 rounded text-[10px] font-bold border cursor-pointer transition-all ${
-                                          hasUrdu
-                                            ? 'bg-amber-100 text-amber-950 border-amber-300 hover:bg-amber-200 shadow-2xs'
-                                            : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                                        }`}
-                                        title={hasUrdu ? 'उर्दू सक्रिय है (हटाने के लिए क्लिक करें)' : 'इस छात्र के लिए उर्दू जोड़ें'}
-                                      >
-                                        {hasUrdu ? 'उर्दू ✓' : '+उर्दू'}
-                                      </button>
-                                    );
+                                      (Array.isArray(st.assignedSubjectIds) && urduSub && st.assignedSubjectIds.includes(urduSub.id)) ||
+                                      (urduSub && studentHasEnteredMarks(st, urduSub.id));
+
+                                    if (isSanskritInClass && isUrduInClass) {
+                                      return (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleUrduForStudent(st.id)}
+                                          className={`px-2 py-1 rounded text-[10px] font-bold border cursor-pointer transition-all flex items-center gap-1 ${
+                                            hasUrdu
+                                              ? 'bg-amber-100 text-amber-950 border-amber-300 hover:bg-amber-200 shadow-2xs'
+                                              : 'bg-indigo-50 text-indigo-900 border-indigo-200 hover:bg-indigo-100 shadow-2xs'
+                                          }`}
+                                          title={hasUrdu ? 'उर्दू सक्रिय है (संस्कृत में बदलने के लिए क्लिक करें)' : 'संस्कृत सक्रिय है (उर्दू में बदलने के लिए क्लिक करें)'}
+                                        >
+                                          <span>{hasUrdu ? '📖 उर्दू' : '🕉️ संस्कृत'}</span>
+                                        </button>
+                                      );
+                                    }
+
+                                    if (isUrduInClass) {
+                                      return (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleUrduForStudent(st.id)}
+                                          className={`px-1.5 py-1 rounded text-[10px] font-bold border cursor-pointer transition-all ${
+                                            hasUrdu
+                                              ? 'bg-amber-100 text-amber-950 border-amber-300 hover:bg-amber-200 shadow-2xs'
+                                              : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                                          }`}
+                                          title={hasUrdu ? 'उर्दू सक्रिय है (हटाने के लिए क्लिक करें)' : 'इस छात्र के लिए उर्दू जोड़ें'}
+                                        >
+                                          {hasUrdu ? 'उर्दू ✓' : '+उर्दू'}
+                                        </button>
+                                      );
+                                    }
+
+                                    return null;
                                   })()}
                                   <button
                                     type="button"
@@ -4190,20 +4308,42 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         कक्षा {currentStudent?.className || '8th'} ({getSubjectsForStudent(subjects, currentStudent, undefined, { forMarksEntry: true }).length} विषय)
                       </span>
                       {currentStudent && (() => {
-                        const urduSubject = subjects.find((s) => isUrduOrOptional(s));
+                        const urduSubject = subjects.find(isUrduSubject);
+                        const sanskritSubject = subjects.find(isSanskritSubject);
                         if (!urduSubject) return null;
-                        const isApplicable = isSubjectApplicableToClass(urduSubject, currentStudent.className);
-                        if (!isApplicable) return null;
+                        const isUrduApplicable = isSubjectApplicableToClass(urduSubject, currentStudent.className);
+                        const isSanskritApplicable = sanskritSubject && isSubjectApplicableToClass(sanskritSubject, currentStudent.className);
+                        if (!isUrduApplicable) return null;
 
-                        const studentWithMarks = {
-                          ...currentStudent,
-                          marks: { ...(currentStudent.marks || {}), ...(currentMarks || {}) },
-                        };
-                        const studentSubs = getSubjectsForStudent(subjects, studentWithMarks, undefined, { forMarksEntry: true });
                         const isUrduAssigned =
                           (Array.isArray(currentStudent.assignedSubjectIds) && currentStudent.assignedSubjectIds.includes(urduSubject.id)) ||
                           Boolean(currentMarks && currentMarks[urduSubject.id] !== undefined) ||
                           studentHasEnteredMarks(currentStudent, urduSubject.id);
+
+                        if (isSanskritApplicable) {
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleUrduForStudent(currentStudent.id)}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-xs border ${
+                                isUrduAssigned
+                                  ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border-amber-300 ring-1 ring-amber-300'
+                                  : 'bg-indigo-700 hover:bg-indigo-800 text-white border-indigo-700'
+                              }`}
+                              title={isUrduAssigned ? 'उर्दू सक्रिय है (संस्कृत में बदलने के लिए क्लिक करें)' : 'संस्कृत सक्रिय है (उर्दू में बदलने के लिए क्लिक करें)'}
+                            >
+                              {isUrduAssigned ? (
+                                <>
+                                  <span>📖 उर्दू सक्रिय (बदलें ➔ संस्कृत)</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>🕉️ संस्कृत सक्रिय (बदलें ➔ उर्दू)</span>
+                                </>
+                              )}
+                            </button>
+                          );
+                        }
 
                         return (
                           <button

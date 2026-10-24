@@ -540,8 +540,32 @@ export async function saveSubjectsToFirebase(subjects: SubjectConfig[]): Promise
 export async function saveSchoolSettingsToFirebase(settings: SchoolSettings): Promise<boolean> {
   if (!firestoreInstance || !settings) return false;
   try {
+    const { classTeachers, ...otherSettings } = settings;
+    const cleanTeachersMeta = Array.isArray(classTeachers)
+      ? classTeachers.map((t) => ({
+          id: t.id || t.className,
+          className: t.className,
+          teacherName: t.teacherName || '',
+          phone: t.phone || '',
+          designation: t.designation || '',
+          signatureUrl: t.signatureUrl && t.signatureUrl.length < 10000 ? t.signatureUrl : '',
+        }))
+      : [];
+
     const ref = doc(firestoreInstance, 'settings', 'main');
-    await setDoc(ref, cleanForFirebase(settings), { merge: true });
+    await setDoc(ref, cleanForFirebase({ ...otherSettings, classTeachers: cleanTeachersMeta }), { merge: true });
+
+    if (Array.isArray(classTeachers) && classTeachers.length > 0) {
+      const batch = writeBatch(firestoreInstance);
+      for (const t of classTeachers) {
+        if (t && t.className) {
+          const docId = (t.className || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+          const tRef = doc(firestoreInstance, 'class_teachers', docId);
+          batch.set(tRef, cleanForFirebase(t), { merge: true });
+        }
+      }
+      await batch.commit();
+    }
     return true;
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, 'settings/main');
@@ -641,8 +665,8 @@ export async function syncAllDataToFirebase(payload: {
   }
 
   try {
-    // 1. Settings
-    await setDoc(doc(firestoreInstance, 'settings', 'main'), cleanForFirebase(payload.schoolSettings), { merge: true });
+    // 1. Settings & Class Teachers
+    await saveSchoolSettingsToFirebase(payload.schoolSettings);
 
     // 2. Subjects
     if (payload.subjects?.length) {
@@ -696,9 +720,18 @@ export function subscribeToFirebaseData(callbacks: {
     try {
       const u = onSnapshot(
         doc(firestoreInstance, 'settings', 'main'),
-        (snapshot) => {
+        async (snapshot) => {
           if (snapshot.exists()) {
-            callbacks.onSettings!(snapshot.data() as SchoolSettings);
+            const rawSettings = snapshot.data() as SchoolSettings;
+            try {
+              const teachersSnap = await getDocs(collection(firestoreInstance!, 'class_teachers'));
+              if (!teachersSnap.empty) {
+                const teachers: any[] = [];
+                teachersSnap.forEach((d) => teachers.push(d.data()));
+                rawSettings.classTeachers = teachers;
+              }
+            } catch {}
+            callbacks.onSettings!(rawSettings);
           }
         },
         (err) => handleFirestoreError(err, OperationType.GET, 'settings/main')
@@ -775,12 +808,13 @@ export async function fetchAllFromFirebase(): Promise<{
 } | null> {
   if (!firestoreInstance) return null;
   try {
-    const [stSnap, subSnap, sSnap, gSnap, staffSnap] = await Promise.all([
+    const [stSnap, subSnap, sSnap, gSnap, staffSnap, teachersSnap] = await Promise.all([
       getDocs(collection(firestoreInstance, 'students')).catch(() => null),
       getDocs(collection(firestoreInstance, 'subjects')).catch(() => null),
       getDoc(doc(firestoreInstance, 'settings', 'main')).catch(() => null),
       getDocs(collection(firestoreInstance, 'grade_rules')).catch(() => null),
       getDocs(collection(firestoreInstance, 'staff_users')).catch(() => null),
+      getDocs(collection(firestoreInstance, 'class_teachers')).catch(() => null),
     ]);
 
     const students: Student[] = [];
@@ -795,7 +829,12 @@ export async function fetchAllFromFirebase(): Promise<{
     const staffUsers: StaffUser[] = [];
     staffSnap?.forEach((d) => staffUsers.push(d.data() as StaffUser));
 
-    const settings = sSnap?.exists() ? (sSnap.data() as SchoolSettings) : undefined;
+    let settings = sSnap?.exists() ? (sSnap.data() as SchoolSettings) : undefined;
+    if (settings && teachersSnap && !teachersSnap.empty) {
+      const teachers: any[] = [];
+      teachersSnap.forEach((d) => teachers.push(d.data()));
+      settings.classTeachers = teachers;
+    }
 
     return {
       students: students.length > 0 ? students : undefined,

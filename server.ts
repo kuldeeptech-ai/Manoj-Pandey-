@@ -2,6 +2,9 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore, doc, collection, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore';
+import firebaseConfig from './firebase-applet-config.json';
 import {
   DEFAULT_SCHOOL_SETTINGS,
   DEFAULT_SUBJECTS,
@@ -14,6 +17,25 @@ import {
   normalizeSchoolSettings,
   formatDisplayDate,
 } from './src/utils/calculations';
+
+let firestoreDb: any = null;
+try {
+  const fbApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  firestoreDb = getFirestore(fbApp, firebaseConfig.firestoreDatabaseId);
+} catch (err) {
+  console.warn('[Server] Firestore init error:', err);
+}
+
+function cleanForDb(obj: any): any {
+  if (obj === undefined) return null;
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.filter((x) => x !== undefined).map(cleanForDb);
+  const res: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) res[k] = cleanForDb(v);
+  }
+  return res;
+}
 
 function normalizeStudent(s: any): any {
   if (!s || typeof s !== 'object') return s;
@@ -80,118 +102,146 @@ function saveStore() {
   }
 }
 
-// Background sync function: keep Firebase Realtime Database in sync with backend store
+// Background sync function: keep official Firestore Database in sync with backend store
 async function syncToFirebaseInBackground() {
+  if (!firestoreDb) return;
   try {
-    const studentMap: Record<string, any> = {};
-    (store.students || []).forEach((s: any) => {
-      if (s && s.id) studentMap[s.id] = s;
-    });
+    // 1. Settings & Class Teachers
+    const { classTeachers, ...otherSettings } = store.schoolSettings || {};
+    const cleanTeachersMeta = Array.isArray(classTeachers)
+      ? classTeachers.map((t: any) => ({
+          id: t.id || t.className,
+          className: t.className,
+          teacherName: t.teacherName || '',
+          phone: t.phone || '',
+          designation: t.designation || '',
+          signatureUrl: t.signatureUrl && t.signatureUrl.length < 10000 ? t.signatureUrl : '',
+        }))
+      : [];
 
-    await Promise.all([
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/school_settings.json', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(store.schoolSettings),
-      }),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/students.json', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(studentMap),
-      }),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/subjects.json', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(store.subjects),
-      }),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/grade_rules.json', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(store.gradeRules),
-      }),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/deleted_students.json', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(store.deletedStudents || []),
-      }),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/cleared_marks_history.json', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(store.clearedMarksHistory || []),
-      }),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/staff_users.json', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(store.staffUsers || []),
-      }),
-    ]);
+    await setDoc(
+      doc(firestoreDb, 'settings', 'main'),
+      cleanForDb({ ...otherSettings, classTeachers: cleanTeachersMeta }),
+      { merge: true }
+    );
+
+    if (Array.isArray(classTeachers) && classTeachers.length > 0) {
+      const batch = writeBatch(firestoreDb);
+      for (const t of classTeachers) {
+        if (t && t.className) {
+          const docId = (t.className || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+          batch.set(doc(firestoreDb, 'class_teachers', docId), cleanForDb(t), { merge: true });
+        }
+      }
+      await batch.commit();
+    }
+
+    // 2. Students in batches
+    if (Array.isArray(store.students) && store.students.length > 0) {
+      const chunkSize = 200;
+      for (let i = 0; i < store.students.length; i += chunkSize) {
+        const chunk = store.students.slice(i, i + chunkSize);
+        const batch = writeBatch(firestoreDb);
+        for (const s of chunk) {
+          if (s && s.id) {
+            batch.set(doc(firestoreDb, 'students', s.id), cleanForDb(s), { merge: true });
+          }
+        }
+        await batch.commit();
+      }
+    }
+
+    // 3. Subjects
+    if (Array.isArray(store.subjects) && store.subjects.length > 0) {
+      const batch = writeBatch(firestoreDb);
+      for (const sub of store.subjects) {
+        if (sub && sub.id) {
+          batch.set(doc(firestoreDb, 'subjects', sub.id), cleanForDb(sub), { merge: true });
+        }
+      }
+      await batch.commit();
+    }
+
+    // 4. Grade Rules
+    if (Array.isArray(store.gradeRules) && store.gradeRules.length > 0) {
+      const batch = writeBatch(firestoreDb);
+      store.gradeRules.forEach((r: any, idx: number) => {
+        const id = r.grade ? r.grade.replace(/[^a-zA-Z0-9_-]/g, '_') : `rule_${idx}`;
+        batch.set(doc(firestoreDb, 'grade_rules', id), cleanForDb(r), { merge: true });
+      });
+      await batch.commit();
+    }
+
+    // 5. Staff Users
+    if (Array.isArray(store.staffUsers) && store.staffUsers.length > 0) {
+      const batch = writeBatch(firestoreDb);
+      for (const u of store.staffUsers) {
+        if (u && u.id) {
+          batch.set(doc(firestoreDb, 'staff_users', u.id), cleanForDb(u), { merge: true });
+        }
+      }
+      await batch.commit();
+    }
   } catch (err) {
-    console.warn('[Server] Error syncing to Firebase RTDB in background:', err);
+    console.warn('[Server] Error syncing to Firestore in background:', err);
   }
 }
 
 async function syncFromFirebaseOnStart() {
+  if (!firestoreDb) return;
   try {
-    const [stRes, sRes, subRes, gRes, delRes, clrRes, staffRes] = await Promise.all([
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/students.json'),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/school_settings.json'),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/subjects.json'),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/grade_rules.json'),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/deleted_students.json'),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/cleared_marks_history.json'),
-      fetch('https://hd-pandey-school-portal-default-rtdb.firebaseio.com/staff_users.json'),
+    const [stSnap, sSnap, subSnap, gSnap, staffSnap, teachersSnap] = await Promise.all([
+      getDocs(collection(firestoreDb, 'students')).catch(() => null),
+      getDoc(doc(firestoreDb, 'settings', 'main')).catch(() => null),
+      getDocs(collection(firestoreDb, 'subjects')).catch(() => null),
+      getDocs(collection(firestoreDb, 'grade_rules')).catch(() => null),
+      getDocs(collection(firestoreDb, 'staff_users')).catch(() => null),
+      getDocs(collection(firestoreDb, 'class_teachers')).catch(() => null),
     ]);
 
-    const rawStudents = await stRes.json();
-    const toList = (val: any) =>
-      Array.isArray(val)
-        ? val.filter(Boolean)
-        : val && typeof val === 'object'
-        ? Object.values(val)
-        : [];
-    const students = toList(rawStudents);
-    if (students.length > 0 && (store.students.length === 0 || students.length >= store.students.length)) {
-      store.students = students.map(normalizeStudent);
+    if (stSnap && stSnap.size > 0) {
+      const loadedStudents: any[] = [];
+      stSnap.forEach((d) => loadedStudents.push(d.data()));
+      if (store.students.length === 0 || loadedStudents.length >= store.students.length) {
+        store.students = loadedStudents.map(normalizeStudent);
+      }
     } else if (store.students.length > 0) {
-      // Server data-store.json has data; push to Firebase to keep cloud updated
       syncToFirebaseInBackground();
     }
 
-    const settings = await sRes.json();
-    if (settings && typeof settings === 'object') {
+    if (sSnap && sSnap.exists()) {
+      const settings = sSnap.data() as any;
+      if (teachersSnap && !teachersSnap.empty) {
+        const teachers: any[] = [];
+        teachersSnap.forEach((d) => teachers.push(d.data()));
+        settings.classTeachers = teachers;
+      }
       store.schoolSettings = normalizeSchoolSettings({ ...store.schoolSettings, ...settings });
     }
 
-    const rawSubs = await subRes.json();
-    const subs = toList(rawSubs);
-    if (subs.length >= DEFAULT_SUBJECTS.length) {
+    if (subSnap && subSnap.size >= DEFAULT_SUBJECTS.length) {
+      const subs: any[] = [];
+      subSnap.forEach((d) => subs.push(d.data()));
       store.subjects = subs;
-    } else {
-      store.subjects = [...DEFAULT_SUBJECTS];
-      syncToFirebaseInBackground();
     }
 
-    const rawGrades = await gRes.json();
-    const grades = toList(rawGrades);
-    if (grades.length > 0) store.gradeRules = grades;
+    if (gSnap && gSnap.size > 0) {
+      const grades: any[] = [];
+      gSnap.forEach((d) => grades.push(d.data()));
+      store.gradeRules = grades;
+    }
 
-    const rawDeleted = await delRes.json();
-    const deleted = toList(rawDeleted);
-    if (deleted.length > 0) store.deletedStudents = deleted;
-
-    const rawCleared = await clrRes.json();
-    const cleared = toList(rawCleared);
-    if (cleared.length > 0) store.clearedMarksHistory = cleared;
-
-    const rawStaff = await staffRes.json();
-    const staff = toList(rawStaff);
-    if (staff.length > 0) store.staffUsers = staff;
+    if (staffSnap && staffSnap.size > 0) {
+      const staff: any[] = [];
+      staffSnap.forEach((d) => staff.push(d.data()));
+      store.staffUsers = staff;
+    }
 
     store.lastUpdated = new Date().toISOString();
     saveStore();
-    console.log(`[Server] Synced on startup from Firebase: ${store.students.length} students loaded.`);
+    console.log(`[Server] Synced on startup from Firestore: ${store.students.length} students loaded.`);
   } catch (err) {
-    console.warn('[Server] Could not sync from Firebase on startup:', err);
+    console.warn('[Server] Could not sync from Firestore on startup:', err);
   }
 }
 
@@ -262,6 +312,7 @@ async function syncFromGoogleSheetOnStart() {
 }
 
 async function startServer() {
+  syncFromFirebaseOnStart().catch(() => {});
   syncFromGoogleSheetOnStart().catch(() => {});
 
   const app = express();
