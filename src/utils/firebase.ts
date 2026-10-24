@@ -284,6 +284,15 @@ export async function saveStudentToFirebase(student: Student): Promise<boolean> 
 export async function saveAllStudentsToFirebase(students: Student[]): Promise<boolean> {
   if (!firestoreInstance || !Array.isArray(students)) return false;
   try {
+    if (students.length === 0) {
+      const snap = await getDocs(collection(firestoreInstance, 'students'));
+      if (!snap.empty) {
+        const batch = writeBatch(firestoreInstance);
+        snap.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+      }
+      return true;
+    }
     // Firestore batch limit is 500 documents per batch
     const chunkSize = 400;
     for (let i = 0; i < students.length; i += chunkSize) {
@@ -301,6 +310,28 @@ export async function saveAllStudentsToFirebase(students: Student[]): Promise<bo
     return true;
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, 'students');
+    return false;
+  }
+}
+
+export async function clearAllStudentsInFirebase(): Promise<boolean> {
+  if (!firestoreInstance) return false;
+  try {
+    const snap = await getDocs(collection(firestoreInstance, 'students'));
+    if (!snap.empty) {
+      const batch = writeBatch(firestoreInstance);
+      snap.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+    const trashSnap = await getDocs(collection(firestoreInstance, 'deleted_students'));
+    if (!trashSnap.empty) {
+      const batchTrash = writeBatch(firestoreInstance);
+      trashSnap.forEach((d) => batchTrash.delete(d.ref));
+      await batchTrash.commit();
+    }
+    return true;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, 'students/clear-all');
     return false;
   }
 }
@@ -748,9 +779,7 @@ export function subscribeToFirebaseData(callbacks: {
         (snapshot) => {
           const list: Student[] = [];
           snapshot.forEach((d) => list.push(d.data() as Student));
-          if (list.length > 0) {
-            callbacks.onStudents!(list);
-          }
+          callbacks.onStudents!(list);
         },
         (err) => handleFirestoreError(err, OperationType.LIST, 'students')
       );

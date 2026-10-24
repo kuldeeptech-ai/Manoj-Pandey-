@@ -136,18 +136,20 @@ async function syncToFirebaseInBackground() {
       await batch.commit();
     }
 
-    // 2. Students in batches + prune deleted from Firestore
-    if (Array.isArray(store.students) && store.students.length > 0) {
-      const chunkSize = 200;
-      for (let i = 0; i < store.students.length; i += chunkSize) {
-        const chunk = store.students.slice(i, i + chunkSize);
-        const batch = writeBatch(firestoreDb);
-        for (const s of chunk) {
-          if (s && s.id) {
-            batch.set(doc(firestoreDb, 'students', s.id), cleanForDb(s), { merge: true });
+    // 2. Students in batches + prune orphaned or deleted from Firestore
+    if (Array.isArray(store.students)) {
+      if (store.students.length > 0) {
+        const chunkSize = 200;
+        for (let i = 0; i < store.students.length; i += chunkSize) {
+          const chunk = store.students.slice(i, i + chunkSize);
+          const batch = writeBatch(firestoreDb);
+          for (const s of chunk) {
+            if (s && s.id) {
+              batch.set(doc(firestoreDb, 'students', s.id), cleanForDb(s), { merge: true });
+            }
           }
+          await batch.commit();
         }
-        await batch.commit();
       }
     }
 
@@ -215,6 +217,8 @@ async function syncFromFirebaseOnStart() {
       getDocs(collection(firestoreDb, 'class_teachers')).catch(() => null),
     ]);
 
+    // If data-store.json was loaded with students, sync those to Firestore
+    // If data-store.json is empty and Firestore has students, load them only if not in deletedStudents
     if (stSnap && stSnap.size > 0) {
       const deletedIds = new Set((store.deletedStudents || []).map((s: any) => s.id));
       const loadedStudents: any[] = [];
@@ -224,14 +228,9 @@ async function syncFromFirebaseOnStart() {
           loadedStudents.push(data);
         }
       });
-      if (store.students.length === 0) {
+      if (store.students.length === 0 && !fs.existsSync(DATA_FILE)) {
         store.students = loadedStudents.map(normalizeStudent);
-      } else {
-        // Sync our local state to Firestore to prune any orphaned deleted documents
-        syncToFirebaseInBackground();
       }
-    } else if (store.students.length > 0) {
-      syncToFirebaseInBackground();
     }
 
     if (sSnap && sSnap.exists()) {
@@ -280,11 +279,8 @@ function syncToGoogleSheetInBackground() {
   if (sheetSyncTimer) clearTimeout(sheetSyncTimer);
   sheetSyncTimer = setTimeout(async () => {
     try {
-      const sheetUrl =
-        store.schoolSettings?.googleSheetWebAppUrl?.trim() ||
-        process.env.VITE_GOOGLE_SHEET_URL ||
-        'https://script.google.com/macros/s/AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ/exec';
-      if (!sheetUrl || !sheetUrl.startsWith('http')) return;
+      const sheetUrl = store.schoolSettings?.googleSheetWebAppUrl?.trim() || process.env.VITE_GOOGLE_SHEET_URL;
+      if (!sheetUrl || !sheetUrl.startsWith('http') || sheetUrl.includes('AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ')) return;
 
       console.log(`[Server] Syncing ${store.students.length} students to Google Sheet in background...`);
       const response = await fetch(sheetUrl, {
@@ -310,25 +306,25 @@ function syncToGoogleSheetInBackground() {
 }
 
 async function syncFromGoogleSheetOnStart() {
-  if (store.students.length > 0) return;
+  // Do NOT auto-restore students from demo or unconfigured sheets on start
+  // Only explicitly configured custom URLs
   try {
-    const sheetUrl =
-      store.schoolSettings?.googleSheetWebAppUrl?.trim() ||
-      process.env.VITE_GOOGLE_SHEET_URL ||
-      'https://script.google.com/macros/s/AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ/exec';
-    if (!sheetUrl || !sheetUrl.startsWith('http')) return;
+    const sheetUrl = store.schoolSettings?.googleSheetWebAppUrl?.trim() || process.env.VITE_GOOGLE_SHEET_URL;
+    if (!sheetUrl || !sheetUrl.startsWith('http') || sheetUrl.includes('AKfycbzItfB0hnC38GWywI4SGxay7THA3AXcuULIsWIo9Zg9GKYlIzzRAkFzTW3brKoxmmMQ')) return;
 
-    console.log('[Server] Attempting student recovery from Google Sheet...');
-    const res = await fetch(`${sheetUrl}?action=allData`, { signal: AbortSignal.timeout(15000) });
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data.students) && data.students.length > 0) {
-        store.students = data.students.map(normalizeStudent);
-        if (data.settings) store.schoolSettings = normalizeSchoolSettings({ ...store.schoolSettings, ...data.settings });
-        if (Array.isArray(data.subjects) && data.subjects.length > 0) store.subjects = data.subjects;
-        if (Array.isArray(data.gradeRules) && data.gradeRules.length > 0) store.gradeRules = data.gradeRules;
-        saveStore();
-        console.log(`[Server] Successfully recovered ${store.students.length} students from Google Sheet.`);
+    // Only if explicitly configured and store.students has not been saved
+    if (store.students.length === 0 && !fs.existsSync(DATA_FILE)) {
+      console.log('[Server] Checking configured Google Sheet...');
+      const res = await fetch(`${sheetUrl}?action=allData`, { signal: AbortSignal.timeout(15000) });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.students) && data.students.length > 0) {
+          store.students = data.students.map(normalizeStudent);
+          if (data.settings) store.schoolSettings = normalizeSchoolSettings({ ...store.schoolSettings, ...data.settings });
+          if (Array.isArray(data.subjects) && data.subjects.length > 0) store.subjects = data.subjects;
+          if (Array.isArray(data.gradeRules) && data.gradeRules.length > 0) store.gradeRules = data.gradeRules;
+          saveStore();
+        }
       }
     }
   } catch (err: any) {
@@ -829,10 +825,22 @@ async function startServer() {
   });
 
   // Save full state (Students, Subjects, Settings, Grade Rules)
-  app.post('/api/admin/data', (req, res) => {
+  app.post('/api/admin/data', async (req, res) => {
     const { students, subjects, schoolSettings, gradeRules, deletedStudents, clearedMarksHistory, staffUsers } = req.body;
     if (Array.isArray(students)) {
       store.students = students.map(normalizeStudent);
+      if (students.length === 0 && firestoreDb) {
+        try {
+          const snap = await getDocs(collection(firestoreDb, 'students'));
+          if (!snap.empty) {
+            const batch = writeBatch(firestoreDb);
+            snap.forEach((d) => batch.delete(d.ref));
+            await batch.commit();
+          }
+        } catch (e) {
+          console.warn('[Firestore] Error clearing students on save:', e);
+        }
+      }
     }
     if (Array.isArray(subjects) && subjects.length > 0) store.subjects = subjects;
     if (Array.isArray(deletedStudents)) store.deletedStudents = deletedStudents;
@@ -876,11 +884,51 @@ async function startServer() {
     syncToGoogleSheetInBackground();
   });
 
-  app.post('/api/admin/student', (req, res) => {
+  // Dedicated Clear All Students Endpoint (Wipes all students and trash permanently from DB & Firestore)
+  app.post(['/api/admin/student/clear-all', '/api/admin/clear-all-students'], async (req, res) => {
+    store.students = [];
+    store.deletedStudents = [];
+    store.lastUpdated = new Date().toISOString();
+    saveStore();
+
+    if (firestoreDb) {
+      try {
+        const snap = await getDocs(collection(firestoreDb, 'students'));
+        if (!snap.empty) {
+          const batch = writeBatch(firestoreDb);
+          snap.forEach((d) => batch.delete(d.ref));
+          await batch.commit();
+        }
+        const trashSnap = await getDocs(collection(firestoreDb, 'deleted_students'));
+        if (!trashSnap.empty) {
+          const batchTrash = writeBatch(firestoreDb);
+          trashSnap.forEach((d) => batchTrash.delete(d.ref));
+          await batchTrash.commit();
+        }
+      } catch (err) {
+        console.warn('[Firestore] clear-all error:', err);
+      }
+    }
+
+    console.log('[Server] Successfully cleared all students and trash.');
+    res.json({ success: true, students: [], deletedStudents: [] });
+  });
+
+  app.post('/api/admin/student', async (req, res) => {
     if (Array.isArray(req.body)) {
       store.students = req.body.map(normalizeStudent);
       store.lastUpdated = new Date().toISOString();
       saveStore();
+      if (store.students.length === 0 && firestoreDb) {
+        try {
+          const snap = await getDocs(collection(firestoreDb, 'students'));
+          if (!snap.empty) {
+            const batch = writeBatch(firestoreDb);
+            snap.forEach((d) => batch.delete(d.ref));
+            await batch.commit();
+          }
+        } catch (e) {}
+      }
       res.json({ success: true, students: store.students });
       syncToGoogleSheetInBackground();
       return;

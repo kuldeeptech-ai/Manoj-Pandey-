@@ -146,6 +146,7 @@ interface AdminPanelProps {
   staffUsers?: StaffUser[];
   onSaveStaffUser?: (staff: StaffUser) => void;
   onDeleteStaffUser?: (staffId: string) => void;
+  onClearAllStudents?: () => void;
 }
 
 type TabType = 'dashboard' | 'students' | 'marks' | 'subjects' | 'school' | 'grades' | 'sheets' | 'teachers' | 'staff';
@@ -179,6 +180,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   staffUsers = [],
   onSaveStaffUser,
   onDeleteStaffUser,
+  onClearAllStudents,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(initialSelectedStudentId ? 'marks' : 'dashboard');
   const [selectedStudentIdForMarks, setSelectedStudentIdForMarks] = useState<string>(
@@ -1004,6 +1006,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         message: `${count} छात्र रीसायकल बिन में भेज दिए गए हैं।`,
         studentIds: idsToDelete,
       });
+    }
+  };
+
+  const handleClearAllExistingStudents = () => {
+    if (students.length === 0) return;
+    if (
+      confirm(
+        `⚠️ चेतावनी: क्या आप सचमुच सभी ${students.length} छात्रों को डेटाबेस से पूरी तरह हटाना चाहते हैं?\n\n- इससे सभी पुराने/डेमो छात्र स्थायी रूप से हट जाएंगे।\n- इसके बाद आप नए सिरे से अपने छात्रों को लिंक, CSV या कॉपी-पेस्ट करके जोड़ सकते हैं।`
+      )
+    ) {
+      if (onClearAllStudents) {
+        onClearAllStudents();
+      } else {
+        onSaveStudents([]);
+      }
+      setSelectedStudentIds([]);
+      setBulkNotice('✓ सभी छात्र ऑनलाइन डेटाबेस और क्लाउड से पूरी तरह हटा दिए गए हैं। अब आप अपने नए छात्रों को जोड़ सकते हैं।');
+      setTimeout(() => setBulkNotice(null), 6000);
     }
   };
 
@@ -2156,6 +2176,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     {deletedStudents.length}
                   </span>
                 </button>
+                {students.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllExistingStudents}
+                    className="px-3 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold rounded shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-all hover:scale-[1.02] active:scale-98"
+                    title="डेटाबेस व क्लाउड से सभी छात्र एक साथ हटाएं ताकि नए छात्र जोड़ सकें"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-200" />
+                    <span>सभी छात्र हटाएं ({students.length})</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowBulkImportModal(true)}

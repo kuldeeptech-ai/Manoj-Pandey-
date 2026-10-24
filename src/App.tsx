@@ -54,6 +54,7 @@ import {
   subscribeToStaffUsers,
   saveStaffUserToFirebase,
   deleteStaffUserFromFirebase,
+  clearAllStudentsInFirebase,
 } from './utils/firebase';
 import { fetchAllFromGoogleSheet, getGoogleSheetUrl } from './utils/googleSheetSync';
 
@@ -68,6 +69,13 @@ if (typeof window !== 'undefined') {
     localStorage.removeItem('hd_pandey_subjects');
     localStorage.removeItem('hd_pandey_settings');
     localStorage.removeItem('hd_pandey_grades');
+
+    // Purge old 193 demo students cache so they never resurrect on refresh
+    if (localStorage.getItem('roster_purge_v5') !== 'done') {
+      localStorage.removeItem('school_students_cache');
+      localStorage.removeItem('school_deleted_students_cache');
+      localStorage.setItem('roster_purge_v5', 'done');
+    }
 
     // Clean up any stale cache where the logo was an SVG or old school name with J.H.S.
     ['school_settings_cache_v2', 'school_settings_cache'].forEach((key) => {
@@ -150,15 +158,15 @@ export default function App() {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('school_students_cache');
-        if (cached) {
+        if (cached !== null) {
           const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             return sortStudentsByRoll(parsed.map(normalizeStudentRecord));
           }
         }
       } catch {}
     }
-    return sortStudentsByRoll((DEFAULT_STUDENTS || []).map(normalizeStudentRecord));
+    return [];
   });
 
   const [deletedStudents, setDeletedStudents] = useState<Student[]>([]);
@@ -298,7 +306,7 @@ export default function App() {
             const norm = normalizeSchoolSettings(data.schoolSettings);
             setSchoolSettings(norm);
           }
-          if (Array.isArray(data.students) && data.students.length > 0) {
+          if (Array.isArray(data.students)) {
             const normalizedStudents = sortStudentsByRoll(data.students.map(normalizeStudentRecord));
             setStudents(normalizedStudents);
             try {
@@ -441,6 +449,9 @@ export default function App() {
         if (Date.now() - lastLocalMutationTimeRef.current < 15000) return;
         const formatted = sortStudentsByRoll(newStudents.map(normalizeStudentRecord));
         setStudents(formatted);
+        try {
+          localStorage.setItem('school_students_cache', JSON.stringify(formatted));
+        } catch {}
       },
       onSubjects: (newSubjects) => {
         if (Date.now() - lastLocalMutationTimeRef.current < 15000) return;
@@ -992,6 +1003,11 @@ export default function App() {
 
     setStudents(remaining);
     setDeletedStudents(updatedTrash);
+    try {
+      localStorage.setItem('school_students_cache', JSON.stringify(remaining));
+      localStorage.setItem('school_deleted_students_cache', JSON.stringify(updatedTrash));
+    } catch {}
+
     setOnlineSyncStatus({
       isSaving: true,
       message: 'ऑनलाइन डेटाबेस से छात्र हटाया जा रहा है...',
@@ -1029,6 +1045,11 @@ export default function App() {
 
     setStudents(remaining);
     setDeletedStudents(updatedTrash);
+    try {
+      localStorage.setItem('school_students_cache', JSON.stringify(remaining));
+      localStorage.setItem('school_deleted_students_cache', JSON.stringify(updatedTrash));
+    } catch {}
+
     setOnlineSyncStatus({
       isSaving: true,
       message: `${studentIds.length} छात्र ऑनलाइन रीसायकल बिन में भेजे जा रहे हैं...`,
@@ -1068,6 +1089,10 @@ export default function App() {
 
     setStudents(updatedStudents);
     setDeletedStudents(remainingTrash);
+    try {
+      localStorage.setItem('school_students_cache', JSON.stringify(updatedStudents));
+      localStorage.setItem('school_deleted_students_cache', JSON.stringify(remainingTrash));
+    } catch {}
 
     try {
       await fetch(`/api/admin/trash/restore/${encodeURIComponent(studentId)}`, { method: 'POST' });
@@ -1088,6 +1113,10 @@ export default function App() {
 
     setStudents(updatedStudents);
     setDeletedStudents([]);
+    try {
+      localStorage.setItem('school_students_cache', JSON.stringify(updatedStudents));
+      localStorage.setItem('school_deleted_students_cache', JSON.stringify([]));
+    } catch {}
 
     try {
       await fetch('/api/admin/trash/restore-all', { method: 'POST' });
@@ -1100,6 +1129,9 @@ export default function App() {
   const handlePermanentlyDeleteStudent = (studentId: string) => {
     const remainingTrash = deletedStudents.filter((s) => s.id !== studentId);
     setDeletedStudents(remainingTrash);
+    try {
+      localStorage.setItem('school_deleted_students_cache', JSON.stringify(remainingTrash));
+    } catch {}
 
     permanentlyDeleteStudentFromTrashInFirebase(studentId).catch(console.warn);
     fetch(`/api/admin/trash/${encodeURIComponent(studentId)}`, { method: 'DELETE' }).catch(() => {});
@@ -1107,10 +1139,47 @@ export default function App() {
 
   // Empty entire Recycle Bin
   const handleEmptyTrash = () => {
+    lastLocalMutationTimeRef.current = Date.now();
     setDeletedStudents([]);
+    try {
+      localStorage.setItem('school_deleted_students_cache', JSON.stringify([]));
+    } catch {}
 
     emptyTrashInFirebase().catch(console.warn);
     fetch('/api/admin/trash', { method: 'DELETE' }).catch(() => {});
+  };
+
+  // Wipe / Clear All Students completely
+  const handleClearAllStudents = async () => {
+    lastLocalMutationTimeRef.current = Date.now();
+    setStudents([]);
+    setDeletedStudents([]);
+    try {
+      localStorage.setItem('school_students_cache', JSON.stringify([]));
+      localStorage.setItem('school_deleted_students_cache', JSON.stringify([]));
+    } catch {}
+
+    setOnlineSyncStatus({
+      isSaving: true,
+      message: 'सभी पुराने छात्र डेटाबेस व क्लाउड से पूरी तरह हटाए जा रहे हैं...',
+      lastSyncTime: onlineSyncStatus.lastSyncTime,
+      type: 'saving',
+    });
+
+    try {
+      await fetch('/api/admin/student/clear-all', { method: 'POST' });
+      setOnlineSyncStatus({
+        isSaving: false,
+        message: '✓ सभी छात्र ऑनलाइन डेटाबेस और क्लाउड से पूरी तरह हटा दिए गए!',
+        lastSyncTime: new Date().toLocaleTimeString('hi-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        type: 'success',
+      });
+      setTimeout(() => {
+        setOnlineSyncStatus((prev) => ({ ...prev, message: null }));
+      }, 5000);
+    } catch {}
+
+    clearAllStudentsInFirebase().catch(console.warn);
   };
 
   // Cleared Marks Backups (Recycle Bin for Marks)
@@ -1385,6 +1454,7 @@ export default function App() {
             staffUsers={staffUsers}
             onSaveStaffUser={handleSaveStaffUser}
             onDeleteStaffUser={handleDeleteStaffUser}
+            onClearAllStudents={handleClearAllStudents}
           />
         ) : (
           <div className="w-full min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">

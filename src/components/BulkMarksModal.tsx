@@ -17,6 +17,7 @@ import {
   Link as LinkIcon,
   RefreshCw,
   Globe,
+  Info,
 } from 'lucide-react';
 import { Student, SubjectConfig } from '../types';
 import {
